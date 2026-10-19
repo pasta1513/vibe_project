@@ -4,7 +4,7 @@
 
 ## 현재 상태
 
-아직 만들기 전입니다. 지금은 README.md와 AGENTS.md만 있습니다.
+아직 만들기 전입니다. 지금은 README.md, AGENTS.md, DECISIONS.md만 있습니다.
 
 만들 기능:
 - 갖고 있는 옷 등록
@@ -17,6 +17,7 @@
 | --- | --- |
 | [README.md](README.md) | 프로젝트 소개와 현재 상태, 시작 방법 (지금 보고 있는 문서) |
 | [AGENTS.md](AGENTS.md) | AI가 작업하기 전에 읽는 작업 규칙 |
+| [DECISIONS.md](DECISIONS.md) | 사람이 확정한 결정 기록 |
 
 ## 시작 방법
 
