@@ -4,7 +4,7 @@
 
 ## 현재 상태
 
-아직 만들기 전입니다. 지금은 README.md, AGENTS.md, DECISIONS.md, PLAN.md, PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md, DATA-MODEL.md, API-SPEC.md, TEST-PLAN.md가 있습니다.
+아직 만들기 전입니다. 지금은 README.md, AGENTS.md, DECISIONS.md, PLAN.md, PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md, DATA-MODEL.md, API-SPEC.md, TEST-PLAN.md, DESIGN.md가 있습니다.
 
 만들 기능:
 - 갖고 있는 옷 등록
@@ -25,6 +25,7 @@
 | [DATA-MODEL.md](DATA-MODEL.md) | 저장할 정보의 이름과 뜻, 앱 기본 단어 목록 |
 | [API-SPEC.md](API-SPEC.md) | 화면과 서버가 주고받는 약속 |
 | [TEST-PLAN.md](TEST-PLAN.md) | 무엇을 보면 통과인지 (검사 시나리오와 기대 결과) |
+| [DESIGN.md](DESIGN.md) | 화면이 어떻게 보이는지 (색, 글자, 여백, 모양 규칙과 그림 목록) |
 
 ## 시작 방법
 

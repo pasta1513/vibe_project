@@ -24,7 +24,7 @@
 | [DATA-MODEL.md](DATA-MODEL.md) | 있음 (승인됨) |
 | [API-SPEC.md](API-SPEC.md) | 있음 (승인됨) |
 | [TEST-PLAN.md](TEST-PLAN.md) | 있음 (승인됨) |
-| DESIGN.md | 아직 없음 |
+| [DESIGN.md](DESIGN.md) | 있음 (승인됨) |
 
 ## 작업 목록
 
@@ -39,7 +39,7 @@
 | P-07 | DATA-MODEL.md 작성 | 완료 | DATA-MODEL.md가 있고, 저장할 정보(예: 옷, 코디, 스타일 태그)마다 이름과 뜻이 적혀 있다. 사람이 내용을 승인했다. |
 | P-08 | API-SPEC.md 작성 | 완료 | API-SPEC.md가 있고, 화면이 서버에 보내는 요청과 받는 응답이 기능마다 적혀 있다. 사람이 내용을 승인했다. 기술과 저장 방식이 정해지기 전에는 초안까지만 쓴다. |
 | P-09 | TEST-PLAN.md 작성 | 완료 | TEST-PLAN.md가 있고, PRD의 기능마다 확인할 내용과 통과 기준이 적혀 있다. 사람이 내용을 승인했다. |
-| P-10 | DESIGN.md 작성 | 예정 | DESIGN.md가 있고, 화면의 색, 글자, 여백, 모양 규칙이 적혀 있다. 사람이 내용을 승인했다. |
+| P-10 | DESIGN.md 작성 | 완료 | DESIGN.md가 있고, 화면의 색, 글자, 여백, 모양 규칙이 적혀 있다. 사람이 내용을 승인했다. |
 
 ## 실제 검증 결과
 
@@ -56,8 +56,7 @@
 | P-07 | 2026-10-20 | DATA-MODEL.md와 수정한 PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md를 검토하고 내용을 승인함 | 통과 |
 | P-08 | 2026-10-20 | API-SPEC.md와 수정한 SCREEN-SPEC.md, PRD.md, ARCHITECTURE.md, DATA-MODEL.md, DECISIONS.md(D-006)를 검토하고 내용을 승인함 | 통과 |
 | P-09 | 2026-10-20 | TEST-PLAN.md와 수정한 PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md, API-SPEC.md, DATA-MODEL.md, DECISIONS.md(D-006 검사 항목 더함)를 검토하고 내용을 승인함 | 통과 |
-
-P-10: 아직 확인하지 않음 (작업 전)
+| P-10 | 2026-10-20 | DESIGN.md와 수정한 SCREEN-SPEC.md, API-SPEC.md를 검토하고 내용을 승인함 | 통과 |
 
 ## 남은 문제와 다음 행동
 
@@ -75,5 +74,6 @@ P-10: 아직 확인하지 않음 (작업 전)
 위 항목은 AI가 혼자 정하지 않습니다. 필요하면 후보를 제안하고, 사람이 확정하면 DECISIONS.md에 기록합니다.
 
 ### 다음 행동
-- P-10 DESIGN.md 초안을 AI가 제안하고, 사람이 검토하고 승인합니다.
+- P-01 ~ P-10 기획 문서가 모두 승인되었습니다.
+- (제안) 코드 작업을 시작하기 전에 위 "아직 정하지 않은 것" 중 실행 명령, AI, 2D 이미지화 도구를 사람이 정하고, 코드 작업을 새 작업 번호로 이 문서에 적습니다.
 - TEST-PLAN.md 13장의 남은 질문(실패를 일부러 만드는 방법, 직접 요청 도구, 5일 예보 확인 등)은 AI, 실행 방법, 날씨 API를 정한 뒤 다시 봅니다.
