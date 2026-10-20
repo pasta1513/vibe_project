@@ -4,7 +4,7 @@
 
 ## 현재 상태
 
-아직 만들기 전입니다. 지금은 README.md, AGENTS.md, DECISIONS.md, PLAN.md, PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md, DATA-MODEL.md, API-SPEC.md, TEST-PLAN.md(초안)가 있습니다.
+아직 만들기 전입니다. 지금은 README.md, AGENTS.md, DECISIONS.md, PLAN.md, PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md, DATA-MODEL.md, API-SPEC.md, TEST-PLAN.md가 있습니다.
 
 만들 기능:
 - 갖고 있는 옷 등록
