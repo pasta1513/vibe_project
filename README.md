@@ -4,7 +4,7 @@
 
 ## 현재 상태
 
-코드 뼈대와 저장소가 있습니다 (P-11, P-12). 서버와 화면이 켜지고, 화면에서 서버 연결을 확인할 수 있습니다. 서버를 켜면 `data/dev.db`가 만들어지고 앱 기본 단어와 태그가 들어갑니다. 사용자가 쓸 수 있는 기능은 아직 없습니다.
+코드 뼈대, 저장소, 가짜 부품이 있습니다 (P-11 ~ P-13). 서버와 화면이 켜지고, 화면에서 서버 연결을 확인할 수 있습니다. 서버를 켜면 `data/dev.db`가 만들어지고 앱 기본 단어와 태그가 들어갑니다. AI, 2D 이미지화, 날씨는 `server/app/external/`에 가짜로 만들어 두었습니다. 사용자가 쓸 수 있는 기능은 아직 없습니다.
 
 문서는 README.md, AGENTS.md, DECISIONS.md, PLAN.md, PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md, DATA-MODEL.md, API-SPEC.md, TEST-PLAN.md, DESIGN.md가 있습니다.
 
@@ -65,6 +65,7 @@ npm run dev
 - 서버의 요청을 직접 보내 확인할 때는 http://localhost:8000/docs 를 엽니다. (D-010)
 - SQLite 파일과 사진은 `data/` 폴더에 저장됩니다. git에 올리지 않습니다.
 - AI, 2D 이미지화, 날씨는 진짜를 연결하기 전까지 가짜로 동작합니다. (D-007)
+- 실패 화면을 확인하려면 서버를 켜기 전에 환경 변수 `FAKE_FAIL`에 실패시킬 부품을 적습니다. 쓸 수 있는 이름은 `weather`, `recommend`, `score`, `imaging`입니다. (예: PowerShell에서 `$env:FAKE_FAIL="weather,score"`) 바꾼 뒤에는 서버를 다시 켭니다.
 
 ## 확인과 기록
 
