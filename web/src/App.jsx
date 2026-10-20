@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from './api.js'
+import ClosetScreen from './components/ClosetScreen.jsx'
 import ErrorLine from './components/ErrorLine.jsx'
 import Mannequin from './components/Mannequin.jsx'
 import MannequinPicker from './components/MannequinPicker.jsx'
 import MenuBar from './components/MenuBar.jsx'
 import Room from './components/Room.jsx'
+import Toast from './components/Toast.jsx'
 import Wardrobe from './components/Wardrobe.jsx'
 
 function App() {
@@ -15,6 +17,8 @@ function App() {
   const [activeMenu, setActiveMenu] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  const [toast, setToast] = useState(null)
+  const clearToast = useCallback(() => setToast(null), [])
 
   // 앱 열기 (API-SPEC §3)의 응답을 반영합니다.
   const applySettings = useCallback((res) => {
@@ -52,22 +56,28 @@ function App() {
 
   const firstRun = status === 'ready' && !mannequin
   const showMenu = status === 'ready' && mannequin
+  // 옷장 화면에서는 옷장이 화면 전체로 커지고 마네킹은 숨깁니다. (SCREEN-SPEC §1.2)
+  const closetOpen = showMenu && activeMenu === 'closet'
 
   return (
     <div className="app">
       {showMenu && <MenuBar active={activeMenu} onSelect={setActiveMenu} />}
       <main className={`stage${firstRun ? ' stage--dimmed' : ''}`}>
         <Room className="stage__room" />
-        <Wardrobe className="stage__wardrobe" />
-        {showMenu && <Mannequin className="stage__mannequin" {...mannequin} />}
+        {!closetOpen && <Wardrobe className="stage__wardrobe" />}
+        {showMenu && !closetOpen && <Mannequin className="stage__mannequin" {...mannequin} />}
+        {closetOpen && <ClosetScreen gender={mannequin.gender} showToast={setToast} />}
         {status === 'error' && (
           <div className="stage__notice">
             <ErrorLine message={loadError} onRetry={retryLoad} />
           </div>
         )}
-        {showMenu && activeMenu && <p className="stage__placeholder">준비 중인 화면이에요.</p>}
+        {showMenu && activeMenu && !closetOpen && (
+          <p className="stage__placeholder">준비 중인 화면이에요.</p>
+        )}
       </main>
       {firstRun && <MannequinPicker onStart={handleStart} saving={saving} error={saveError} />}
+      <Toast message={toast} onDone={clearToast} />
     </div>
   )
 }

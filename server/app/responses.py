@@ -7,10 +7,14 @@
 HTTP 상태: 성공과 확인 필요는 200, 잘못된 입력은 400, 없는 것은 404, 저장소 실패는 500
 """
 
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
+
+logger = logging.getLogger("uvicorn.error")
 
 
 def ok(data=None) -> dict:
@@ -48,4 +52,6 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(SQLAlchemyError)
     async def handle_storage_error(request: Request, exc: SQLAlchemyError):
+        # 원인은 서버 터미널에만 남기고, 화면에는 한 줄만 보냅니다.
+        logger.error("저장소 오류: %s %s", request.method, request.url.path, exc_info=exc)
         return _error("storage_failed", "저장소에 쓰거나 읽지 못했어요.", 500)

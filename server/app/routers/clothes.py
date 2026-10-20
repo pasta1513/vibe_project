@@ -1,0 +1,178 @@
+"""옷장 (API-SPEC §4)."""
+
+from typing import Literal
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, ConfigDict
+from sqlmodel import Session, select
+
+from .. import photos
+from ..db import get_session
+from ..models import CATEGORIES, Clothing, ClothingKeyword, Keyword
+from ..responses import ApiError, ok
+from .keywords import keyword_data
+
+router = APIRouter(prefix="/api/clothes")
+
+OPTIONAL_KINDS = ("material", "season", "pattern")
+KIND_NAMES = {"category": "구분", "color": "색", "type": "종류"}
+
+
+class ClothingIn(BaseModel):
+    upload_id: str
+    category: Literal["top", "bottom", "shoes", "outer", "dress"] | None = None
+    keyword_ids: list[int] = []
+
+
+class OptionalKeywordsIn(BaseModel):
+    # 선택 키워드만 받습니다. 색 같은 다른 칸을 끼워 넣으면 입력 오류입니다. (TEST-PLAN T-76)
+    model_config = ConfigDict(extra="forbid")
+
+    material: list[int]
+    season: list[int]
+    pattern: list[int]
+
+
+def clothing_summary(clothing: Clothing) -> dict:
+    """옷 한 벌 정보 (API-SPEC §2.4)"""
+    return {
+        "id": clothing.id,
+        "category": clothing.category,
+        "image_url": photos.url_for(clothing.image_path),
+        "is_deleted": clothing.is_deleted,
+    }
+
+
+def _keywords_of(session: Session, clothing_id: int) -> list[Keyword]:
+    return session.exec(
+        select(Keyword)
+        .join(ClothingKeyword, ClothingKeyword.keyword_id == Keyword.id)
+        .where(ClothingKeyword.clothing_id == clothing_id)
+        .order_by(Keyword.sort_order, Keyword.id)
+    ).all()
+
+
+def clothing_detail(session: Session, clothing: Clothing) -> dict:
+    grouped = {kind: [] for kind in ("color", "type", *OPTIONAL_KINDS)}
+    for keyword in _keywords_of(session, clothing.id):
+        grouped[keyword.kind].append(keyword_data(keyword))
+    return {
+        **clothing_summary(clothing),
+        "photo_url": photos.url_for(clothing.photo_path),
+        "keywords": grouped,
+    }
+
+
+def _load_keywords(session: Session, ids: list[int]) -> list[Keyword]:
+    unique = set(ids)
+    keywords = session.exec(select(Keyword).where(Keyword.id.in_(unique))).all() if unique else []
+    if len(keywords) != len(unique):
+        raise ApiError("unknown_keyword", "목록에 없는 키워드가 있어요.")
+    return keywords
+
+
+def _get_clothing(session: Session, clothing_id: int) -> Clothing:
+    clothing = session.get(Clothing, clothing_id)
+    if clothing is None or clothing.is_deleted:
+        raise ApiError("clothing_not_found", "그 옷을 찾지 못했어요.", 404)
+    return clothing
+
+
+# 메뉴 "옷장": 지운 옷을 뺀 옷 목록을 구분별로 모음
+@router.get("")
+def list_clothes(session: Session = Depends(get_session)):
+    clothes = session.exec(
+        select(Clothing).where(Clothing.is_deleted == False).order_by(Clothing.id)  # noqa: E712
+    ).all()
+    grouped = {category: [] for category in CATEGORIES}
+    for clothing in clothes:
+        grouped[clothing.category].append(clothing_summary(clothing))
+    return ok(grouped)
+
+
+@router.get("/{clothing_id}")
+def read_clothing(clothing_id: int, session: Session = Depends(get_session)):
+    return ok(clothing_detail(session, _get_clothing(session, clothing_id)))
+
+
+# 등록하기
+@router.post("")
+def register_clothing(body: ClothingIn, session: Session = Depends(get_session)):
+    keywords = _load_keywords(session, body.keyword_ids)
+    kinds = {k.kind for k in keywords}
+    missing = [name for kind, name in KIND_NAMES.items()
+               if (body.category is None if kind == "category" else kind not in kinds)]
+    if missing:
+        # 예: "색이 선택되지 않았어요.", "색, 종류가 선택되지 않았어요." (SCREEN-SPEC §2.6)
+        particle = "가" if missing[-1] == "종류" else "이"
+        raise ApiError("missing_required", f"{', '.join(missing)}{particle} 선택되지 않았어요.")
+    if any(k.kind == "type" and k.category != body.category for k in keywords):
+        raise ApiError("type_category_mismatch", "고른 구분에 맞지 않는 종류가 있어요.")
+
+    files = photos.temp_files(body.upload_id)
+    if set(files) != {"original", "image"}:
+        raise ApiError("upload_missing", "올린 사진이 없어졌어요. 사진을 다시 올려 주세요.")
+
+    clothing = Clothing(category=body.category, photo_path=files["original"].name,
+                        image_path=files["image"].name)
+    session.add(clothing)
+    session.flush()
+    for keyword in keywords:
+        session.add(ClothingKeyword(clothing_id=clothing.id, keyword_id=keyword.id))
+    # 임시 파일을 정식으로 옮긴 뒤에 저장을 마칩니다.
+    moved = []
+    try:
+        for path in files.values():
+            target = photos.PHOTO_DIR / path.name
+            path.replace(target)
+            moved.append((target, path))
+        session.commit()
+    except Exception:
+        session.rollback()
+        for target, original in moved:
+            target.replace(original)
+        raise
+    session.refresh(clothing)
+    return ok(clothing_summary(clothing))
+
+
+# 선택 키워드 고치고 저장
+@router.patch("/{clothing_id}/keywords")
+def save_optional_keywords(clothing_id: int, body: OptionalKeywordsIn,
+                           session: Session = Depends(get_session)):
+    clothing = session.get(Clothing, clothing_id)
+    if clothing is None:
+        raise ApiError("clothing_not_found", "그 옷을 찾지 못했어요.", 404)
+    if clothing.is_deleted:
+        raise ApiError("already_deleted", "이미 지운 옷이에요.")
+
+    wanted = {kind: getattr(body, kind) for kind in OPTIONAL_KINDS}
+    keywords = _load_keywords(session, [i for ids in wanted.values() for i in ids])
+    by_id = {k.id: k for k in keywords}
+    for kind, ids in wanted.items():
+        if any(by_id[i].kind != kind for i in ids):
+            raise ApiError("wrong_keyword_kind", "선택 키워드만 고칠 수 있어요.")
+
+    for keyword in _keywords_of(session, clothing.id):
+        if keyword.kind in OPTIONAL_KINDS:
+            link = session.get(ClothingKeyword, (clothing.id, keyword.id))
+            session.delete(link)
+    session.flush()
+    for keyword in keywords:
+        session.add(ClothingKeyword(clothing_id=clothing.id, keyword_id=keyword.id))
+    session.commit()
+    return ok(clothing_detail(session, clothing)["keywords"])
+
+
+# 옷 지우기: 지운 옷 표시만 붙입니다. 사진, 2D 이미지, 키워드는 그대로 둡니다.
+@router.delete("/{clothing_id}")
+def delete_clothing(clothing_id: int, session: Session = Depends(get_session)):
+    clothing = session.get(Clothing, clothing_id)
+    if clothing is None:
+        raise ApiError("clothing_not_found", "그 옷을 찾지 못했어요.", 404)
+    if clothing.is_deleted:
+        raise ApiError("already_deleted", "이미 지운 옷이에요.")
+    clothing.is_deleted = True
+    session.add(clothing)
+    session.commit()
+    return ok(None)

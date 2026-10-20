@@ -1,5 +1,5 @@
 # 서버 패키지 (D-008, D-009). 버전을 고정합니다.
-# 직접 고른 패키지: fastapi, uvicorn, sqlmodel. 나머지는 이 셋이 함께 설치한 것입니다.
+# 직접 고른 패키지: fastapi, uvicorn, sqlmodel, python-multipart(사진 올리기, P-15). 나머지는 이들이 함께 설치한 것입니다.
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
@@ -10,6 +10,7 @@ idna==3.20
 opentelemetry-api==1.45.1
 pydantic==2.14.1
 pydantic_core==2.50.1
+python-multipart==0.0.32
 SQLAlchemy==2.1.5
 sqlmodel==0.0.48
 starlette==1.9.0

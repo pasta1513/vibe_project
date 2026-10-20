@@ -1,6 +1,6 @@
 """저장할 정보 (DATA-MODEL §2~7). 칸 이름은 DATA-MODEL §12를 따릅니다."""
 
-from datetime import date as Date, datetime
+from datetime import date as Date, datetime, timezone
 from typing import Optional
 
 from sqlalchemy import JSON, Column
@@ -43,7 +43,7 @@ class Clothing(SQLModel, table=True):
     photo_path: str
     image_path: str
     is_deleted: bool = False
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # 옷과 키워드 단어 잇기
@@ -93,7 +93,7 @@ class DiaryEntry(OutfitSlots, MannequinShape, table=True):
     note_type: str
     note_summary: str
     note_details: dict = Field(sa_column=Column(JSON, nullable=False))
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # §7 즐겨찾기. 같은 코디 구성은 서버 코드에서 막습니다. (SQLite는 빈 칸끼리 같다고 보지 않음)

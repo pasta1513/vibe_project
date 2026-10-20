@@ -1,8 +1,10 @@
 // 서버 요청 도구. 응답의 공통 모양(API-SPEC §2.1)을 그대로 돌려줍니다.
 //   { result: 'ok', data } | { result: 'confirm', confirm } | { result: 'error', error: { kind, message } }
 
-// 내 PC 서버의 일반 요청은 5초를 넘으면 실패로 봅니다. (API-SPEC §2.3)
+// 실패로 볼 때까지 기다리는 시간 (API-SPEC §2.3)
 const DEFAULT_TIMEOUT_MS = 5000
+// 사진 올리기 = 2D 이미지화 60초 + AI 키워드 미리 고르기 30초
+const UPLOAD_TIMEOUT_MS = 90000
 
 function fail(kind, message) {
   return { result: 'error', error: { kind, message } }
@@ -11,11 +13,12 @@ function fail(kind, message) {
 export async function request(method, path, body, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const isForm = body instanceof FormData
   try {
     const res = await fetch(path, {
       method,
-      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: body === undefined || isForm ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
       signal: controller.signal,
     })
     let json
@@ -37,4 +40,20 @@ export async function request(method, path, body, { timeoutMs = DEFAULT_TIMEOUT_
 export const api = {
   getSettings: () => request('GET', '/api/settings'),
   saveMannequin: (mannequin) => request('PUT', '/api/settings/mannequin', mannequin),
+
+  getKeywords: () => request('GET', '/api/keywords'),
+
+  uploadPhoto: (file, previousUploadId) => {
+    const form = new FormData()
+    form.append('file', file)
+    if (previousUploadId) form.append('previous_upload_id', previousUploadId)
+    return request('POST', '/api/uploads', form, { timeoutMs: UPLOAD_TIMEOUT_MS })
+  },
+  discardUpload: (uploadId) => request('DELETE', `/api/uploads/${uploadId}`),
+
+  getClothes: () => request('GET', '/api/clothes'),
+  getClothing: (id) => request('GET', `/api/clothes/${id}`),
+  registerClothing: (body) => request('POST', '/api/clothes', body),
+  saveOptionalKeywords: (id, body) => request('PATCH', `/api/clothes/${id}/keywords`, body),
+  deleteClothing: (id) => request('DELETE', `/api/clothes/${id}`),
 }
