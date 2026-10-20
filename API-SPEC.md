@@ -4,7 +4,7 @@
 사용자 행동마다 화면이 보내는 것, 서버가 할 일, 받는 것, 성공했을 때 화면, 실패 종류, 다음 행동을 적습니다.
 프로그램 문법은 최소한으로 하고 쉬운 말로 적습니다. 화면 모습은 SCREEN-SPEC에, 저장할 정보의 뜻은 DATA-MODEL에 적습니다.
 
-- 상태: 초안 (2026-10-20). 사람의 승인 전
+- 상태: 초안 (2026-10-20), 승인됨 (2026-10-20)
 - 근거 결정: [DECISIONS.md](DECISIONS.md)의 D-002, D-003, D-004, D-005, D-006
 - 관련 작업: [PLAN.md](PLAN.md)의 P-08
 - 기준 문서: [SCREEN-SPEC.md](SCREEN-SPEC.md), [PRD.md](PRD.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DATA-MODEL.md](DATA-MODEL.md)

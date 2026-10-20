@@ -3,7 +3,7 @@
 앱이 저장할 정보의 이름과 뜻을 적은 문서입니다.
 데이터베이스 문법은 쓰지 않고 쉬운 말로 적습니다. 화면과 서버가 주고받는 모양은 API-SPEC에, 화면에서 보이는 모습은 SCREEN-SPEC에 적습니다.
 
-- 상태: 초안 (2026-10-20), 승인됨 (2026-10-20), 수정 (2026-10-20: §7 즐겨찾기를 넣는 버튼 이름을 SCREEN-SPEC에 맞춤. 재승인 전)
+- 상태: 초안 (2026-10-20), 승인됨 (2026-10-20), 수정 (2026-10-20: §7 즐겨찾기를 넣는 버튼 이름을 SCREEN-SPEC에 맞춤), 재승인 (2026-10-20)
 - 근거 결정: [DECISIONS.md](DECISIONS.md)의 D-002, D-003, D-005
 - 관련 작업: [PLAN.md](PLAN.md)의 P-07
 - 기준 문서: [PRD.md](PRD.md), [SCREEN-SPEC.md](SCREEN-SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md)
