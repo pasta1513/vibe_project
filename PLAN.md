@@ -23,7 +23,7 @@
 | [SCREEN-SPEC.md](SCREEN-SPEC.md) | 있음 (승인됨) |
 | [DATA-MODEL.md](DATA-MODEL.md) | 있음 (승인됨) |
 | [API-SPEC.md](API-SPEC.md) | 있음 (승인됨) |
-| TEST-PLAN.md | 아직 없음 |
+| [TEST-PLAN.md](TEST-PLAN.md) | 있음 (초안) |
 | DESIGN.md | 아직 없음 |
 
 ## 작업 목록
@@ -38,7 +38,7 @@
 | P-06 | SCREEN-SPEC.md 작성 | 완료 | SCREEN-SPEC.md가 있고, PRD의 기능마다 화면에서 보이는 것과 할 수 있는 행동이 적혀 있다. 사람이 내용을 승인했다. |
 | P-07 | DATA-MODEL.md 작성 | 완료 | DATA-MODEL.md가 있고, 저장할 정보(예: 옷, 코디, 스타일 태그)마다 이름과 뜻이 적혀 있다. 사람이 내용을 승인했다. |
 | P-08 | API-SPEC.md 작성 | 완료 | API-SPEC.md가 있고, 화면이 서버에 보내는 요청과 받는 응답이 기능마다 적혀 있다. 사람이 내용을 승인했다. 기술과 저장 방식이 정해지기 전에는 초안까지만 쓴다. |
-| P-09 | TEST-PLAN.md 작성 | 예정 | TEST-PLAN.md가 있고, PRD의 기능마다 확인할 내용과 통과 기준이 적혀 있다. 사람이 내용을 승인했다. |
+| P-09 | TEST-PLAN.md 작성 | 진행 중 | TEST-PLAN.md가 있고, PRD의 기능마다 확인할 내용과 통과 기준이 적혀 있다. 사람이 내용을 승인했다. |
 | P-10 | DESIGN.md 작성 | 예정 | DESIGN.md가 있고, 화면의 색, 글자, 여백, 모양 규칙이 적혀 있다. 사람이 내용을 승인했다. |
 
 ## 실제 검증 결과
