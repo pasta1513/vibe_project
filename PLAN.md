@@ -17,11 +17,11 @@
 | --- | --- |
 | [README.md](README.md) | 있음 |
 | [AGENTS.md](AGENTS.md) | 있음 |
-| [DECISIONS.md](DECISIONS.md) | 있음 (D-001 ~ D-004 확정) |
+| [DECISIONS.md](DECISIONS.md) | 있음 (D-001 ~ D-005 확정) |
 | [PRD.md](PRD.md) | 있음 (승인됨) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 있음 (승인됨) |
 | [SCREEN-SPEC.md](SCREEN-SPEC.md) | 있음 (승인됨) |
-| DATA-MODEL.md | 아직 없음 |
+| [DATA-MODEL.md](DATA-MODEL.md) | 있음 (승인됨) |
 | API-SPEC.md | 아직 없음 |
 | TEST-PLAN.md | 아직 없음 |
 | DESIGN.md | 아직 없음 |
@@ -36,7 +36,7 @@
 | P-04 | PRD.md 작성 | 완료 | PRD.md가 있고, 기능 3개(옷 등록, 코디 추천, 코디 점수)마다 사용자가 보거나 겪는 일이 적혀 있다. 사람이 내용을 승인했다. |
 | P-05 | ARCHITECTURE.md 작성 | 완료 | ARCHITECTURE.md가 있고, 부품과 각 부품의 책임이 적혀 있다. 정하지 않은 기술은 "미정"이나 "제안"으로 표시되어 있다. 사람이 내용을 승인했다. 기술과 저장 방식이 정해지기 전에는 초안까지만 쓴다. |
 | P-06 | SCREEN-SPEC.md 작성 | 완료 | SCREEN-SPEC.md가 있고, PRD의 기능마다 화면에서 보이는 것과 할 수 있는 행동이 적혀 있다. 사람이 내용을 승인했다. |
-| P-07 | DATA-MODEL.md 작성 | 예정 | DATA-MODEL.md가 있고, 저장할 정보(예: 옷, 코디, 스타일 태그)마다 이름과 뜻이 적혀 있다. 사람이 내용을 승인했다. |
+| P-07 | DATA-MODEL.md 작성 | 완료 | DATA-MODEL.md가 있고, 저장할 정보(예: 옷, 코디, 스타일 태그)마다 이름과 뜻이 적혀 있다. 사람이 내용을 승인했다. |
 | P-08 | API-SPEC.md 작성 | 예정 | API-SPEC.md가 있고, 화면이 서버에 보내는 요청과 받는 응답이 기능마다 적혀 있다. 사람이 내용을 승인했다. 기술과 저장 방식이 정해지기 전에는 초안까지만 쓴다. |
 | P-09 | TEST-PLAN.md 작성 | 예정 | TEST-PLAN.md가 있고, PRD의 기능마다 확인할 내용과 통과 기준이 적혀 있다. 사람이 내용을 승인했다. |
 | P-10 | DESIGN.md 작성 | 예정 | DESIGN.md가 있고, 화면의 색, 글자, 여백, 모양 규칙이 적혀 있다. 사람이 내용을 승인했다. |
@@ -53,8 +53,9 @@
 | P-04 | 2026-10-19 | PRD.md를 검토하고 내용을 승인함 | 통과 |
 | P-05 | 2026-10-20 | ARCHITECTURE.md와 수정한 PRD.md를 검토하고 내용을 승인함 | 통과 |
 | P-06 | 2026-10-20 | SCREEN-SPEC.md와 수정한 PRD.md를 검토하고 내용을 승인함 | 통과 |
+| P-07 | 2026-10-20 | DATA-MODEL.md와 수정한 PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md를 검토하고 내용을 승인함 | 통과 |
 
-P-07 ~ P-10: 아직 확인하지 않음 (작업 전)
+P-08 ~ P-10: 아직 확인하지 않음 (작업 전)
 
 ## 남은 문제와 다음 행동
 
@@ -63,7 +64,7 @@ P-07 ~ P-10: 아직 확인하지 않음 (작업 전)
 - 데이터 저장 방식: 해결 (D-002, D-003)
 - 실행 명령
 - OpenWeatherMap API 키를 둘 곳: 해결 (D-004)
-- 코디 추천과 점수 매기기에 쓸 AI
+- 코디 추천, 점수 매기기, 키워드 미리 고르기, 종류 단어의 성별 정하기에 쓸 AI
 - D-001의 결정 이유 (DECISIONS.md에 "미정"으로 남아 있음)
 - 옷 사진을 2D 이미지로 바꿀 도구나 AI
 - OpenWeatherMap에서 오늘 포함 5일의 하루 예보를 받을 수 있는지 (확인 필요)
@@ -72,4 +73,4 @@ P-07 ~ P-10: 아직 확인하지 않음 (작업 전)
 위 항목은 AI가 혼자 정하지 않습니다. 필요하면 후보를 제안하고, 사람이 확정하면 DECISIONS.md에 기록합니다.
 
 ### 다음 행동
-- P-07 DATA-MODEL.md 초안을 AI가 제안하고, 사람이 검토하고 승인합니다.
+- P-08 API-SPEC.md 초안을 AI가 제안하고, 사람이 검토하고 승인합니다.
