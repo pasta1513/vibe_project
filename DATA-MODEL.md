@@ -3,7 +3,7 @@
 앱이 저장할 정보의 이름과 뜻을 적은 문서입니다.
 데이터베이스 문법은 쓰지 않고 쉬운 말로 적습니다. 화면과 서버가 주고받는 모양은 API-SPEC에, 화면에서 보이는 모습은 SCREEN-SPEC에 적습니다.
 
-- 상태: 초안 (2026-10-20), 승인됨 (2026-10-20), 수정 (2026-10-20: §7 즐겨찾기를 넣는 버튼 이름을 SCREEN-SPEC에 맞춤), 재승인 (2026-10-20), 수정 (2026-10-20: §4, §5 이름의 띄어쓰기 정리와 빈 이름 금지 더함), 재승인 (2026-10-20), 수정 (2026-10-20: §10 ORM을 SQLModel로 정함, D-009), 재승인 (2026-10-20)
+- 상태: 초안 (2026-10-20), 승인됨 (2026-10-20), 수정 (2026-10-20: §7 즐겨찾기를 넣는 버튼 이름을 SCREEN-SPEC에 맞춤), 재승인 (2026-10-20), 수정 (2026-10-20: §4, §5 이름의 띄어쓰기 정리와 빈 이름 금지 더함), 재승인 (2026-10-20), 수정 (2026-10-20: §10 ORM을 SQLModel로 정함, D-009), 재승인 (2026-10-20), 수정 (2026-10-20: §12 저장 칸의 영어 이름 더함, P-12), 재승인 (2026-10-20)
 - 근거 결정: [DECISIONS.md](DECISIONS.md)의 D-002, D-003, D-005
 - 관련 작업: [PLAN.md](PLAN.md)의 P-07
 - 기준 문서: [PRD.md](PRD.md), [SCREEN-SPEC.md](SCREEN-SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md)
@@ -197,7 +197,7 @@ PRD 부록에서 옮겨 온 목록입니다. AI가 제안하고 사람이 승인
 
 | 항목 | 상태 |
 | --- | --- |
-| 실제 저장 칸의 영어 이름 | 미정. 코드 작업 때 정함 |
+| 실제 저장 칸의 영어 이름 | 정함. §12 (사람이 정함, 2026-10-20) |
 | DB를 다루는 도구(ORM) | 정함. SQLModel (D-009) |
 
 ## 11. 다른 문서로 넘길 내용
@@ -208,3 +208,42 @@ PRD 부록에서 옮겨 온 목록입니다. AI가 제안하고 사람이 승인
 | 종류 단어의 성별을 보고 고치는 화면 | SCREEN-SPEC §9 (적음. 버튼 모양은 미정) |
 | 저장한 정보를 화면과 서버가 주고받는 모양 | API-SPEC |
 | 저장 규칙마다 확인할 내용과 통과 기준 | TEST-PLAN |
+
+## 12. 저장 칸의 영어 이름
+
+코드에서 쓰는 이름입니다. (사람이 정함, 2026-10-20, P-12) 코드는 `server/app/models.py`에 있습니다.
+
+### 12.1 정해진 값
+
+정해진 값은 영어 코드로 저장하고, 화면에서 한국어로 바꿔 보여 줍니다.
+
+| 뜻 | 코드 |
+| --- | --- |
+| 구분 | `top` 상의, `bottom` 하의, `shoes` 신발, `outer` 아우터, `dress` 원피스 |
+| 키워드 종류 | `color` 색, `type` 종류, `material` 소재, `season` 계절·두께, `pattern` 무늬 |
+| 마네킹 성별 | `female` 여성, `male` 남성 |
+| 종류 단어의 맞는 성별 | `female` 여성, `male` 남성, `both` 둘 다 |
+| 마네킹 키 | `short` 작은 키, `medium` 보통 키, `tall` 큰 키 |
+| 마네킹 체형 | `slim` 마른 체형, `medium` 보통 체형, `chubby` 통통한 체형 |
+| 날씨 상태 | `clear` 맑음, `cloudy` 흐림, `rain` 비, `snow` 눈 (DESIGN §5.4의 배경 4가지) |
+| 이유인지 코멘트인지 | `reason` 이유, `comment` 코멘트 |
+
+- 구분 다섯 개는 고정값이라 키워드 단어 표에 넣지 않고, 옷의 `category` 칸에 코드로 저장합니다. 사용자가 겪는 일은 §4와 같습니다. 구분을 더하거나 고치거나 지우는 요청은 고칠 단어가 없으므로 실패합니다. (사람이 정함, 2026-10-20)
+- 날씨 상태는 4가지 코드만 저장합니다. 진짜 날씨 서비스를 연결할 때 "안개" 같은 자세한 상태 이름도 남길지 다시 봅니다. (미정)
+
+### 12.2 표와 칸
+
+| 표 | 뜻 (절) | 칸 |
+| --- | --- | --- |
+| `settings` | 설정 (§2). 한 줄뿐이고, 첫 실행 전에는 줄이 없음 | `mannequin_gender`, `mannequin_height`, `mannequin_body`, `home_region` (없을 수 있음) |
+| `keyword` | 옷 키워드 단어 (§4) | `id`, `kind`, `name`, `category` (종류 단어만), `gender` (종류 단어만), `sort_order` (목록 순서) |
+| `clothing` | 옷 (§3) | `id`, `category`, `photo_path` (원래 사진), `image_path` (2D 이미지), `is_deleted` (지운 옷 표시), `created_at` |
+| `clothing_keyword` | 옷에 붙은 키워드 단어 | `clothing_id`, `keyword_id` |
+| `style_tag` | 스타일 태그 (§5) | `id`, `name`, `sort_order` |
+| `diary_entry` | 코디 일기 기록 (§6) | `id`, `date` (같은 날짜는 하나만), 코디 구성, 마네킹 모양, `weather_region`, `weather_min_temp`, `weather_max_temp`, `weather_condition`, `style_tag_id` (없을 수 있음), `score`, `note_type`, `note_summary` (한 줄), `note_details` (옷마다 자세한 내용), `created_at` |
+| `favorite` | 즐겨찾기 (§7) | `id`, 코디 구성, 마네킹 모양, `style_tag_id` (없을 수 있음), `position` (순서) |
+
+- 코디 구성 (§1.3): `top_id`, `bottom_id`, `dress_id`, `shoes_id`, `outer_id`. 저장된 기록은 칸이 모두 채워져 있으므로 `outer_id`가 비어 있으면 "입지 않음"입니다.
+- 마네킹 모양: `mannequin_gender`, `mannequin_height`, `mannequin_body`
+- 같은 코디 구성의 즐겨찾기는 서버 코드에서 막습니다. SQLite는 빈 칸끼리를 같은 값으로 보지 않아서 DB 규칙으로 막을 수 없기 때문입니다.
+- 저장 파일: `data/dev.db` (D-007의 시험용 파일). 앱 기본 단어(§9)는 이 파일을 새로 만들 때 한 번만 넣습니다. 그래서 사용자가 지운 기본 단어는 서버를 다시 켜도 되살아나지 않습니다.

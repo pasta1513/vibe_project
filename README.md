@@ -4,7 +4,7 @@
 
 ## 현재 상태
 
-코드 뼈대만 있습니다 (P-11). 서버와 화면이 켜지고, 화면에서 서버 연결을 확인하는 것까지 됩니다. 기능은 아직 없습니다.
+코드 뼈대와 저장소가 있습니다 (P-11, P-12). 서버와 화면이 켜지고, 화면에서 서버 연결을 확인할 수 있습니다. 서버를 켜면 `data/dev.db`가 만들어지고 앱 기본 단어와 태그가 들어갑니다. 사용자가 쓸 수 있는 기능은 아직 없습니다.
 
 문서는 README.md, AGENTS.md, DECISIONS.md, PLAN.md, PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md, DATA-MODEL.md, API-SPEC.md, TEST-PLAN.md, DESIGN.md가 있습니다.
 
