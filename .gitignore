@@ -1,0 +1,30 @@
+# API 키 (D-004: git에 올리지 않음)
+.env
+.env.*
+
+# 서버: Python 가상환경과 캐시 (D-008)
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# 화면: 설치한 패키지와 빌드 결과 (D-008)
+node_modules/
+dist/
+
+# 저장소: SQLite 파일과 사진 폴더 (D-003, D-007의 시험용 저장 파일 포함)
+*.db
+*.sqlite
+*.sqlite3
+server/data/
+
+# 로그
+*.log
+npm-debug.log*
+
+# 운영체제와 편집기가 만드는 파일
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
