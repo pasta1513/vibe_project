@@ -4,7 +4,7 @@
 
 ## 현재 상태
 
-아직 만들기 전입니다. 지금은 README.md, AGENTS.md, DECISIONS.md, PLAN.md, PRD.md, ARCHITECTURE.md가 있습니다.
+아직 만들기 전입니다. 지금은 README.md, AGENTS.md, DECISIONS.md, PLAN.md, PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md가 있습니다.
 
 만들 기능:
 - 갖고 있는 옷 등록
@@ -21,6 +21,7 @@
 | [PLAN.md](PLAN.md) | 작업 목록, 상태, 완료 조건, 검증 결과, 다음 행동 |
 | [PRD.md](PRD.md) | 사용자가 보거나 겪는 일 (무엇을 만들지) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 부품과 각 부품의 책임 (어떤 구조로) |
+| [SCREEN-SPEC.md](SCREEN-SPEC.md) | 화면에서 보이는 것과 할 수 있는 행동 |
 
 ## 시작 방법
 
