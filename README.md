@@ -4,7 +4,9 @@
 
 ## 현재 상태
 
-아직 만들기 전입니다. 지금은 README.md, AGENTS.md, DECISIONS.md, PLAN.md, PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md, DATA-MODEL.md, API-SPEC.md, TEST-PLAN.md, DESIGN.md가 있습니다.
+코드 뼈대만 있습니다 (P-11). 서버와 화면이 켜지고, 화면에서 서버 연결을 확인하는 것까지 됩니다. 기능은 아직 없습니다.
+
+문서는 README.md, AGENTS.md, DECISIONS.md, PLAN.md, PRD.md, ARCHITECTURE.md, SCREEN-SPEC.md, DATA-MODEL.md, API-SPEC.md, TEST-PLAN.md, DESIGN.md가 있습니다.
 
 만들 기능:
 - 갖고 있는 옷 등록
@@ -30,12 +32,39 @@
 ## 시작 방법
 
 1. README.md와 AGENTS.md부터 읽고 앱이 무엇을 하는지, 지금 어디까지 됐는지, 어떤 규칙으로 작업하는지 확인합니다.
-2. 필요한 것: Python 3.12, Node.js 22 (npm 포함). 아직 코드가 없으므로 그 밖에 설치할 것은 없습니다. (D-008)
+2. 필요한 것: Python 3.12, Node.js 22 (npm 포함). (D-008)
+3. 처음 한 번 패키지를 설치합니다. 버전은 `server/requirements.txt`와 `web/package-lock.json`에 고정되어 있습니다.
+
+```bash
+cd server
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+```
+
+```bash
+cd web
+npm install
+```
 
 ## 실행 방법
 
 개발 중에는 서버(`server/`, http://localhost:8000)와 화면(`web/`, http://localhost:5173)을 따로 켭니다. (D-008)
-실제 명령은 코드를 만든 뒤 적습니다. AI, 2D 이미지화, 날씨는 진짜를 연결하기 전까지 가짜로 동작합니다. (D-007)
+터미널 두 개에서 하나씩 켭니다.
+
+```bash
+cd server
+.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
+```
+
+```bash
+cd web
+npm run dev
+```
+
+- 브라우저에서 http://localhost:5173 을 열면 화면이 보입니다. 화면의 `/api` 요청은 Vite 중계로 서버에 넘어갑니다.
+- 서버의 요청을 직접 보내 확인할 때는 http://localhost:8000/docs 를 엽니다. (D-010)
+- SQLite 파일과 사진은 `data/` 폴더에 저장됩니다. git에 올리지 않습니다.
+- AI, 2D 이미지화, 날씨는 진짜를 연결하기 전까지 가짜로 동작합니다. (D-007)
 
 ## 확인과 기록
 

@@ -28,3 +28,9 @@ desktop.ini
 .DS_Store
 .vscode/
 .idea/
+
+# 저장소 폴더: SQLite 파일과 사진 폴더 (ARCHITECTURE §2.5)
+data/
+
+# Claude 앱의 미리보기 설정 (커밋하지 않음)
+.claude/
