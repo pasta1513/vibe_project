@@ -1,0 +1,66 @@
+/* DESIGN.md의 규칙을 한 곳에 모읍니다. 다른 곳에서는 이 변수만 씁니다. */
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Medium.woff2') format('woff2');
+}
+
+:root {
+  /* 색 (DESIGN §2.1) */
+  --color-wall: #f1efe8;
+  --color-floor: #b4b2a9;
+  --color-prop: #d3d1c7;
+  --color-prop-dark: #b4b2a9;
+  --color-accent: #d85a30;
+  --color-on-accent: #ffffff;
+  --color-star: #ba7517;
+  --color-star-empty: #b4b2a9;
+  --color-dashed: #888780;
+  --color-danger: #a32d2d;
+  --color-text: #2c2c2a;
+  --color-text-sub: #5f5e5a;
+  --color-toast-bg: #444441;
+  --color-toast-text: #ffffff;
+  --color-surface: #ffffff;
+  --color-border: #d3d1c7;
+  --color-diary-paper: #faeeda;
+  --color-diary-border: #fac775;
+  --color-diary-text: #633806;
+
+  /* 글자 (DESIGN §3) */
+  --font-base: 'Pretendard', system-ui, sans-serif;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 22px;
+  --weight-regular: 400;
+  --weight-bold: 500;
+
+  /* 간격과 모서리 (DESIGN §4.1) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-button: 8px;
+  --radius-card: 12px;
+  --radius-dialog: 16px;
+  --radius-pill: 999px;
+  --border: 1px solid var(--color-border);
+
+  /* 메뉴바 높이 */
+  --menubar-height: 56px;
+}

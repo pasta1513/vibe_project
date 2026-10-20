@@ -1,111 +1,224 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import './styles/tokens.css';
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+body {
+  font-family: var(--font-base);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-wall);
+  min-width: 1024px;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+button {
+  font: inherit;
+}
+
+/* 버튼 (DESIGN §4.2). 그림자는 쓰지 않습니다. */
+.btn {
+  font-size: var(--text-md);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-button);
+  border: var(--border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.btn--danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-on-accent);
+}
+
+/* 실패 한 줄 (SCREEN-SPEC §2.7) */
+.error-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+/* 화면 틀 (SCREEN-SPEC §1) */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.menubar {
+  display: flex;
+  gap: var(--space-2);
+  height: var(--menubar-height);
+  padding: 0 var(--space-6);
+  align-items: stretch;
+  background: var(--color-surface);
+  border-bottom: var(--border);
+}
+
+.menubar__item {
+  font-size: var(--text-md);
+  padding: 0 var(--space-4);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.menubar__item--active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  font-weight: var(--weight-bold);
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.stage__room {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.stage--dimmed > * {
+  filter: blur(2px);
+}
+
+.stage__wardrobe {
+  position: absolute;
+  left: 8%;
+  bottom: 30%;
+  height: 40%;
+}
+
+.stage__mannequin {
+  position: absolute;
+  left: 50%;
+  bottom: 10%;
+  height: 72%;
+  transform: translateX(-50%);
+}
+
+.stage__notice,
+.stage__placeholder {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-4);
+  transform: translateX(-50%);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-button);
+  background: var(--color-surface);
+}
+
+.stage__placeholder {
+  color: var(--color-text-sub);
+}
+
+/* 창 (DESIGN §4.3) */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(241, 239, 232, 0.5);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-dialog);
+  border: var(--border);
+  background: var(--color-surface);
+}
+
+.dialog__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* 마네킹 고르기 (SCREEN-SPEC §3) */
+.picker__body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.picker__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.picker__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.picker__label {
+  width: 48px;
+  font-size: var(--text-md);
+  color: var(--color-text-sub);
+}
+
+.picker__preview {
+  width: 160px;
+  height: 320px;
+}
+
+.chip {
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-button);
+  border: var(--border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.chip--selected {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: var(--weight-bold);
 }
