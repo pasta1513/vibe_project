@@ -97,7 +97,9 @@ function RecommendList({
         ))}
       </div>
       {recommendation.fewer_than_three && (
-        <p className="sub-text">옷을 더 등록하면 추천이 다양해져요.</p>
+        <p className="sub-text">
+          옷이 부족해 {recommendation.outfits.length}벌만 추천했어요. 옷을 더 등록하면 추천이 다양해져요.
+        </p>
       )}
     </div>
   )

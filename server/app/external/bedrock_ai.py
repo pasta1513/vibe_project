@@ -1,7 +1,7 @@
 """진짜 AI: Amazon Bedrock의 Amazon Nova Lite (D-013).
 
 ai.py가 부르는 함수 모양은 가짜 AI(fake_ai.py)와 같습니다. 답의 검사는 ai.py가 합니다.
-아직 Bedrock으로 옮기지 않은 일은 가짜 AI를 그대로 부릅니다. P-24 ~ P-27에서 하나씩 옮깁니다.
+아직 Bedrock으로 옮기지 않은 일(키워드 미리 고르기)은 가짜 AI를 그대로 부릅니다. P-27에서 옮깁니다.
 
 접속 정보와 설정은 `server/.env`에서 읽습니다. (D-004, README "진짜 AI 연결")
 - AWS_BEARER_TOKEN_BEDROCK: Bedrock API 키 (사람이 직접 만들어 넣음)
@@ -156,8 +156,82 @@ def pick_keywords(photo_path, candidates):
     return fake_ai.pick_keywords(photo_path, candidates)
 
 
+RECOMMEND_SYSTEM = (
+    "당신은 사용자의 옷장에서 코디를 골라 추천합니다. 서로 다른 코디를 최대 3벌 고릅니다.\n"
+    "코디마다 먼저 kind를 고릅니다. top_bottom은 상의와 하의를 함께 입고, dress는 원피스 하나를 입습니다.\n"
+    "kind가 top_bottom이면 top과 bottom에 옷 번호를 쓰고 dress는 0입니다. "
+    "kind가 dress이면 dress에 옷 번호를 쓰고 top과 bottom은 0입니다.\n"
+    "신발(shoes)은 언제나 꼭 씁니다. 아우터(outer)는 입으면 번호, 입지 않으면 0입니다.\n"
+    "칸마다 옷장의 같은 구분 아래에 적힌 번호만 씁니다. 목록에 없는 번호는 쓰지 않습니다.\n"
+    "날씨(기온, 비나 눈), 스타일 태그, 옷끼리의 어울림을 보고 가장 잘 맞는 코디부터 고릅니다.\n"
+    "코디마다 점수를 정하기 전에 weather_fit, tag_fit에 그 코디가 날씨와 태그에 맞는지 짧게 판단을 적습니다.\n"
+    "score는 0.1~5.0, 소수점 한 자리입니다. 5.0에서 시작해 맞지 않는 만큼 깎습니다. 예:\n"
+    "- 최저 기온이 5° 아래인데 아우터를 입지 않았으면 크게 깎습니다.\n"
+    "- 청바지와 운동화처럼 편한 옷에 '포멀' 태그면 태그 기준에서 크게 깎습니다.\n"
+    "- 0.5 단위로만 매기지 말고 4.3, 2.7처럼 판단에 맞게 씁니다.\n"
+    "옷장에 태그나 날씨에 맞는 옷이 없어도 그중 나은 코디를 고르고, 점수는 판단대로 낮게 매깁니다.\n"
+    "summary는 고른 이유 한 줄(40자 안팎)의 문법에 맞는 완전한 문장입니다. 코디마다 다른 점이 드러나게 따로 씁니다. "
+    "태그 이름은 스타일을 말할 때만 쓰고, 날씨를 꾸미는 말로 쓰지 않습니다.\n"
+    "details에는 입은 칸마다 그 옷을 고른 이유를 한 문장씩 적습니다.\n"
+    "모든 글은 자연스러운 한국어 존댓말로 씁니다."
+)
+
+
+# 코디 추천 (PRD §5, P-26). 옷 사진은 보내지 않고 구분과 키워드만 보냅니다 (사람이 정함, 2026-10-21).
+# 옷장이 커져도 한 번에 보내는 양이 적게 유지됩니다. 칸과 번호가 맞는지는 ai.py가 검사합니다.
 def recommend(closet, weather, tag):
-    return fake_ai.recommend(closet, weather, tag)
+    # 구분마다 묶어 보내서, 칸에 다른 구분의 번호를 쓰는 실수를 줄입니다.
+    groups = []
+    for slot, slot_name in SLOT_NAMES.items():
+        lines = [f"- 번호 {item['id']}: {_keyword_text(item['keywords'])}"
+                 for item in closet if item["category"] == slot]
+        groups.append(f"[{slot_name} ({slot})]\n" + ("\n".join(lines) if lines else "- 없음"))
+    listed = "\n".join(groups)
+    slot_schema = {s: {"type": "integer", "description": f"{SLOT_NAMES[s]} 옷 번호, 입지 않으면 0"}
+                   for s in SLOT_NAMES}
+    answer = converse_tool(
+        RECOMMEND_SYSTEM,
+        f"날씨: {_weather_text(weather)}\n스타일 태그: {tag}\n옷장:\n{listed}",
+        "answer_recommend",
+        "추천 코디를 최대 3벌 답합니다.",
+        {"type": "object",
+         "properties": {"outfits": {"type": "array", "items": {
+             "type": "object",
+             "properties": {
+                 "kind": {"type": "string", "enum": ["top_bottom", "dress"],
+                          "description": "top_bottom: 상의+하의, dress: 원피스"},
+                 **slot_schema,
+                 # 판단을 먼저 적게 해서 점수가 판단을 따르게 합니다. 이 두 칸은 저장하지 않습니다.
+                 "weather_fit": {"type": "string", "description": "날씨에 맞는지 짧은 판단"},
+                 "tag_fit": {"type": "string", "description": "태그에 맞는지 짧은 판단"},
+                 "score": {"type": "number", "description": "0.1~5.0, 소수점 한 자리"},
+                 "summary": {"type": "string", "description": "고른 이유 한 줄"},
+                 "details": {"type": "object",
+                             "properties": {s: {"type": "string"} for s in SLOT_NAMES}},
+             },
+             "required": ["kind", *SLOT_NAMES, "weather_fit", "tag_fit", "score", "summary", "details"]}}},
+         "required": ["outfits"]},
+        max_tokens=2000,
+    )
+    results = []
+    for item in answer.get("outfits") or []:
+        if not isinstance(item, dict):
+            continue
+        outfit = {s: (item.get(s) or None) for s in SLOT_NAMES}
+        # 먼저 고른 kind에 맞지 않는 칸은 비웁니다. 그래도 맞지 않으면 ai.py의 검사에서 빠집니다.
+        if item.get("kind") == "dress":
+            outfit["top"] = outfit["bottom"] = None
+        elif item.get("kind") == "top_bottom":
+            outfit["dress"] = None
+        details = item.get("details") if isinstance(item.get("details"), dict) else {}
+        results.append({
+            "outfit": outfit,
+            "score": item.get("score"),
+            "summary": item.get("summary"),
+            "details": {s: t for s, t in details.items()
+                        if outfit.get(s) is not None and isinstance(t, str) and t},
+        })
+    return results
 
 
 SLOT_NAMES = {"top": "상의", "bottom": "하의", "dress": "원피스", "shoes": "신발", "outer": "아우터"}

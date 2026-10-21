@@ -3,7 +3,9 @@
 AI가 준 답은 여기서 검사한 뒤에 돌려줍니다. 가짜 AI의 답도 똑같이 검사합니다. (D-007)
 """
 
+import logging
 import os
+from collections import Counter
 
 from ..models import TYPE_GENDERS
 from ..rules import check_outfit, outfit_key
@@ -18,6 +20,9 @@ else:
     provider = fake_ai
 
 MIN_SCORE, MAX_SCORE = 0.1, 5.0
+
+# 서버 터미널에 남는 기록. uvicorn이 이미 화면에 찍는 기록 이름을 빌려 씁니다.
+log = logging.getLogger("uvicorn.error")
 
 
 def _valid_score(value) -> bool:
@@ -80,13 +85,16 @@ def recommend(closet: list[dict], weather: dict, tag: str) -> list[dict]:
     """
     answers = provider.recommend(closet, weather, tag)
     categories = {item["id"]: item["category"] for item in closet}
-    results, seen = [], set()
+    results, seen, dropped = [], set(), Counter()
     for answer in answers or []:
         outfit = answer.get("outfit") or {}
         key = outfit_key(outfit)
-        if check_outfit(outfit, categories) or key in seen:
+        problem = check_outfit(outfit, categories)
+        if problem or key in seen:
+            dropped[problem or "same_outfit"] += 1
             continue
         if not _valid_score(answer.get("score")) or not answer.get("summary"):
+            dropped["bad_score_or_summary"] += 1
             continue
         seen.add(key)
         results.append({
@@ -98,6 +106,8 @@ def recommend(closet: list[dict], weather: dict, tag: str) -> list[dict]:
         })
         if len(results) == 3:
             break
+    # AI가 준 코디 수와 검사에서 뺀 이유. 추천이 3벌보다 적게 나올 때 원인을 보려고 남깁니다. (P-26)
+    log.info("추천: AI 답 %d벌, 통과 %d벌, 뺀 이유 %s", len(answers or []), len(results), dict(dropped))
     if not results:
         raise ExternalError("ai_invalid")
     return results
