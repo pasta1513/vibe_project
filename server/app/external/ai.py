@@ -7,7 +7,7 @@ import os
 
 from ..models import TYPE_GENDERS
 from ..rules import check_outfit, outfit_key
-from . import ExternalError
+from . import ExternalError, should_fake_fail
 from . import fake_ai
 
 # 지금 쓰는 AI. `server/.env`의 AI_PROVIDER로 고릅니다. (P-23)
@@ -18,6 +18,12 @@ else:
     provider = fake_ai
 
 MIN_SCORE, MAX_SCORE = 0.1, 5.0
+
+
+def _fail_if_asked(name: str) -> None:
+    """FAKE_FAIL에 적힌 일은 AI를 부르지 않고 실패합니다. 가짜와 Bedrock 모두 같습니다. (TEST-PLAN §13)"""
+    if should_fake_fail(name):
+        raise ExternalError("ai_failed")
 
 
 def _valid_score(value) -> bool:
@@ -32,6 +38,7 @@ def pick_keywords(photo_path, candidates: list[dict]):
     목록에 없는 단어는 뺍니다.
     """
     try:
+        _fail_if_asked("keywords")
         answer = provider.pick_keywords(photo_path, candidates)
     except ExternalError:
         return None
@@ -50,6 +57,7 @@ def decide_gender(word: str, category: str) -> tuple[str, bool]:
     돌려주는 것: (성별 코드, 정했는지). 못 정하면 ("both", False).
     """
     try:
+        _fail_if_asked("gender")
         answer = provider.decide_gender(word, category)
     except ExternalError:
         answer = None
@@ -65,6 +73,7 @@ def find_similar(name: str, candidates: list[str]):
     AI가 답하지 못하거나 목록에 없는 단어를 주면 비슷한 단어가 없는 것으로 봅니다. (제안)
     """
     try:
+        _fail_if_asked("similar")
         answer = provider.find_similar(name, candidates)
     except ExternalError:
         return None
@@ -78,6 +87,7 @@ def recommend(closet: list[dict], weather: dict, tag: str) -> list[dict]:
     돌려주는 것: [{"outfit", "score", "note_type": "reason", "summary", "details"}, ...]
     검사를 통과하지 못한 코디는 빼고, 하나도 남지 않으면 ExternalError("ai_invalid")를 냅니다.
     """
+    _fail_if_asked("recommend")
     answers = provider.recommend(closet, weather, tag)
     categories = {item["id"]: item["category"] for item in closet}
     results, seen = [], set()
@@ -111,6 +121,7 @@ def score(outfit: dict, weather: dict, tag, items: list[dict] | None = None) -> 
     점수가 범위 밖이면 ExternalError("ai_invalid")를 냅니다.
     입지 않은 칸의 평가는 버립니다.
     """
+    _fail_if_asked("score")
     answer = provider.score(outfit, weather, tag, items or [])
     if not answer or not _valid_score(answer.get("score")) or not answer.get("summary"):
         raise ExternalError("ai_invalid")

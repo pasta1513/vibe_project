@@ -68,7 +68,10 @@ npm run dev
 - 서버의 요청을 직접 보내 확인할 때는 http://localhost:8000/docs 를 엽니다. (D-010)
 - SQLite 파일과 사진은 `data/` 폴더에 저장됩니다. git에 올리지 않습니다.
 - AI, 2D 이미지화, 날씨는 진짜를 연결하기 전까지 가짜로 동작합니다. (D-007)
-- 실패 화면을 확인하려면 서버를 켜기 전에 환경 변수 `FAKE_FAIL`에 실패시킬 부품을 적습니다. 쓸 수 있는 이름은 `weather`, `recommend`, `score`, `imaging`입니다. (예: PowerShell에서 `$env:FAKE_FAIL="weather,score"`) 바꾼 뒤에는 서버를 다시 켭니다.
+- 실패 화면을 확인하려면 서버를 켜기 전에 환경 변수 `FAKE_FAIL`에 실패시킬 일을 적습니다. (예: PowerShell에서 `$env:FAKE_FAIL="weather,score"`) 바꾼 뒤에는 서버를 다시 켭니다. (TEST-PLAN §13)
+  - AI 일: `recommend`, `score`, `keywords`, `gender`, `similar`. 가짜 AI와 Bedrock 모두에서 AI를 부르지 않고 실패합니다.
+  - `weather`, `imaging`: 날씨와 2D 이미지화는 아직 가짜라서 먹힙니다. 진짜를 연결하면 다시 정합니다.
+  - 한계: 진짜 AI의 시간 초과나 접속 실패 자체는 `FAKE_FAIL`로 만들 수 없습니다. `BEDROCK_MODEL_ID`를 잠깐 틀리게 해서 확인합니다.
 
 ## 진짜 AI 연결 (Amazon Bedrock, D-013)
 
@@ -92,6 +95,8 @@ OPENWEATHERMAP_API_KEY=<OpenWeatherMap API 키>
 - `AI_PROVIDER`: `bedrock`이면 진짜 AI, 없거나 `fake`면 가짜 AI
 - `AWS_REGION`, `BEDROCK_MODEL_ID`: 적지 않으면 위의 값을 씁니다. 서울은 Nova Lite를 바로 쓸 수 없어 아시아·태평양 묶음(`apac.`)으로 부르며, 요청은 도쿄, 서울, 오사카, 뭄바이, 싱가포르, 시드니 중 한 곳에서 처리될 수 있습니다.
 - 값을 바꾼 뒤에는 서버를 다시 켭니다.
+- 키를 넣기 전에는 `AI_PROVIDER=fake`로 둡니다. 키 없이 `bedrock`으로 두면 성별은 늘 "둘 다", 비슷한 단어는 늘 "없음"이 되고 점수는 매번 "받지 못했어요"가 나옵니다.
+- 서버는 AI를 일마다 정한 시간(API-SPEC §2.3)까지만 기다리고 다시 시도하지 않습니다.
 - 지금 `AI_PROVIDER=bedrock`이면 종류 단어의 성별, 비슷한 단어 판단, 코디 점수는 Nova Lite가 답합니다 (P-24, P-25). 코디 추천과 사진 키워드 미리 고르기는 P-26, P-27에서 옮기며, 그 전까지는 가짜 AI가 답합니다.
 - git에서 새로 받은 PC에는 `server/.env`가 없습니다. 위 순서대로 직접 다시 만들어 넣습니다. 없으면 가짜 AI로 켜집니다.
 

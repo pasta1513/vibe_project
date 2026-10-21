@@ -11,8 +11,8 @@ const WEATHER_TIMEOUT_MS = 10000
 const SCORE_TIMEOUT_MS = 40000
 // 추천받기 = 날씨 10초 + AI 추천 45초
 const RECOMMEND_TIMEOUT_MS = 55000
-// 종류 단어 더하기 = 일반 요청 5초 + AI 성별 정하기 15초
-const TYPE_WORD_TIMEOUT_MS = 20000
+// 종류 단어 더하기 = 일반 요청 5초 + AI 비슷한 단어 판단 5초 + AI 성별 정하기 15초 (P-25a)
+const TYPE_WORD_TIMEOUT_MS = 25000
 // 키워드·태그 더하기 = 일반 요청 5초 + AI 비슷한 단어 판단 5초 (P-24, P-28에서 다시 맞춤)
 const WORD_TIMEOUT_MS = 10000
 

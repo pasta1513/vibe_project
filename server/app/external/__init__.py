@@ -19,7 +19,9 @@ def should_fake_fail(name: str) -> bool:
     """환경 변수 FAKE_FAIL에 적힌 부품은 일부러 실패합니다. (TEST-PLAN §13)
 
     예: FAKE_FAIL=weather,score
-    쓸 수 있는 이름: weather, recommend, score, imaging
+    쓸 수 있는 이름: weather, imaging (날씨, 2D 이미지화)
+    AI 일: recommend, score, keywords, gender, similar. AI 일은 ai.py가 검사하므로
+    가짜 AI와 Bedrock 모두에서 똑같이 실패합니다. (P-25a)
     """
     names = os.environ.get("FAKE_FAIL", "")
     return name in {n.strip() for n in names.split(",") if n.strip()}

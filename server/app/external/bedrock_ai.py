@@ -22,28 +22,42 @@ from . import fake_ai
 DEFAULT_REGION = "ap-northeast-2"
 DEFAULT_MODEL_ID = "apac.amazon.nova-lite-v1:0"
 
-_client = None
+# 실패로 볼 때까지 기다리는 시간(초). API-SPEC §2.3의 AI 시간과 같습니다. (P-25a, P-28에서 실제로 재서 다시 맞춤)
+# 서버가 화면보다 먼저 포기해야, 화면이 실패를 보인 뒤에 서버가 몰래 저장하는 일이 없습니다.
+TIMEOUTS = {
+    "similar": 5,
+    "gender": 15,
+    "keywords": 30,
+    "score": 30,
+    "recommend": 45,
+    "ping": 15,
+}
+CONNECT_TIMEOUT = 3
+
+_clients = {}
 
 
-def _get_client():
-    """Bedrock 런타임 클라이언트. 처음 부를 때 한 번 만듭니다."""
-    global _client
-    if _client is None:
+def _get_client(task: str):
+    """일마다 기다리는 시간이 다른 Bedrock 런타임 클라이언트. 처음 부를 때 한 번 만듭니다.
+
+    재시도는 하지 않습니다. 재시도하면 기다리는 시간이 화면의 시간을 넘습니다.
+    """
+    if task not in _clients:
         region = os.environ.get("AWS_REGION", DEFAULT_REGION)
-        # 실패로 볼 때까지 기다리는 시간은 API-SPEC §2.3을 따르도록 일마다 정합니다. (P-28에서 다시 맞춤)
-        config = Config(connect_timeout=5, read_timeout=60, retries={"max_attempts": 2})
-        _client = boto3.client("bedrock-runtime", region_name=region, config=config)
-    return _client
+        config = Config(connect_timeout=CONNECT_TIMEOUT, read_timeout=TIMEOUTS[task],
+                        retries={"total_max_attempts": 1, "mode": "standard"})
+        _clients[task] = boto3.client("bedrock-runtime", region_name=region, config=config)
+    return _clients[task]
 
 
 def model_id() -> str:
     return os.environ.get("BEDROCK_MODEL_ID", DEFAULT_MODEL_ID)
 
 
-def converse_text(system: str, user_text: str, max_tokens: int = 512) -> str:
+def converse_text(task: str, system: str, user_text: str, max_tokens: int = 512) -> str:
     """글 한 덩어리를 보내고 글 답을 받습니다. 실패하면 ExternalError("ai_failed")."""
     try:
-        response = _get_client().converse(
+        response = _get_client(task).converse(
             modelId=model_id(),
             system=[{"text": system}],
             messages=[{"role": "user", "content": [{"text": user_text}]}],
@@ -57,10 +71,10 @@ def converse_text(system: str, user_text: str, max_tokens: int = 512) -> str:
 
 def ping() -> str:
     """연결 확인용 짧은 질문 하나. (P-23)"""
-    return converse_text("짧게 답하세요.", "연결 확인입니다. '연결됨'이라고만 답하세요.", max_tokens=20)
+    return converse_text("ping", "짧게 답하세요.", "연결 확인입니다. '연결됨'이라고만 답하세요.", max_tokens=20)
 
 
-def converse_tool(system: str, user_text, tool_name: str, description: str,
+def converse_tool(task: str, system: str, user_text, tool_name: str, description: str,
                   schema: dict, max_tokens: int = 300) -> dict:
     """"답하기" 도구 하나를 꼭 쓰게 해서 정해진 모양(JSON)의 답을 받습니다.
 
@@ -68,12 +82,13 @@ def converse_tool(system: str, user_text, tool_name: str, description: str,
     toolChoice "tool"은 지정한 도구를 한 번 부르게 합니다. 도구 뒤에 글이 더 붙지 않게
     stop sequence "</tool>"를 둡니다. (Amazon Nova 사용자 안내서 "Choosing a tool")
     같은 질문에 같은 답이 나오도록 temperature는 0으로 둡니다.
+    task: 기다리는 시간을 고르는 일 이름 (TIMEOUTS)
     user_text: 글 한 덩어리, 또는 글과 사진 블록의 목록 (사진은 P-25부터)
     돌려주는 것: 도구 입력(dict). 실패하면 ExternalError. 값이 맞는지는 ai.py가 검사합니다.
     """
     content = [{"text": user_text}] if isinstance(user_text, str) else user_text
     try:
-        response = _get_client().converse(
+        response = _get_client(task).converse(
             modelId=model_id(),
             system=[{"text": system}],
             messages=[{"role": "user", "content": content}],
@@ -107,6 +122,7 @@ GENDER_SYSTEM = (
 # 종류 단어의 성별 (D-005, P-24). 못 정하면 None → ai.py가 "둘 다"로 둡니다.
 def decide_gender(word, category):
     answer = converse_tool(
+        "gender",
         GENDER_SYSTEM,
         f"구분: {CATEGORY_NAMES.get(category, category)}\n종류 단어: {word}",
         "answer_gender",
@@ -138,6 +154,7 @@ def find_similar(name, candidates):
         return None
     listed = "\n".join(f"- {c}" for c in candidates)
     answer = converse_tool(
+        "similar",
         SIMILAR_SYSTEM,
         f"더하려는 이름: {name}\n이미 있는 목록:\n{listed}",
         "answer_similar",
@@ -233,6 +250,7 @@ def score(outfit, weather, tag, items=None):
             content.append(block)
     worn = [item["slot"] for item in items]
     answer = converse_tool(
+        "score",
         SCORE_SYSTEM,
         content,
         "answer_score",

@@ -5,8 +5,6 @@
 
 import random
 
-from . import ExternalError, should_fake_fail
-
 REASON_TEXT = "AI 연결 전 예시입니다."
 COMMENT_TEXT = "AI 연결 전 예시 코멘트입니다."
 
@@ -39,9 +37,8 @@ def find_similar(name, candidates):
     return match if match in candidates else None
 
 
+# 일부러 실패하기(FAKE_FAIL)는 ai.py가 가짜와 Bedrock 모두에 똑같이 합니다.
 def recommend(closet, weather, tag):
-    if should_fake_fail("recommend"):
-        raise ExternalError("ai_failed")
     by_category = {}
     for item in closet:
         by_category.setdefault(item["category"], []).append(item["id"])
@@ -78,8 +75,6 @@ def recommend(closet, weather, tag):
 
 
 def score(outfit, weather, tag, items=None):
-    if should_fake_fail("score"):
-        raise ExternalError("ai_failed")
     return {
         "score": _random_score(),
         "summary": COMMENT_TEXT,
