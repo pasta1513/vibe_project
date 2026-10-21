@@ -6,6 +6,7 @@ import { useId } from 'react'
 // outfit: 칸마다 옷의 2D 이미지 주소. { top, bottom, dress, shoes, outer }
 //   비어 있으면 null, 아우터 "입지 않음"은 'none'. 원피스는 상의와 하의 칸을 함께 차지합니다. (PRD §6 마네킹)
 // showEmpty: 빈 칸에 점선과 "하의를 골라 주세요"를 겹쳐 보입니다. (SCREEN-SPEC §2.5, DESIGN §4.1)
+// fadedSlots: 지운 옷이 든 칸. 그 옷을 흐리게 보입니다. (SCREEN-SPEC §2.4)
 //   잠옷은 그대로 보이고, 칸을 채운 것으로 보지 않습니다.
 
 const HEIGHT_RATIO = { short: 0.92, medium: 1, tall: 1.08 }
@@ -76,10 +77,11 @@ function Hair({ gender, back }) {
 }
 
 // 옷의 2D 이미지를 칸 상자에 비율을 지켜 얹습니다. (DESIGN §5.1)
-function ClothingImage({ box, url }) {
+function ClothingImage({ box, url, faded }) {
   return (
     <image
       href={url}
+      opacity={faded ? 0.4 : 1}
       x={box.x}
       y={box.y}
       width={box.w}
@@ -127,6 +129,7 @@ function Mannequin({
   body = 'medium',
   outfit,
   showEmpty = false,
+  fadedSlots = [],
   className,
   title,
 }) {
@@ -248,16 +251,20 @@ function Mannequin({
         ))}
 
         {/* 옷: 신발 → 하의 → 상의(또는 원피스) → 아우터 순서로 겹칩니다. */}
-        {worn.shoes && <ClothingImage box={boxes.shoes} url={worn.shoes} />}
+        {worn.shoes && <ClothingImage box={boxes.shoes} url={worn.shoes} faded={fadedSlots.includes('shoes')} />}
         {hasDress ? (
-          <ClothingImage box={boxes.dress} url={worn.dress} />
+          <ClothingImage box={boxes.dress} url={worn.dress} faded={fadedSlots.includes('dress')} />
         ) : (
           <>
-            {worn.bottom && <ClothingImage box={boxes.bottom} url={worn.bottom} />}
-            {worn.top && <ClothingImage box={boxes.top} url={worn.top} />}
+            {worn.bottom && (
+              <ClothingImage box={boxes.bottom} url={worn.bottom} faded={fadedSlots.includes('bottom')} />
+            )}
+            {worn.top && <ClothingImage box={boxes.top} url={worn.top} faded={fadedSlots.includes('top')} />}
           </>
         )}
-        {worn.outer && worn.outer !== 'none' && <ClothingImage box={boxes.outer} url={worn.outer} />}
+        {worn.outer && worn.outer !== 'none' && (
+          <ClothingImage box={boxes.outer} url={worn.outer} faded={fadedSlots.includes('outer')} />
+        )}
 
         {/* 빈 칸 표시. 아우터 안내는 어깨 쪽, 상의 안내는 허리 쪽에 두어 겹치지 않게 합니다. */}
         {emptySlots.map((slot) => (

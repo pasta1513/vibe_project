@@ -15,10 +15,19 @@ import ScoreCard from './ScoreCard.jsx'
 
 const EMPTY_OUTFIT = { top: null, bottom: null, dress: null, shoes: null, outer: null }
 const NO_CLOTHES_MS = 3000
+// 지운 옷 칸을 다시 고르라는 알림이 보이는 시간 (SCREEN-SPEC §2.6)
+const RESELECT_MS = 3000
 // 오늘 포함 5일 (PRD §5)
 const DATES = [0, 1, 2, 3, 4].map((offset) => isoDate(offset))
 
 // 빈 칸 경고창에 적을 칸. 아우터 "입지 않음"은 채운 것으로 봅니다. (PRD §6 흐름 2)
+// 받침이 있으면 "을", 없으면 "를" (예: 하의를, 신발을)
+function objectParticle(word) {
+  const last = word.charCodeAt(word.length - 1)
+  if (last < 0xac00 || last > 0xd7a3) return '를'
+  return (last - 0xac00) % 28 === 0 ? '를' : '을'
+}
+
 function missingSlots(outfit) {
   const missing = []
   if (!outfit.dress) {
@@ -30,18 +39,28 @@ function missingSlots(outfit) {
   return missing
 }
 
-function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed }) {
+// initial: 코디 일기나 즐겨찾기의 "입혀 보기"로 열 때 받은 것 (API-SPEC §6 입혀 보기의 받는 것)
+//   { date, outfit, tag_id, deleted_slots, weather, weather_error }. 메뉴로 열면 없습니다.
+function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial }) {
   const [clothes, setClothes] = useState(null)
   const [tags, setTags] = useState([])
   const [loadError, setLoadError] = useState(null)
   const [noClothes, setNoClothes] = useState(false)
 
-  const [date, setDate] = useState(DATES[0])
+  const [date, setDate] = useState(initial?.date ?? DATES[0])
   const [chosenRegion, setChosenRegion] = useState(null) // 사용자가 조건 띠에서 바꾼 지역
-  const [tagId, setTagId] = useState(null)
+  const [tagId, setTagId] = useState(initial?.tag_id ?? null)
   const [weather, setWeather] = useState({ data: null, loading: true, error: null })
 
-  const [outfit, setOutfit] = useState(EMPTY_OUTFIT)
+  // 입혀 보기로 열면 그 코디를 입힙니다. 저장된 기록에서 아우터가 비어 있으면 "입지 않음"입니다.
+  // 지운 옷이 든 칸은 서버가 비워서 보냅니다.
+  const [outfit, setOutfit] = useState(() => {
+    if (!initial) return EMPTY_OUTFIT
+    const o = { ...EMPTY_OUTFIT, ...initial.outfit }
+    if (!o.outer && !initial.deleted_slots.includes('outer')) o.outer = 'none'
+    return o
+  })
+  const [reselect, setReselect] = useState(initial?.deleted_slots ?? [])
   const [stage, setStage] = useState('pick') // pick: 옷 고르는 단계, recommend: 추천 보기, score: 점수 확인 단계
   const [scoring, setScoring] = useState(false)
   const [scoreError, setScoreError] = useState(null)
@@ -76,7 +95,9 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed }) {
   // 날씨를 받지 못해도 옷 목록은 보입니다. (API-SPEC §5.1)
   const load = useCallback(async () => {
     setLoadError(null)
-    loadWeather(DATES[0], null)
+    if (initial?.weather) setWeather({ data: initial.weather, loading: false, error: null })
+    else if (initial?.weather_error) setWeather({ data: null, loading: false, error: initial.weather_error })
+    else loadWeather(initial?.date ?? DATES[0], null)
     const [clothesRes, tagsRes] = await Promise.all([api.getClothes(), api.getTags()])
     const failed = [clothesRes, tagsRes].find((r) => r.result !== 'ok')
     if (failed) {
@@ -90,11 +111,18 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed }) {
     }
     setClothes(clothesRes.data)
     setTags(tagsRes.data)
-  }, [loadWeather])
+  }, [loadWeather, initial])
 
   useEffect(() => {
     load()
   }, [load])
+
+  // 지운 옷이 든 칸이 있으면 "⚠ 지운 옷이 있어요. 하의를 다시 골라 주세요"를 3초 보입니다.
+  useEffect(() => {
+    if (reselect.length === 0) return undefined
+    const timer = setTimeout(() => setReselect([]), RESELECT_MS)
+    return () => clearTimeout(timer)
+  }, [reselect])
 
   // 옷이 한 벌도 없으면 경고창을 버튼 없이 3초 보인 뒤 옷장으로 옮겨 갑니다. (SCREEN-SPEC §2.6)
   useEffect(() => {
@@ -340,6 +368,12 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed }) {
           recommending={recommending}
           locked={scoreStage}
         />
+        {reselect.length > 0 && (
+          <p className="reselect-notice" role="status">
+            ⚠ 지운 옷이 있어요. {reselect.map((slot) => SLOT_LABEL[slot]).join(', ')}
+            {objectParticle(SLOT_LABEL[reselect[reselect.length - 1]])} 다시 골라 주세요
+          </p>
+        )}
         {recommendError && <ErrorLine message={recommendError} onRetry={requestRecommend} />}
         {confirmError && <ErrorLine message={confirmError} />}
         <div className="dressup__body">

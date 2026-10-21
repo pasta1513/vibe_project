@@ -1,4 +1,4 @@
-"""코디 일기 (API-SPEC §5.3, §6). P-19에서는 확정하기만 만듭니다. 목록, 입혀 보기, 지우기는 P-20."""
+"""코디 일기 (API-SPEC §5.3, §6): 확정하기, 목록, 입혀 보기, 지우기."""
 
 from datetime import date
 from typing import Literal, Optional
@@ -8,10 +8,13 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from ..db import get_session
-from ..models import DiaryEntry, Settings, StyleTag
+from ..models import Clothing, DiaryEntry, Settings, StyleTag
 from ..responses import ApiError, confirm, ok
-from ..rules import SLOTS
+from ..rules import SLOTS, outfit_key
+from .clothes import clothing_summary
+from .recommendations import favorite_ids
 from .scores import OutfitIn, check_outfit_or_fail
+from .weather import daily_weather
 
 router = APIRouter(prefix="/api/diary")
 
@@ -86,3 +89,87 @@ def confirm_outfit(body: DiaryIn, session: Session = Depends(get_session)):
     session.commit()
     session.refresh(entry)
     return ok({"id": entry.id, "date": entry.date.isoformat(), "weather": body.weather.model_dump()})
+
+
+class TryOnIn(BaseModel):
+    day: date = Field(alias="date")
+    region: Optional[str] = None  # 사용자가 바꾼 지역. 없으면 내 지역 → 서울
+
+
+def _get_entry(session: Session, entry_id: int) -> DiaryEntry:
+    entry = session.get(DiaryEntry, entry_id)
+    if entry is None:
+        raise ApiError("diary_not_found", "그 기록이 이미 없어요.", 404)
+    return entry
+
+
+def _slots(entry) -> dict:
+    return {slot: getattr(entry, f"{slot}_id") for slot in SLOTS}
+
+
+def deleted_slots(slots: dict, clothes: dict) -> list[str]:
+    """코디 구성 중 지운 옷이 든 칸 (API-SPEC §2.4 지운 옷 칸)"""
+    return [slot for slot in SLOTS if slots[slot] is not None and clothes[slots[slot]].is_deleted]
+
+
+# 메뉴 "코디 일기": 날짜순으로 모읍니다. 아직 오지 않은 날이 맨 앞에 옵니다. (PRD §7)
+# 지운 옷도 그림이 계속 보이도록 옷 정보를 함께 보냅니다. (ARCHITECTURE 흐름 7)
+@router.get("")
+def list_diary(session: Session = Depends(get_session)):
+    entries = session.exec(select(DiaryEntry).order_by(DiaryEntry.date.desc())).all()
+    clothes = {c.id: c for c in session.exec(select(Clothing)).all()}
+    tags = {t.id: t.name for t in session.exec(select(StyleTag)).all()}
+    favorites = favorite_ids(session)
+    items = []
+    for e in entries:
+        slots = _slots(e)
+        items.append({
+            "id": e.id,
+            "date": e.date.isoformat(),
+            "outfit": {slot: clothing_summary(clothes[i]) if i is not None else None
+                       for slot, i in slots.items()},
+            "mannequin": {"gender": e.mannequin_gender, "height": e.mannequin_height,
+                          "body": e.mannequin_body},
+            "weather": {"region": e.weather_region, "min_temp": e.weather_min_temp,
+                        "max_temp": e.weather_max_temp, "condition": e.weather_condition},
+            "tag": {"id": e.style_tag_id, "name": tags[e.style_tag_id]} if e.style_tag_id else None,
+            "result": {"score": e.score, "note_type": e.note_type, "summary": e.note_summary,
+                       "details": e.note_details},
+            "deleted_slots": deleted_slots(slots, clothes),
+            "favorite_id": favorites.get(outfit_key(slots)),
+        })
+    return ok(items)
+
+
+# 입혀 보기: 그 기록의 코디 구성과 태그, 지운 옷 칸, 고른 날짜의 날씨를 돌려줍니다.
+# 지운 옷이 든 칸은 비워서 보냅니다. 날씨를 받지 못해도 옷 고르기는 열립니다. (API-SPEC §6, 제안)
+@router.post("/{entry_id}/try-on")
+def try_on(entry_id: int, body: TryOnIn, session: Session = Depends(get_session)):
+    entry = _get_entry(session, entry_id)
+    slots = _slots(entry)
+    ids = [i for i in slots.values() if i is not None]
+    clothes = {c.id: c for c in session.exec(select(Clothing).where(Clothing.id.in_(ids))).all()}
+    gone = deleted_slots(slots, clothes)
+    weather, weather_error = None, None
+    try:
+        weather = daily_weather(session, body.day, body.region)
+    except ApiError as e:
+        if e.kind != "weather_failed":
+            raise
+        weather_error = e.message
+    return ok({
+        "date": body.day.isoformat(),
+        "outfit": {slot: (None if slot in gone else i) for slot, i in slots.items()},
+        "tag_id": entry.style_tag_id,
+        "deleted_slots": gone,
+        "weather": weather,
+        "weather_error": weather_error,
+    })
+
+
+# 지우기. 즐겨찾기는 따로 저장되어 있어 그대로 남습니다. (DATA-MODEL §1.2)
+@router.delete("/{entry_id}")
+def delete_entry(entry_id: int, session: Session = Depends(get_session)):
+    session.delete(_get_entry(session, entry_id))
+    session.commit()
+    return ok(None)

@@ -83,6 +83,11 @@ export const api = {
   // body: { date, region, tag_id }
   recommend: (body) =>
     request('POST', '/api/recommendations', body, { timeoutMs: RECOMMEND_TIMEOUT_MS }),
+  getDiary: () => request('GET', '/api/diary'),
+  deleteDiary: (id) => request('DELETE', `/api/diary/${id}`),
+  // 입혀 보기 → 날짜 고르기. 고른 날짜의 날씨를 함께 받습니다.
+  tryOnDiary: (id, date) =>
+    request('POST', `/api/diary/${id}/try-on`, { date }, { timeoutMs: WEATHER_TIMEOUT_MS }),
   // 확정하기. body: { outfit, date, weather, tag_id, result, confirmed } (점수와 날씨는 화면이 보냄, D-006)
   confirmOutfit: (body) => request('POST', '/api/diary', body),
   score: (body) => request('POST', '/api/scores', body, { timeoutMs: SCORE_TIMEOUT_MS }),

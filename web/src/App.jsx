@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from './api.js'
 import ClosetScreen from './components/ClosetScreen.jsx'
 import ConfirmedScreen from './components/ConfirmedScreen.jsx'
+import DiaryScreen from './components/DiaryScreen.jsx'
 import DressUpScreen from './components/DressUpScreen.jsx'
 import ErrorLine from './components/ErrorLine.jsx'
 import Mannequin from './components/Mannequin.jsx'
@@ -21,6 +22,10 @@ function App() {
   const [activeMenu, setActiveMenu] = useState(null)
   // 확정한 뒤 화면 (SCREEN-SPEC §5.6). 메뉴를 누르면 사라집니다. 앱을 다시 켜면 처음 화면입니다.
   const [confirmed, setConfirmed] = useState(null)
+  // 코디 일기의 "입혀 보기"로 새 옷 입기를 열 때 넘기는 것. 메뉴를 누르면 비웁니다.
+  const [dressUpInit, setDressUpInit] = useState(null)
+  // 입혀 보기를 할 때마다 새 옷 입기 화면을 처음부터 다시 그립니다.
+  const [dressUpKey, setDressUpKey] = useState(0)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [toast, setToast] = useState(null)
@@ -65,7 +70,15 @@ function App() {
 
   function selectMenu(key) {
     setConfirmed(null)
+    setDressUpInit(null)
+    setDressUpKey((k) => k + 1)
     setActiveMenu(key)
+  }
+
+  function openTryOn(data) {
+    setDressUpInit(data)
+    setDressUpKey((k) => k + 1)
+    setActiveMenu('dressup')
   }
 
   // 확정하면 아무 메뉴도 선택되지 않은 확정한 뒤 화면이 됩니다. (사람이 정함, 2026-10-21)
@@ -82,7 +95,9 @@ function App() {
   const settingsOpen = showMenu && activeMenu === 'settings'
   // 새 옷 입기에서는 커진 옷장과 조건 띠, 옷을 입히는 마네킹이 보입니다. (SCREEN-SPEC §1.2, §5)
   const dressUpOpen = showMenu && activeMenu === 'dressup'
-  const fullScreen = closetOpen || settingsOpen || dressUpOpen
+  // 코디 일기에서는 일기장이 화면 전체로 펼쳐지고 옷장과 마네킹은 숨깁니다. (SCREEN-SPEC §1.2, §7)
+  const diaryOpen = showMenu && activeMenu === 'diary'
+  const fullScreen = closetOpen || settingsOpen || dressUpOpen || diaryOpen
 
   return (
     <div className="app">
@@ -100,12 +115,15 @@ function App() {
         {closetOpen && <ClosetScreen gender={mannequin.gender} showToast={setToast} />}
         {dressUpOpen && (
           <DressUpScreen
+            key={dressUpKey}
+            initial={dressUpInit}
             mannequin={mannequin}
             regions={regions}
             onNoClothes={goToCloset}
             onConfirmed={handleConfirmed}
           />
         )}
+        {diaryOpen && <DiaryScreen onGoDressUp={() => selectMenu('dressup')} onTryOn={openTryOn} />}
         {settingsOpen && (
           <SettingsScreen mannequin={mannequin} onMannequinSaved={setMannequin} showToast={setToast} />
         )}
