@@ -7,7 +7,7 @@ import logging
 import os
 from collections import Counter
 
-from ..models import TYPE_GENDERS
+from ..models import CATEGORIES, TYPE_GENDERS
 from ..rules import check_outfit, outfit_key
 from . import ExternalError
 from . import fake_ai
@@ -32,9 +32,9 @@ def _valid_score(value) -> bool:
 def pick_keywords(photo_path, candidates: list[dict]):
     """AI가 사진을 보고 구분과 키워드를 미리 고릅니다.
 
-    candidates: 고를 수 있는 단어 목록 (id 포함).
+    candidates: 고를 수 있는 단어 목록 (id, kind 포함. 종류 단어는 category도).
     돌려주는 것: {"category": 구분 코드 또는 None, "keyword_ids": [...]}, 못 고르면 None.
-    목록에 없는 단어는 뺍니다.
+    목록에 없는 단어와 다섯 구분이 아닌 구분은 뺍니다. 종류 단어는 고른 구분에 속한 것만 남깁니다. (P-27)
     """
     try:
         answer = provider.pick_keywords(photo_path, candidates)
@@ -42,11 +42,19 @@ def pick_keywords(photo_path, candidates: list[dict]):
         return None
     if not answer:
         return None
-    allowed = {c["id"] for c in candidates}
-    return {
-        "category": answer.get("category"),
-        "keyword_ids": [k for k in answer.get("keyword_ids", []) if k in allowed],
-    }
+    category = answer.get("category")
+    if category not in CATEGORIES:
+        category = None
+    by_id = {c["id"]: c for c in candidates}
+    keyword_ids = []
+    for k in answer.get("keyword_ids") or []:
+        word = by_id.get(k)
+        if word is None or k in keyword_ids:
+            continue
+        if word["kind"] == "type" and word.get("category") != category:
+            continue
+        keyword_ids.append(k)
+    return {"category": category, "keyword_ids": keyword_ids}
 
 
 def decide_gender(word: str, category: str) -> tuple[str, bool]:

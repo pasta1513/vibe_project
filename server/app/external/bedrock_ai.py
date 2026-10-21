@@ -1,7 +1,7 @@
 """진짜 AI: Amazon Bedrock의 Amazon Nova Lite (D-013).
 
 ai.py가 부르는 함수 모양은 가짜 AI(fake_ai.py)와 같습니다. 답의 검사는 ai.py가 합니다.
-아직 Bedrock으로 옮기지 않은 일(키워드 미리 고르기)은 가짜 AI를 그대로 부릅니다. P-27에서 옮깁니다.
+AI가 하는 일은 모두 Bedrock으로 옮겼습니다 (P-24 ~ P-27).
 
 접속 정보와 설정은 `server/.env`에서 읽습니다. (D-004, README "진짜 AI 연결")
 - AWS_BEARER_TOKEN_BEDROCK: Bedrock API 키 (사람이 직접 만들어 넣음)
@@ -17,7 +17,6 @@ from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
 from . import ExternalError
-from . import fake_ai
 
 DEFAULT_REGION = "ap-northeast-2"
 DEFAULT_MODEL_ID = "apac.amazon.nova-lite-v1:0"
@@ -151,9 +150,55 @@ def find_similar(name, candidates):
     return answer.get("existing") or None
 
 
-# 아직 Bedrock으로 옮기지 않은 일: 가짜 AI를 그대로 씁니다.
+PICK_SYSTEM = (
+    "당신은 옷 사진 한 장을 보고 옷장에 등록할 구분과 키워드를 고릅니다. 사진에는 옷 하나가 있습니다.\n"
+    "category는 top(상의), bottom(하의), dress(원피스), shoes(신발), outer(아우터) 중 하나입니다.\n"
+    "나머지 칸은 주어진 목록의 번호로만 답합니다. 목록에 없는 번호는 쓰지 않습니다.\n"
+    "- colors: 옷에서 눈에 띄는 색. 1~2개\n"
+    "- types: 고른 category 아래에 적힌 종류 단어에서 가장 맞는 것. 보통 1개\n"
+    "- materials, seasons, patterns: 사진으로 분명히 알 수 있을 때만 고릅니다. 모르면 빈 목록입니다.\n"
+    "확실하지 않은 단어는 고르지 않습니다. 사용자가 나중에 고칠 수 있습니다."
+)
+
+PICK_KINDS = {"colors": "color", "types": "type", "materials": "material", "seasons": "season",
+              "patterns": "pattern"}
+
+
+# 키워드 미리 고르기 (PRD §4 등록하기 4, P-27). 원래 사진을 보냅니다 (D-013, ARCHITECTURE 흐름 1).
+# 사진을 보내지 못하면 None → ai.py가 "못 고름"으로 두고 사용자가 직접 고릅니다.
 def pick_keywords(photo_path, candidates):
-    return fake_ai.pick_keywords(photo_path, candidates)
+    image = _image_block(photo_path, [MAX_IMAGE_BYTES])
+    if image is None:
+        return None
+    lines = []
+    for field, kind in PICK_KINDS.items():
+        words = [c for c in candidates if c["kind"] == kind]
+        if kind == "type":
+            # 종류 단어는 구분마다 묶어서 보냅니다.
+            for slot, slot_name in SLOT_NAMES.items():
+                listed = ", ".join(f"{c['id']} {c['name']}" for c in words if c.get("category") == slot)
+                lines.append(f"[types - {slot_name} ({slot})] {listed or '없음'}")
+        else:
+            listed = ", ".join(f"{c['id']} {c['name']}" for c in words)
+            lines.append(f"[{field} - {KIND_NAMES[kind]}] {listed or '없음'}")
+    id_list = {"type": "array", "items": {"type": "integer"}}
+    answer = converse_tool(
+        PICK_SYSTEM,
+        [image, {"text": "고를 수 있는 단어 (번호 이름):\n" + "\n".join(lines)}],
+        "answer_keywords",
+        "옷 사진의 구분과 키워드 번호를 답합니다.",
+        {"type": "object",
+         "properties": {"category": {"type": "string", "enum": list(SLOT_NAMES)},
+                        **{field: id_list for field in PICK_KINDS}},
+         "required": ["category", *PICK_KINDS]},
+        max_tokens=300,
+    )
+    keyword_ids = []
+    for field in PICK_KINDS:
+        values = answer.get(field)
+        if isinstance(values, list):
+            keyword_ids += [v for v in values if isinstance(v, int)]
+    return {"category": answer.get("category"), "keyword_ids": keyword_ids}
 
 
 RECOMMEND_SYSTEM = (
