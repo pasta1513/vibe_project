@@ -84,7 +84,8 @@ BEDROCK_MODEL_ID=apac.amazon.nova-lite-v1:0
 OPENWEATHERMAP_API_KEY=<OpenWeatherMap API 키>
 ```
 
-- `OPENWEATHERMAP_API_KEY`: 날씨에 쓸 키입니다. 날씨는 아직 가짜라서 지금은 읽기만 하고 쓰지 않습니다.
+- `OPENWEATHERMAP_API_KEY`: 날씨에 쓸 키입니다. `WEATHER_PROVIDER=openweathermap`일 때만 씁니다.
+- `WEATHER_PROVIDER`: `openweathermap`이면 진짜 날씨(무료 5 Day / 3 Hour Forecast, D-014), 없거나 `fake`면 가짜 날씨. 적지 않으면 가짜입니다.
 
 - `AI_PROVIDER`: `bedrock`이면 진짜 AI, 없거나 `fake`면 가짜 AI
 - `AWS_REGION`, `BEDROCK_MODEL_ID`: 적지 않으면 위의 값을 씁니다. 서울은 Nova Lite를 바로 쓸 수 없어 아시아·태평양 묶음(`apac.`)으로 부르며, 요청은 도쿄, 서울, 오사카, 뭄바이, 싱가포르, 시드니 중 한 곳에서 처리될 수 있습니다.
