@@ -29,6 +29,16 @@ def decide_gender(word, category):
     return None
 
 
+# 비슷한 단어 확인 질문을 화면에서 볼 수 있게, 정해 둔 예시 하나에만 "비슷함"을 줍니다.
+# (TEST-PLAN T-21, 사람이 정함 2026-10-21) 나머지 이름은 언제나 "비슷한 단어 없음"입니다.
+_FAKE_SIMILAR = {"블랙": "검정"}
+
+
+def find_similar(name, candidates):
+    match = _FAKE_SIMILAR.get(name)
+    return match if match in candidates else None
+
+
 def recommend(closet, weather, tag):
     if should_fake_fail("recommend"):
         raise ExternalError("ai_failed")

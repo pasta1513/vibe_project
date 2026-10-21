@@ -6,12 +6,13 @@ import Button from './Button.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import KeywordChips from './KeywordChips.jsx'
+import WordAdder, { GENDER_FAILED } from './WordAdder.jsx'
 
 // 옷 등록 창 (SCREEN-SPEC §6.2)
-// [+ 더하기]는 설정의 키워드 더하기와 함께 P-16에서 붙입니다.
+// [+ 더하기]로 더한 단어는 이 창의 목록에 바로 붙고 켜진 채로 보입니다. 구분 줄에는 [+ 더하기]가 없습니다.
 const EMPTY_PICK = { category: null, color: [], type: [], material: [], season: [], pattern: [] }
 
-function ClothingRegisterDialog({ keywords, gender, onClose, onRegistered }) {
+function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onRegistered }) {
   const fileInput = useRef(null)
   const [upload, setUpload] = useState(null) // { upload_id, photo_url, image_url }
   const [lastFile, setLastFile] = useState(null)
@@ -24,6 +25,11 @@ function ClothingRegisterDialog({ keywords, gender, onClose, onRegistered }) {
   const [confirmClose, setConfirmClose] = useState(false)
   const [registering, setRegistering] = useState(false)
   const [registerError, setRegisterError] = useState(null)
+  const [genderFailed, setGenderFailed] = useState(false)
+  const [added, setAdded] = useState({}) // 이 창에서 더한 단어 (키워드 종류 → 단어 목록)
+  const keywords = Object.fromEntries(
+    KEYWORD_ROWS.map((row) => [row.kind, [...loadedKeywords[row.kind], ...(added[row.kind] ?? [])]]),
+  )
 
   async function sendPhoto(file) {
     setUploading(true)
@@ -70,6 +76,13 @@ function ClothingRegisterDialog({ keywords, gender, onClose, onRegistered }) {
     // 구분을 바꾸면 새 구분에 맞지 않는 종류 단어는 꺼집니다.
     const allowed = new Set(keywords.type.filter((t) => t.category === category).map((t) => t.id))
     setPick({ ...pick, category, type: pick.type.filter((id) => allowed.has(id)) })
+  }
+
+  function handleAdded(kind, word, failed) {
+    // 한 번 보인 성별 실패 알림은 다른 단어를 더해도 남겨 둡니다.
+    if (failed) setGenderFailed(true)
+    setAdded((prev) => ({ ...prev, [kind]: [...(prev[kind] ?? []), word] }))
+    setPick((prev) => ({ ...prev, [kind]: [...prev[kind], word.id] }))
   }
 
   function toggleKeyword(kind, id) {
@@ -174,6 +187,7 @@ function ClothingRegisterDialog({ keywords, gender, onClose, onRegistered }) {
               {pickFailed && (
                 <p className="sub-text">키워드를 미리 고르지 못했어요. 직접 골라 주세요.</p>
               )}
+              {genderFailed && <p className="sub-text">{GENDER_FAILED}</p>}
               <div className="keyword-row">
                 <span className="keyword-row__label">구분<span className="required">*</span></span>
                 <KeywordChips
@@ -198,7 +212,14 @@ function ClothingRegisterDialog({ keywords, gender, onClose, onRegistered }) {
                       options={row.kind === 'type' ? types : keywords[row.kind]}
                       selected={pick[row.kind]}
                       onToggle={(id) => toggleKeyword(row.kind, id)}
-                    />
+                    >
+                      <WordAdder
+                        key={row.kind === 'type' ? pick.category : row.kind}
+                        kind={row.kind}
+                        category={row.kind === 'type' ? pick.category : undefined}
+                        onAdded={(word, failed) => handleAdded(row.kind, word, failed)}
+                      />
+                    </KeywordChips>
                   )}
                 </div>
               ))}

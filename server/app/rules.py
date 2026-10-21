@@ -36,3 +36,23 @@ def check_outfit(slots: Mapping[str, Optional[int]],
 def outfit_key(slots: Mapping[str, Optional[int]]) -> tuple:
     """같은 코디인지 비교할 때 쓰는 값. 한 칸이라도 다르면 다른 코디입니다. (PRD §5)"""
     return tuple(slots.get(slot) for slot in SLOTS)
+
+
+def normalize_name(name: str) -> str:
+    """키워드와 태그 이름의 띄어쓰기를 정리합니다. (DATA-MODEL §4, §5)
+
+    앞뒤 띄어쓰기는 지우고, 가운데 여러 칸은 한 칸으로 바꿉니다. 같은 이름인지도 바꾼 이름으로 봅니다.
+    예: " 봄   소풍 " → "봄 소풍"
+    """
+    return " ".join(name.split())
+
+
+def particle(word: str, after_consonant: str, after_vowel: str) -> str:
+    """받침이 있으면 after_consonant, 없으면 after_vowel. 예: particle("검정", "은", "는") → "은"
+
+    한글이 아닌 글자로 끝나면 after_vowel을 씁니다. (화면의 labels.js subjectParticle과 같음)
+    """
+    last = ord(word[-1]) if word else 0
+    if not 0xAC00 <= last <= 0xD7A3:
+        return after_vowel
+    return after_consonant if (last - 0xAC00) % 28 else after_vowel

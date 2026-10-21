@@ -1,5 +1,6 @@
 // 키워드 버튼 줄. 켜고 끌 수 있습니다. single이면 하나만 고릅니다.
-function KeywordChips({ options, selected, onToggle, single = false, label }) {
+// children은 줄 끝에 붙습니다. (예: 등록 창의 [+ 더하기])
+function KeywordChips({ options, selected, onToggle, single = false, label, children }) {
   return (
     <div className="chips" role={single ? 'radiogroup' : 'group'} aria-label={label}>
       {options.map((option) => {
@@ -17,6 +18,7 @@ function KeywordChips({ options, selected, onToggle, single = false, label }) {
           </button>
         )
       })}
+      {children}
     </div>
   )
 }

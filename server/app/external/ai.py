@@ -52,6 +52,19 @@ def decide_gender(word: str, category: str) -> tuple[str, bool]:
     return "both", False
 
 
+def find_similar(name: str, candidates: list[str]):
+    """더하려는 이름과 뜻이 비슷한 단어를 candidates에서 찾습니다. (PRD §4, 사람이 정함 2026-10-21)
+
+    돌려주는 것: 비슷한 단어 하나, 없으면 None.
+    AI가 답하지 못하거나 목록에 없는 단어를 주면 비슷한 단어가 없는 것으로 봅니다. (제안)
+    """
+    try:
+        answer = provider.find_similar(name, candidates)
+    except ExternalError:
+        return None
+    return answer if answer in candidates and answer != name else None
+
+
 def recommend(closet: list[dict], weather: dict, tag: str) -> list[dict]:
     """코디를 최대 3벌 추천받습니다.
 

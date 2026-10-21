@@ -97,7 +97,11 @@ function ClosetScreen({ gender, showToast }) {
         <ClothingRegisterDialog
           keywords={keywords}
           gender={gender}
-          onClose={() => setRegistering(false)}
+          onClose={() => {
+            // 등록 창에서 [+ 더하기]로 더한 단어가 옷 상세에도 보이도록 목록을 다시 받습니다.
+            setRegistering(false)
+            load()
+          }}
           onRegistered={handleRegistered}
         />
       )}

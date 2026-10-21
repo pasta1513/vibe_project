@@ -6,6 +6,7 @@ import Mannequin from './components/Mannequin.jsx'
 import MannequinPicker from './components/MannequinPicker.jsx'
 import MenuBar from './components/MenuBar.jsx'
 import Room from './components/Room.jsx'
+import SettingsScreen from './components/SettingsScreen.jsx'
 import Toast from './components/Toast.jsx'
 import Wardrobe from './components/Wardrobe.jsx'
 
@@ -58,21 +59,27 @@ function App() {
   const showMenu = status === 'ready' && mannequin
   // 옷장 화면에서는 옷장이 화면 전체로 커지고 마네킹은 숨깁니다. (SCREEN-SPEC §1.2)
   const closetOpen = showMenu && activeMenu === 'closet'
+  // 설정 화면에서는 옷장과 마네킹을 숨기고, 마네킹 모양 미리보기만 보입니다. (SCREEN-SPEC §1.2)
+  const settingsOpen = showMenu && activeMenu === 'settings'
+  const fullScreen = closetOpen || settingsOpen
 
   return (
     <div className="app">
       {showMenu && <MenuBar active={activeMenu} onSelect={setActiveMenu} />}
       <main className={`stage${firstRun ? ' stage--dimmed' : ''}`}>
         <Room className="stage__room" />
-        {!closetOpen && <Wardrobe className="stage__wardrobe" />}
-        {showMenu && !closetOpen && <Mannequin className="stage__mannequin" {...mannequin} />}
+        {!fullScreen && <Wardrobe className="stage__wardrobe" />}
+        {showMenu && !fullScreen && <Mannequin className="stage__mannequin" {...mannequin} />}
         {closetOpen && <ClosetScreen gender={mannequin.gender} showToast={setToast} />}
+        {settingsOpen && (
+          <SettingsScreen mannequin={mannequin} onMannequinSaved={setMannequin} showToast={setToast} />
+        )}
         {status === 'error' && (
           <div className="stage__notice">
             <ErrorLine message={loadError} onRetry={retryLoad} />
           </div>
         )}
-        {showMenu && activeMenu && !closetOpen && (
+        {showMenu && activeMenu && !fullScreen && (
           <p className="stage__placeholder">준비 중인 화면이에요.</p>
         )}
       </main>

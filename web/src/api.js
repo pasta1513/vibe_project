@@ -5,6 +5,8 @@
 const DEFAULT_TIMEOUT_MS = 5000
 // 사진 올리기 = 2D 이미지화 60초 + AI 키워드 미리 고르기 30초
 const UPLOAD_TIMEOUT_MS = 90000
+// 종류 단어 더하기 = 일반 요청 5초 + AI 성별 정하기 15초
+const TYPE_WORD_TIMEOUT_MS = 20000
 
 function fail(kind, message) {
   return { result: 'error', error: { kind, message } }
@@ -40,8 +42,22 @@ export async function request(method, path, body, { timeoutMs = DEFAULT_TIMEOUT_
 export const api = {
   getSettings: () => request('GET', '/api/settings'),
   saveMannequin: (mannequin) => request('PUT', '/api/settings/mannequin', mannequin),
+  saveRegion: (region) => request('PUT', '/api/settings/region', { region }),
 
   getKeywords: () => request('GET', '/api/keywords'),
+  // body: { kind, name, category(종류 단어만), confirmed(비슷한 단어 질문에서 [더하기]) }
+  addKeyword: (body) =>
+    request('POST', '/api/keywords', body, {
+      timeoutMs: body.kind === 'type' ? TYPE_WORD_TIMEOUT_MS : DEFAULT_TIMEOUT_MS,
+    }),
+  renameKeyword: (id, name) => request('PATCH', `/api/keywords/${id}`, { name }),
+  setKeywordGender: (id, gender) => request('PATCH', `/api/keywords/${id}`, { gender }),
+  deleteKeyword: (id) => request('DELETE', `/api/keywords/${id}`),
+
+  getTags: () => request('GET', '/api/tags'),
+  addTag: (body) => request('POST', '/api/tags', body),
+  renameTag: (id, name) => request('PATCH', `/api/tags/${id}`, { name }),
+  deleteTag: (id) => request('DELETE', `/api/tags/${id}`),
 
   uploadPhoto: (file, previousUploadId) => {
     const form = new FormData()

@@ -8,9 +8,14 @@ from sqlmodel import Session
 
 from ..db import get_session
 from ..models import Settings
-from ..responses import ok
+from ..responses import ApiError, ok
 
 router = APIRouter(prefix="/api/settings")
+
+# 고를 수 있는 지역: 시·도 17곳 (사람이 정함, 2026-10-21). 저장한 지역이 없으면 서울을 씁니다. (PRD §5)
+# 진짜 날씨 서비스를 연결할 때 이 이름으로 날씨를 받을 수 있는지 다시 봅니다.
+REGIONS = ["서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종", "경기", "강원",
+           "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
 
 
 class MannequinIn(BaseModel):
@@ -20,9 +25,13 @@ class MannequinIn(BaseModel):
     body: Literal["slim", "medium", "chubby"]
 
 
+class RegionIn(BaseModel):
+    region: str
+
+
 def _settings_data(settings: Settings | None) -> dict:
     if settings is None:
-        return {"mannequin": None, "home_region": None}
+        return {"mannequin": None, "home_region": None, "regions": REGIONS}
     return {
         "mannequin": {
             "gender": settings.mannequin_gender,
@@ -30,6 +39,7 @@ def _settings_data(settings: Settings | None) -> dict:
             "body": settings.mannequin_body,
         },
         "home_region": settings.home_region,
+        "regions": REGIONS,
     }
 
 
@@ -54,3 +64,17 @@ def save_mannequin(body: MannequinIn, session: Session = Depends(get_session)):
     session.commit()
     session.refresh(settings)
     return ok(_settings_data(settings)["mannequin"])
+
+
+# 내 지역 저장하기. 목록에 있는 지역만 받습니다.
+@router.put("/region")
+def save_region(body: RegionIn, session: Session = Depends(get_session)):
+    if body.region not in REGIONS:
+        raise ApiError("unknown_region", "그 지역은 찾지 못했어요. 목록에서 골라 주세요.")
+    settings = session.get(Settings, 1)
+    if settings is None:
+        raise ApiError("no_mannequin", "마네킹 모양을 먼저 골라 주세요.")
+    settings.home_region = body.region
+    session.add(settings)
+    session.commit()
+    return ok({"home_region": settings.home_region})
