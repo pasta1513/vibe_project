@@ -5,6 +5,7 @@ import ConfirmDialog from './ConfirmDialog.jsx'
 import DatePickerDialog from './DatePickerDialog.jsx'
 import DiaryCard from './DiaryCard.jsx'
 import ErrorLine from './ErrorLine.jsx'
+import { outfitKey } from '../labels.js'
 
 // 코디 일기 (SCREEN-SPEC §7): 방 위에 일기장이 화면 전체로 펼쳐지고, 기록이 3열 카드로 놓입니다.
 function DiaryScreen({ onGoDressUp, onTryOn }) {
@@ -44,6 +45,14 @@ function DiaryScreen({ onGoDressUp, onTryOn }) {
     }
   }
 
+  // 별이 바뀌면 같은 코디 구성의 다른 카드도 함께 바꿉니다. (SCREEN-SPEC §2.8, 제안)
+  function changeFavorite(entry, favoriteId) {
+    const key = outfitKey(entry.outfit)
+    setEntries((prev) =>
+      prev.map((e) => (outfitKey(e.outfit) === key ? { ...e, favorite_id: favoriteId } : e)),
+    )
+  }
+
   // 입혀 보기 → 날짜 고르기: 그 기록을 지금 마네킹 모양에 입혀 옷 고르는 단계로 엽니다. (SCREEN-SPEC §5.5)
   async function pickDate(date) {
     setOpening(true)
@@ -79,6 +88,7 @@ function DiaryScreen({ onGoDressUp, onTryOn }) {
                 setPicking(e)
               }}
               onDelete={setDeleting}
+              onFavorite={changeFavorite}
             />
           ))}
         </div>

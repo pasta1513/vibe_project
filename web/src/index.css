@@ -1042,3 +1042,127 @@ button {
   padding: var(--space-1) var(--space-3);
   font-size: var(--text-sm);
 }
+
+.rec-card__star {
+  cursor: pointer;
+}
+
+.rec-card__star:disabled {
+  cursor: default;
+}
+
+/* 즐겨찾기 (SCREEN-SPEC §8): 옷걸이(행거)에 코디가 가로 한 줄로 걸림 */
+.favorites {
+  position: absolute;
+  inset: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.favorites__empty {
+  align-self: center;
+  margin: 0;
+  padding: var(--space-6);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  font-size: var(--text-md);
+  color: var(--color-text-sub);
+}
+
+.favorites__rack {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.favorites__arrow {
+  align-self: center;
+  padding: var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-button);
+  background: var(--color-surface);
+  color: var(--color-text-sub);
+  cursor: pointer;
+}
+
+.favorites__track {
+  position: relative;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-top: var(--space-2);
+  scrollbar-width: none;
+}
+
+/* 옷걸이 봉 */
+.favorites__rail {
+  position: absolute;
+  top: var(--space-2);
+  left: 0;
+  min-width: 100%;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-prop-dark);
+}
+
+.favorites__list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 코디 하나의 폭은 FavoritesScreen의 SLOT_WIDTH(220px)와 같아야 합니다. */
+.hanger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 220px;
+  padding: 0 10px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.hanger--dragging {
+  cursor: grabbing;
+  opacity: 0.6;
+}
+
+.hanger__hook {
+  width: 40px;
+  height: 28px;
+}
+
+.hanger__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-4) var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.hanger__mannequin {
+  width: 110px;
+  height: 220px;
+  pointer-events: none;
+}
+
+.hanger__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.hanger__actions .btn {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}

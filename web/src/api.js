@@ -88,6 +88,15 @@ export const api = {
   // 입혀 보기 → 날짜 고르기. 고른 날짜의 날씨를 함께 받습니다.
   tryOnDiary: (id, date) =>
     request('POST', `/api/diary/${id}/try-on`, { date }, { timeoutMs: WEATHER_TIMEOUT_MS }),
+  // 즐겨찾기 (API-SPEC §5.4, §7)
+  getFavorites: () => request('GET', '/api/favorites'),
+  // body: { outfit, tag_id }
+  addFavorite: (body) => request('POST', '/api/favorites', body),
+  addFavoriteFromDiary: (entryId) => request('POST', `/api/favorites/from-diary/${entryId}`),
+  removeFavorite: (id) => request('DELETE', `/api/favorites/${id}`),
+  reorderFavorites: (ids) => request('PUT', '/api/favorites/order', { ids }),
+  tryOnFavorite: (id, date) =>
+    request('POST', `/api/favorites/${id}/try-on`, { date }, { timeoutMs: WEATHER_TIMEOUT_MS }),
   // 확정하기. body: { outfit, date, weather, tag_id, result, confirmed } (점수와 날씨는 화면이 보냄, D-006)
   confirmOutfit: (body) => request('POST', '/api/diary', body),
   score: (body) => request('POST', '/api/scores', body, { timeoutMs: SCORE_TIMEOUT_MS }),

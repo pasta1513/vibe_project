@@ -1,5 +1,7 @@
 import { SLOT_LABEL } from '../labels.js'
+import { api } from '../api.js'
 import Button from './Button.jsx'
+import FavoriteStar from './FavoriteStar.jsx'
 import Mannequin from './Mannequin.jsx'
 import { NoteToggle, Stars } from './ScoreCard.jsx'
 
@@ -25,26 +27,21 @@ function missingText({ missing, dress_alternative: dressAlternative }) {
   return `${parts.join(', ')}${objectParticle(lastWord)}`
 }
 
-function RecommendCard({ item, imageOf, mannequin, index, onTryOn, onConfirm, confirming }) {
+function RecommendCard({ item, imageOf, mannequin, index, tagId, onTryOn, onConfirm, confirming, onFavorite }) {
   const { outfit } = item
   const worn = Object.fromEntries(
     Object.entries(outfit).map(([slot, id]) => [slot, id ? imageOf[id] : null]),
   )
   // 아우터가 없는 코디는 아우터 칸이 처음부터 "입지 않음"입니다. (PRD §5 추천 결과)
   if (!outfit.outer) worn.outer = 'none'
-  const favorite = item.favorite_id != null
 
   return (
     <article className="rec-card" aria-label={`추천 ${index + 1}`}>
-      {/* 즐겨찾기 별은 P-21에서 누를 수 있게 합니다. (사람이 정함, 2026-10-21) */}
-      <button
-        type="button"
-        className={`rec-card__star${favorite ? ' rec-card__star--on' : ''}`}
-        aria-label={favorite ? '즐겨찾기에 있음 (준비 중)' : '즐겨찾기에 넣기 (준비 중)'}
-        disabled
-      >
-        {favorite ? '★' : '☆'}
-      </button>
+      <FavoriteStar
+        favoriteId={item.favorite_id}
+        add={() => api.addFavorite({ outfit, tag_id: tagId })}
+        onChange={(id) => onFavorite(outfit, id)}
+      />
       <Mannequin className="rec-card__mannequin" {...mannequin} outfit={worn} />
       <Stars score={item.score} />
       <NoteToggle result={item} />
@@ -64,8 +61,10 @@ function RecommendList({
   imageOf,
   mannequin,
   onTryOn,
+  tagId,
   onConfirm,
   confirming,
+  onFavorite,
   onGoCloset,
 }) {
   if (recommendation.insufficient) {
@@ -90,15 +89,16 @@ function RecommendList({
             imageOf={imageOf}
             mannequin={mannequin}
             onTryOn={onTryOn}
+            tagId={tagId}
             onConfirm={onConfirm}
             confirming={confirming}
+            onFavorite={onFavorite}
           />
         ))}
       </div>
       {recommendation.fewer_than_three && (
         <p className="sub-text">옷을 더 등록하면 추천이 다양해져요.</p>
       )}
-      <p className="sub-text">즐겨찾기는 준비 중이에요.</p>
     </div>
   )
 }

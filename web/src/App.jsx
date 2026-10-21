@@ -4,6 +4,7 @@ import ClosetScreen from './components/ClosetScreen.jsx'
 import ConfirmedScreen from './components/ConfirmedScreen.jsx'
 import DiaryScreen from './components/DiaryScreen.jsx'
 import DressUpScreen from './components/DressUpScreen.jsx'
+import FavoritesScreen from './components/FavoritesScreen.jsx'
 import ErrorLine from './components/ErrorLine.jsx'
 import Mannequin from './components/Mannequin.jsx'
 import MannequinPicker from './components/MannequinPicker.jsx'
@@ -97,7 +98,9 @@ function App() {
   const dressUpOpen = showMenu && activeMenu === 'dressup'
   // 코디 일기에서는 일기장이 화면 전체로 펼쳐지고 옷장과 마네킹은 숨깁니다. (SCREEN-SPEC §1.2, §7)
   const diaryOpen = showMenu && activeMenu === 'diary'
-  const fullScreen = closetOpen || settingsOpen || dressUpOpen || diaryOpen
+  // 즐겨찾기에서는 옷걸이가 화면 전체로 커지고 옷장과 마네킹은 숨깁니다. (SCREEN-SPEC §1.2, §8)
+  const favoritesOpen = showMenu && activeMenu === 'favorites'
+  const fullScreen = closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen
 
   return (
     <div className="app">
@@ -121,9 +124,11 @@ function App() {
             regions={regions}
             onNoClothes={goToCloset}
             onConfirmed={handleConfirmed}
+            showToast={setToast}
           />
         )}
         {diaryOpen && <DiaryScreen onGoDressUp={() => selectMenu('dressup')} onTryOn={openTryOn} />}
+        {favoritesOpen && <FavoritesScreen onTryOn={openTryOn} />}
         {settingsOpen && (
           <SettingsScreen mannequin={mannequin} onMannequinSaved={setMannequin} showToast={setToast} />
         )}

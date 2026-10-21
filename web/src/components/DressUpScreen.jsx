@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
-import { CATEGORIES, SLOT_LABEL, isoDate, subjectParticle } from '../labels.js'
+import { CATEGORIES, SLOT_LABEL, isoDate, outfitKey, subjectParticle } from '../labels.js'
 import AlertDialog from './AlertDialog.jsx'
 import Button from './Button.jsx'
 import ConditionBar from './ConditionBar.jsx'
@@ -41,7 +41,7 @@ function missingSlots(outfit) {
 
 // initial: 코디 일기나 즐겨찾기의 "입혀 보기"로 열 때 받은 것 (API-SPEC §6 입혀 보기의 받는 것)
 //   { date, outfit, tag_id, deleted_slots, weather, weather_error }. 메뉴로 열면 없습니다.
-function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial }) {
+function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, showToast }) {
   const [clothes, setClothes] = useState(null)
   const [tags, setTags] = useState([])
   const [loadError, setLoadError] = useState(null)
@@ -77,6 +77,8 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial }
   const [confirming, setConfirming] = useState(false)
   const [confirmError, setConfirmError] = useState(null)
   const [sameDate, setSameDate] = useState(null) // 같은 날짜 확인 질문에서 다시 보낼 요청 내용
+  const [favoriting, setFavoriting] = useState(false)
+  const [favoriteError, setFavoriteError] = useState(null)
   // 확정한 뒤 화면에 옷 그림을 넘길 때 씁니다.
   const imageOfRef = useRef({})
 
@@ -228,6 +230,39 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial }
     })
   }
 
+  // 추천 카드의 별이 바뀌면 같은 코디 구성의 카드를 함께 바꿉니다. (SCREEN-SPEC §2.8, 제안)
+  function changeFavorite(changedOutfit, favoriteId) {
+    const key = outfitKey(changedOutfit)
+    setRecommendation((prev) =>
+      prev && {
+        ...prev,
+        data: {
+          ...prev.data,
+          outfits: prev.data.outfits.map((o) =>
+            outfitKey(o.outfit) === key ? { ...o, favorite_id: favoriteId } : o,
+          ),
+        },
+      },
+    )
+  }
+
+  // 점수 확인 단계의 [즐겨찾기]: 넣으면 짧은 알림, 이미 있으면 알림창 (SCREEN-SPEC §2.6)
+  async function addScoredFavorite() {
+    const sent = { ...outfit, outer: outfit.outer === 'none' ? null : outfit.outer }
+    setFavoriting(true)
+    setFavoriteError(null)
+    const res = await api.addFavorite({ outfit: sent, tag_id: tagId })
+    setFavoriting(false)
+    if (res.result === 'ok') {
+      changeFavorite(sent, res.data.id)
+      showToast('즐겨찾기에 등록되었습니다.')
+    } else if (res.error.kind === 'duplicate') {
+      setAlert(res.error.message)
+    } else {
+      setFavoriteError(res.error.message)
+    }
+  }
+
   // 추천 다시 보기: AI를 다시 부르지 않고, 추천을 받을 때의 조건과 같은 목록으로 돌아갑니다.
   function reviewRecommendations() {
     const c = recommendation.conditions
@@ -280,6 +315,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial }
     setStage('pick')
     setResult(null)
     setConfirmError(null)
+    setFavoriteError(null)
   }
 
   if (noClothes) {
@@ -376,6 +412,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial }
         )}
         {recommendError && <ErrorLine message={recommendError} onRetry={requestRecommend} />}
         {confirmError && <ErrorLine message={confirmError} />}
+        {favoriteError && <ErrorLine message={favoriteError} />}
         <div className="dressup__body">
           {recommendStage ? (
             <RecommendList
@@ -383,8 +420,10 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial }
               imageOf={imageOf}
               mannequin={mannequin}
               onTryOn={tryOn}
+              tagId={recommendation.conditions.tagId}
               onConfirm={confirmRecommendation}
               confirming={confirming}
+              onFavorite={changeFavorite}
               onGoCloset={onNoClothes}
             />
           ) : (
@@ -402,6 +441,8 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial }
                   onEdit={backToPick}
                   onConfirm={confirmScored}
                   confirming={confirming}
+                  onFavorite={addScoredFavorite}
+                  favoriting={favoriting}
                 />
               )}
             </>

@@ -5,7 +5,8 @@ from fastapi import FastAPI
 from .db import init_db
 from .photos import clear_temp
 from .responses import install_error_handlers
-from .routers import clothes, diary, keywords, photos, recommendations, scores, settings, tags, uploads, weather
+from .routers import (clothes, diary, favorites, keywords, photos, recommendations, scores, settings,
+                      tags, uploads, weather)
 
 
 @asynccontextmanager
@@ -19,7 +20,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="코디 추천 웹앱", lifespan=lifespan)
 install_error_handlers(app)
-for module in (settings, keywords, tags, uploads, clothes, photos, weather, scores, recommendations, diary):
+for module in (settings, keywords, tags, uploads, clothes, photos, weather, scores, recommendations,
+               diary, favorites):
     app.include_router(module.router)
 
 

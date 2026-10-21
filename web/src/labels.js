@@ -54,6 +54,13 @@ export function isoDate(offset = 0) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+// 같은 코디인지 비교할 때 쓰는 값. 한 칸이라도 다르면 다른 코디입니다. (서버 rules.outfit_key와 같음)
+// outfit: 칸 → 옷 번호 또는 옷 한 벌 정보. 아우터 "입지 않음"과 빈 칸은 같게 봅니다.
+export function outfitKey(outfit) {
+  const id = (v) => (v && typeof v === 'object' ? v.id : v === 'none' ? null : (v ?? null))
+  return ['top', 'bottom', 'dress', 'shoes', 'outer'].map((slot) => id(outfit[slot])).join(',')
+}
+
 // 날씨 상태 (DATA-MODEL §12.1)
 export const WEATHER_LABEL = {
   clear: { icon: '☀', label: '맑음' },

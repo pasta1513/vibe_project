@@ -1,6 +1,8 @@
 import '@fontsource/gamja-flower/400.css'
 import { SLOT_LABEL, WEATHER_LABEL, formatDate, isoDate } from '../labels.js'
+import { api } from '../api.js'
 import Button from './Button.jsx'
+import FavoriteStar from './FavoriteStar.jsx'
 import Mannequin from './Mannequin.jsx'
 import { NoteToggle, Stars } from './ScoreCard.jsx'
 
@@ -12,14 +14,13 @@ function tiltOf(id) {
   return (((id * 37) % 31) / 10 - 1.5).toFixed(1)
 }
 
-function DiaryCard({ entry, onTryOn, onDelete }) {
+function DiaryCard({ entry, onTryOn, onDelete, onFavorite }) {
   const worn = Object.fromEntries(
     Object.entries(entry.outfit).map(([slot, item]) => [slot, item ? item.image_url : null]),
   )
   if (!entry.outfit.outer) worn.outer = 'none'
   const look = WEATHER_LABEL[entry.weather.condition]
   const isToday = entry.date === isoDate(0)
-  const favorite = entry.favorite_id != null
 
   return (
     <article
@@ -33,15 +34,12 @@ function DiaryCard({ entry, onTryOn, onDelete }) {
           ⚠ {entry.deleted_slots.map((slot) => SLOT_LABEL[slot]).join(', ')}
         </span>
       )}
-      {/* 즐겨찾기 별은 P-21에서 누를 수 있게 합니다. (사람이 정함, 2026-10-21) */}
-      <button
-        type="button"
-        className={`rec-card__star${favorite ? ' rec-card__star--on' : ''}`}
-        aria-label={favorite ? '즐겨찾기에 있음 (준비 중)' : '즐겨찾기에 넣기 (준비 중)'}
-        disabled
-      >
-        {favorite ? '★' : '☆'}
-      </button>
+      {/* 지운 옷이 든 기록도 넣을 수 있습니다. (PRD §7 즐겨찾기) */}
+      <FavoriteStar
+        favoriteId={entry.favorite_id}
+        add={() => api.addFavoriteFromDiary(entry.id)}
+        onChange={(id) => onFavorite(entry, id)}
+      />
       <Mannequin
         className="diary-card__mannequin"
         {...entry.mannequin}
