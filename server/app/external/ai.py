@@ -3,13 +3,19 @@
 AI가 준 답은 여기서 검사한 뒤에 돌려줍니다. 가짜 AI의 답도 똑같이 검사합니다. (D-007)
 """
 
+import os
+
 from ..models import TYPE_GENDERS
 from ..rules import check_outfit, outfit_key
 from . import ExternalError
 from . import fake_ai
 
-# 지금 쓰는 AI. 진짜 AI를 정하면 여기만 바꿉니다.
-provider = fake_ai
+# 지금 쓰는 AI. `server/.env`의 AI_PROVIDER로 고릅니다. (P-23)
+# 기본은 가짜(fake)입니다. bedrock이면 Amazon Bedrock의 Nova Lite를 씁니다. (D-013)
+if os.environ.get("AI_PROVIDER", "fake").strip().lower() == "bedrock":
+    from . import bedrock_ai as provider
+else:
+    provider = fake_ai
 
 MIN_SCORE, MAX_SCORE = 0.1, 5.0
 
