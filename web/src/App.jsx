@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from './api.js'
 import ClosetScreen from './components/ClosetScreen.jsx'
+import ConfirmedScreen from './components/ConfirmedScreen.jsx'
 import DressUpScreen from './components/DressUpScreen.jsx'
 import ErrorLine from './components/ErrorLine.jsx'
 import Mannequin from './components/Mannequin.jsx'
@@ -18,6 +19,8 @@ function App() {
   const [mannequin, setMannequin] = useState(null)
   const [regions, setRegions] = useState([])
   const [activeMenu, setActiveMenu] = useState(null)
+  // 확정한 뒤 화면 (SCREEN-SPEC §5.6). 메뉴를 누르면 사라집니다. 앱을 다시 켜면 처음 화면입니다.
+  const [confirmed, setConfirmed] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [toast, setToast] = useState(null)
@@ -60,6 +63,17 @@ function App() {
 
   const goToCloset = useCallback(() => setActiveMenu('closet'), [])
 
+  function selectMenu(key) {
+    setConfirmed(null)
+    setActiveMenu(key)
+  }
+
+  // 확정하면 아무 메뉴도 선택되지 않은 확정한 뒤 화면이 됩니다. (사람이 정함, 2026-10-21)
+  function handleConfirmed(data) {
+    setActiveMenu(null)
+    setConfirmed(data)
+  }
+
   const firstRun = status === 'ready' && !mannequin
   const showMenu = status === 'ready' && mannequin
   // 옷장 화면에서는 옷장이 화면 전체로 커지고 마네킹은 숨깁니다. (SCREEN-SPEC §1.2)
@@ -72,14 +86,25 @@ function App() {
 
   return (
     <div className="app">
-      {showMenu && <MenuBar active={activeMenu} onSelect={setActiveMenu} />}
+      {showMenu && <MenuBar active={activeMenu} onSelect={selectMenu} />}
       <main className={`stage${firstRun ? ' stage--dimmed' : ''}`}>
-        <Room className="stage__room" />
-        {!fullScreen && <Wardrobe className="stage__wardrobe" />}
-        {showMenu && !fullScreen && <Mannequin className="stage__mannequin" {...mannequin} />}
+        {confirmed ? (
+          <ConfirmedScreen confirmed={confirmed} mannequin={mannequin} />
+        ) : (
+          <>
+            <Room className="stage__room" />
+            {!fullScreen && <Wardrobe className="stage__wardrobe" />}
+            {showMenu && !fullScreen && <Mannequin className="stage__mannequin" {...mannequin} />}
+          </>
+        )}
         {closetOpen && <ClosetScreen gender={mannequin.gender} showToast={setToast} />}
         {dressUpOpen && (
-          <DressUpScreen mannequin={mannequin} regions={regions} onNoClothes={goToCloset} />
+          <DressUpScreen
+            mannequin={mannequin}
+            regions={regions}
+            onNoClothes={goToCloset}
+            onConfirmed={handleConfirmed}
+          />
         )}
         {settingsOpen && (
           <SettingsScreen mannequin={mannequin} onMannequinSaved={setMannequin} showToast={setToast} />

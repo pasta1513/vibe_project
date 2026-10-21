@@ -47,7 +47,7 @@ export function NoteToggle({ result }) {
 }
 
 // 점수 카드 (SCREEN-SPEC §5.4): 날짜, 점수, 코멘트 한 줄
-function ScoreCard({ date, result, onEdit }) {
+function ScoreCard({ date, result, onEdit, onConfirm, confirming }) {
   return (
     <aside className="score-card" aria-label="점수 카드">
       <h3 className="score-card__date">{formatDate(date)}</h3>
@@ -55,14 +55,14 @@ function ScoreCard({ date, result, onEdit }) {
       <NoteToggle result={result} />
       <div className="score-card__actions">
         <Button onClick={onEdit}>수정하기</Button>
-        {/* 확정하기는 P-19, 즐겨찾기는 P-21에서 붙입니다. (사람이 정함, 2026-10-21) */}
-        <Button variant="primary" disabled title="준비 중이에요">
-          확정하기
+        <Button variant="primary" disabled={confirming} onClick={onConfirm}>
+          {confirming ? '확정하는 중…' : '확정하기'}
         </Button>
+        {/* 즐겨찾기는 P-21에서 붙입니다. (사람이 정함, 2026-10-21) */}
         <Button disabled title="준비 중이에요">
           즐겨찾기
         </Button>
-        <p className="sub-text">확정하기와 즐겨찾기는 준비 중이에요.</p>
+        <p className="sub-text">즐겨찾기는 준비 중이에요.</p>
       </div>
     </aside>
   )

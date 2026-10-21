@@ -4,6 +4,7 @@ import { CATEGORIES, SLOT_LABEL, isoDate, subjectParticle } from '../labels.js'
 import AlertDialog from './AlertDialog.jsx'
 import Button from './Button.jsx'
 import ConditionBar from './ConditionBar.jsx'
+import ConfirmDialog from './ConfirmDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import Mannequin from './Mannequin.jsx'
 import RecommendList from './RecommendList.jsx'
@@ -29,7 +30,7 @@ function missingSlots(outfit) {
   return missing
 }
 
-function DressUpScreen({ mannequin, regions, onNoClothes }) {
+function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed }) {
   const [clothes, setClothes] = useState(null)
   const [tags, setTags] = useState([])
   const [loadError, setLoadError] = useState(null)
@@ -52,6 +53,13 @@ function DressUpScreen({ mannequin, regions, onNoClothes }) {
   const [recommendation, setRecommendation] = useState(null) // { data, conditions }
   const [recommending, setRecommending] = useState(false)
   const [recommendError, setRecommendError] = useState(null)
+
+  // 확정하기 (API-SPEC §5.3)
+  const [confirming, setConfirming] = useState(false)
+  const [confirmError, setConfirmError] = useState(null)
+  const [sameDate, setSameDate] = useState(null) // 같은 날짜 확인 질문에서 다시 보낼 요청 내용
+  // 확정한 뒤 화면에 옷 그림을 넘길 때 씁니다.
+  const imageOfRef = useRef({})
 
   // 가장 마지막에 보낸 날씨 요청만 반영합니다. (날짜를 빠르게 바꿀 때)
   const weatherSeq = useRef(0)
@@ -145,6 +153,53 @@ function DressUpScreen({ mannequin, regions, onNoClothes }) {
     setStage('pick')
   }
 
+  // 확정하기: 화면이 들고 있던 코디, 날짜, 날씨, 태그, 점수 결과를 보냅니다. (D-006)
+  // 같은 날짜에 기록이 있으면 묻고, [바꾸기]를 누르면 "확인함"을 붙여 다시 보냅니다.
+  async function sendConfirm(body) {
+    setConfirming(true)
+    setConfirmError(null)
+    const res = await api.confirmOutfit(body)
+    setConfirming(false)
+    if (res.result === 'confirm') {
+      setSameDate(body)
+      return
+    }
+    if (res.result !== 'ok') {
+      setConfirmError(res.error.message)
+      return
+    }
+    imageOfRef.current = imageOf
+  const worn = Object.fromEntries(
+      Object.entries(body.outfit).map(([slot, id]) => [slot, id ? imageOfRef.current[id] : null]),
+    )
+    if (!body.outfit.outer) worn.outer = 'none'
+    onConfirmed({ date: res.data.date, weather: res.data.weather, worn })
+  }
+
+  // 추천 목록에서 바로 확정: 추천을 받을 때의 조건과 이유가 남습니다.
+  function confirmRecommendation(index) {
+    const item = recommendation.data.outfits[index]
+    const c = recommendation.conditions
+    sendConfirm({
+      outfit: item.outfit,
+      date: c.date,
+      weather: c.weather,
+      tag_id: c.tagId,
+      result: { score: item.score, note_type: item.note_type, summary: item.summary, details: item.details },
+    })
+  }
+
+  // 점수 확인 단계에서 확정: 코멘트가 남습니다.
+  function confirmScored() {
+    sendConfirm({
+      outfit: { ...outfit, outer: outfit.outer === 'none' ? null : outfit.outer },
+      date,
+      weather: weather.data,
+      tag_id: tagId,
+      result,
+    })
+  }
+
   // 추천 다시 보기: AI를 다시 부르지 않고, 추천을 받을 때의 조건과 같은 목록으로 돌아갑니다.
   function reviewRecommendations() {
     const c = recommendation.conditions
@@ -196,6 +251,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes }) {
   function backToPick() {
     setStage('pick')
     setResult(null)
+    setConfirmError(null)
   }
 
   if (noClothes) {
@@ -285,6 +341,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes }) {
           locked={scoreStage}
         />
         {recommendError && <ErrorLine message={recommendError} onRetry={requestRecommend} />}
+        {confirmError && <ErrorLine message={confirmError} />}
         <div className="dressup__body">
           {recommendStage ? (
             <RecommendList
@@ -292,6 +349,8 @@ function DressUpScreen({ mannequin, regions, onNoClothes }) {
               imageOf={imageOf}
               mannequin={mannequin}
               onTryOn={tryOn}
+              onConfirm={confirmRecommendation}
+              confirming={confirming}
               onGoCloset={onNoClothes}
             />
           ) : (
@@ -302,7 +361,15 @@ function DressUpScreen({ mannequin, regions, onNoClothes }) {
                 outfit={worn}
                 showEmpty={!scoreStage}
               />
-              {scoreStage && <ScoreCard date={date} result={result} onEdit={backToPick} />}
+              {scoreStage && (
+                <ScoreCard
+                  date={date}
+                  result={result}
+                  onEdit={backToPick}
+                  onConfirm={confirmScored}
+                  confirming={confirming}
+                />
+              )}
             </>
           )}
         </div>
@@ -318,6 +385,19 @@ function DressUpScreen({ mannequin, regions, onNoClothes }) {
       </div>
 
       {alert && <AlertDialog message={alert} onClose={() => setAlert(null)} />}
+      {sameDate && (
+        <ConfirmDialog
+          message="이미 이 날의 코디가 있어요. 바꿀까요?"
+          confirmLabel="바꾸기"
+          danger
+          onCancel={() => setSameDate(null)}
+          onConfirm={() => {
+            const body = sameDate
+            setSameDate(null)
+            sendConfirm({ ...body, confirmed: true })
+          }}
+        />
+      )}
     </section>
   )
 }

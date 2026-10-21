@@ -25,7 +25,7 @@ function missingText({ missing, dress_alternative: dressAlternative }) {
   return `${parts.join(', ')}${objectParticle(lastWord)}`
 }
 
-function RecommendCard({ item, imageOf, mannequin, index, onTryOn }) {
+function RecommendCard({ item, imageOf, mannequin, index, onTryOn, onConfirm, confirming }) {
   const { outfit } = item
   const worn = Object.fromEntries(
     Object.entries(outfit).map(([slot, id]) => [slot, id ? imageOf[id] : null]),
@@ -50,8 +50,8 @@ function RecommendCard({ item, imageOf, mannequin, index, onTryOn }) {
       <NoteToggle result={item} />
       <div className="rec-card__actions">
         <Button onClick={() => onTryOn(index)}>입혀 보기</Button>
-        {/* 확정하기는 P-19에서 붙입니다. (사람이 정함, 2026-10-21) */}
-        <Button variant="primary" disabled title="준비 중이에요">
+        {/* 마네킹을 거치지 않고 바로 코디 일기에 남깁니다. 이유가 남습니다. (PRD §5) */}
+        <Button variant="primary" disabled={confirming} onClick={() => onConfirm(index)}>
           확정하기
         </Button>
       </div>
@@ -59,7 +59,15 @@ function RecommendCard({ item, imageOf, mannequin, index, onTryOn }) {
   )
 }
 
-function RecommendList({ recommendation, imageOf, mannequin, onTryOn, onGoCloset }) {
+function RecommendList({
+  recommendation,
+  imageOf,
+  mannequin,
+  onTryOn,
+  onConfirm,
+  confirming,
+  onGoCloset,
+}) {
   if (recommendation.insufficient) {
     return (
       <div className="rec-list__notice">
@@ -82,13 +90,15 @@ function RecommendList({ recommendation, imageOf, mannequin, onTryOn, onGoCloset
             imageOf={imageOf}
             mannequin={mannequin}
             onTryOn={onTryOn}
+            onConfirm={onConfirm}
+            confirming={confirming}
           />
         ))}
       </div>
       {recommendation.fewer_than_three && (
         <p className="sub-text">옷을 더 등록하면 추천이 다양해져요.</p>
       )}
-      <p className="sub-text">확정하기와 즐겨찾기는 준비 중이에요.</p>
+      <p className="sub-text">즐겨찾기는 준비 중이에요.</p>
     </div>
   )
 }
