@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from './api.js'
 import ClosetScreen from './components/ClosetScreen.jsx'
+import DressUpScreen from './components/DressUpScreen.jsx'
 import ErrorLine from './components/ErrorLine.jsx'
 import Mannequin from './components/Mannequin.jsx'
 import MannequinPicker from './components/MannequinPicker.jsx'
@@ -15,6 +16,7 @@ function App() {
   const [status, setStatus] = useState('loading')
   const [loadError, setLoadError] = useState(null)
   const [mannequin, setMannequin] = useState(null)
+  const [regions, setRegions] = useState([])
   const [activeMenu, setActiveMenu] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
@@ -25,6 +27,7 @@ function App() {
   const applySettings = useCallback((res) => {
     if (res.result === 'ok') {
       setMannequin(res.data.mannequin)
+      setRegions(res.data.regions)
       setStatus('ready')
     } else {
       setLoadError(res.error.message)
@@ -55,13 +58,17 @@ function App() {
     }
   }
 
+  const goToCloset = useCallback(() => setActiveMenu('closet'), [])
+
   const firstRun = status === 'ready' && !mannequin
   const showMenu = status === 'ready' && mannequin
   // 옷장 화면에서는 옷장이 화면 전체로 커지고 마네킹은 숨깁니다. (SCREEN-SPEC §1.2)
   const closetOpen = showMenu && activeMenu === 'closet'
   // 설정 화면에서는 옷장과 마네킹을 숨기고, 마네킹 모양 미리보기만 보입니다. (SCREEN-SPEC §1.2)
   const settingsOpen = showMenu && activeMenu === 'settings'
-  const fullScreen = closetOpen || settingsOpen
+  // 새 옷 입기에서는 커진 옷장과 조건 띠, 옷을 입히는 마네킹이 보입니다. (SCREEN-SPEC §1.2, §5)
+  const dressUpOpen = showMenu && activeMenu === 'dressup'
+  const fullScreen = closetOpen || settingsOpen || dressUpOpen
 
   return (
     <div className="app">
@@ -71,6 +78,9 @@ function App() {
         {!fullScreen && <Wardrobe className="stage__wardrobe" />}
         {showMenu && !fullScreen && <Mannequin className="stage__mannequin" {...mannequin} />}
         {closetOpen && <ClosetScreen gender={mannequin.gender} showToast={setToast} />}
+        {dressUpOpen && (
+          <DressUpScreen mannequin={mannequin} regions={regions} onNoClothes={goToCloset} />
+        )}
         {settingsOpen && (
           <SettingsScreen mannequin={mannequin} onMannequinSaved={setMannequin} showToast={setToast} />
         )}

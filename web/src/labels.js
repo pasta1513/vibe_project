@@ -32,3 +32,38 @@ export function sortTypesByGender(types, gender) {
   const fits = (t) => t.gender === 'both' || t.gender === gender
   return [...types.filter(fits), ...types.filter((t) => !fits(t))]
 }
+
+// 마네킹 칸 (DATA-MODEL §1.3). 빈 칸 경고창에 적는 순서이기도 합니다.
+export const SLOT_LABEL = { top: '상의', bottom: '하의', dress: '원피스', shoes: '신발', outer: '아우터' }
+
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
+
+// 날짜 표기: 10월 20일(화). 연도는 적지 않습니다. (SCREEN-SPEC §2.2)
+// iso: 'YYYY-MM-DD'
+export function formatDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number)
+  const day = new Date(y, m - 1, d).getDay()
+  return `${m}월 ${d}일(${WEEKDAYS[day]})`
+}
+
+// 이 PC의 날짜를 'YYYY-MM-DD'로. offset일 뒤의 날짜도 구합니다.
+export function isoDate(offset = 0) {
+  const d = new Date()
+  d.setDate(d.getDate() + offset)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+// 날씨 상태 (DATA-MODEL §12.1)
+export const WEATHER_LABEL = {
+  clear: { icon: '☀', label: '맑음' },
+  cloudy: { icon: '☁', label: '흐림' },
+  rain: { icon: '☂', label: '비' },
+  snow: { icon: '❄', label: '눈' },
+}
+
+// 점수 별: 별 개수는 소수점을 버린 정수, 숫자는 소수점 한 자리 (PRD §6 점수)
+export function scoreStars(score) {
+  const filled = Math.floor(score)
+  return { filled, empty: 5 - filled, text: score.toFixed(1) }
+}

@@ -2,6 +2,11 @@ import { useId } from 'react'
 
 // 마네킹과 기본 잠옷 (DESIGN §5.1, §5.2).
 // 성별마다 기본 그림 하나를 두고, 키와 체형은 비율로 늘이거나 줄입니다. 머리는 그대로 둡니다.
+//
+// outfit: 칸마다 옷의 2D 이미지 주소. { top, bottom, dress, shoes, outer }
+//   비어 있으면 null, 아우터 "입지 않음"은 'none'. 원피스는 상의와 하의 칸을 함께 차지합니다. (PRD §6 마네킹)
+// showEmpty: 빈 칸에 점선과 "하의를 골라 주세요"를 겹쳐 보입니다. (SCREEN-SPEC §2.5, DESIGN §4.1)
+//   잠옷은 그대로 보이고, 칸을 채운 것으로 보지 않습니다.
 
 const HEIGHT_RATIO = { short: 0.92, medium: 1, tall: 1.08 }
 const BODY_RATIO = { slim: 0.85, medium: 1, chubby: 1.2 }
@@ -15,6 +20,15 @@ const PAJAMA = '#B5D4F4'
 const PAJAMA_DOT = '#2C2C2A'
 const COLLAR = '#E6F1FB'
 const COLLAR_LINE = '#185FA5'
+const DASHED = '#888780'
+const EMPTY_TEXT = '#5F5E5A'
+
+const EMPTY_LABEL = {
+  top: '상의를 골라 주세요',
+  bottom: '하의를 골라 주세요',
+  shoes: '신발을 골라 주세요',
+  outer: '아우터를 골라 주세요',
+}
 
 // 기본 그림의 몸 치수 (키 1배, 체형 1배일 때)
 const BASE = {
@@ -61,7 +75,61 @@ function Hair({ gender, back }) {
   )
 }
 
-function Mannequin({ gender = 'female', height = 'medium', body = 'medium', className, title }) {
+// 옷의 2D 이미지를 칸 상자에 비율을 지켜 얹습니다. (DESIGN §5.1)
+function ClothingImage({ box, url }) {
+  return (
+    <image
+      href={url}
+      x={box.x}
+      y={box.y}
+      width={box.w}
+      height={box.h}
+      preserveAspectRatio="xMidYMid meet"
+    />
+  )
+}
+
+// 빈 칸: 2px 회색 점선, 모서리 8px, 안내 글 (DESIGN §4.1). labelY는 상자 안에서 글이 놓일 높이입니다.
+function EmptySlot({ box, label, labelY }) {
+  return (
+    <g>
+      <rect
+        x={box.x}
+        y={box.y}
+        width={box.w}
+        height={box.h}
+        rx={8}
+        fill="rgba(255, 255, 255, 0.35)"
+        stroke={DASHED}
+        strokeWidth={2}
+        strokeDasharray="5 4"
+      />
+      <text
+        x={box.x + box.w / 2}
+        y={labelY ?? box.y + box.h / 2}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={11}
+        fill={EMPTY_TEXT}
+        stroke="#FFFFFF"
+        strokeWidth={3}
+        paintOrder="stroke"
+      >
+        {label}
+      </text>
+    </g>
+  )
+}
+
+function Mannequin({
+  gender = 'female',
+  height = 'medium',
+  body = 'medium',
+  outfit,
+  showEmpty = false,
+  className,
+  title,
+}) {
   const patternId = `pj-dots-${useId().replace(/:/g, '')}`
   const h = HEIGHT_RATIO[height] ?? 1
   const w = BODY_RATIO[body] ?? 1
@@ -89,12 +157,32 @@ function Mannequin({ gender = 'female', height = 'medium', body = 'medium', clas
 
   const shiftY = SOLE_TARGET_Y - soleY
 
+  // 칸 상자 (마네킹과 같은 비율로 늘고 줄어듭니다)
+  const sleeve = armX + armW / 2
+  const legOuter = legX + pantW / 2
+  const boxes = {
+    top: { x: -sleeve - 2, y: SHOULDER_Y - 6, w: (sleeve + 2) * 2, h: hipY + 14 - (SHOULDER_Y - 6) },
+    bottom: { x: -legOuter - 2, y: hipY - 6, w: (legOuter + 2) * 2, h: ankleY + 2 - (hipY - 6) },
+    shoes: { x: -legOuter - 10, y: ankleY - 6, w: (legOuter + 10) * 2, h: footH + 12 },
+    outer: { x: -sleeve - 8, y: SHOULDER_Y - 10, w: (sleeve + 8) * 2, h: hipY + 34 - (SHOULDER_Y - 10) },
+  }
+  boxes.dress = { x: boxes.top.x, y: boxes.top.y, w: boxes.top.w, h: boxes.bottom.y + boxes.bottom.h - boxes.top.y }
+
+  const worn = outfit ?? {}
+  const hasDress = Boolean(worn.dress)
+  const emptySlots = showEmpty
+    ? ['shoes', 'bottom', 'top', 'outer'].filter((slot) => {
+        if ((slot === 'top' || slot === 'bottom') && hasDress) return false
+        return !worn[slot]
+      })
+    : []
+
   return (
     <svg
       className={className}
       viewBox="-100 -12 200 400"
       role="img"
-      aria-label={title ?? '잠옷을 입은 마네킹'}
+      aria-label={title ?? (outfit ? '옷을 입은 마네킹' : '잠옷을 입은 마네킹')}
     >
       <defs>
         <pattern id={patternId} width="12" height="12" patternUnits="userSpaceOnUse">
@@ -156,6 +244,30 @@ function Mannequin({ gender = 'female', height = 'medium', body = 'medium', clas
             stroke={COLLAR_LINE}
             strokeWidth="1.5"
             strokeLinejoin="round"
+          />
+        ))}
+
+        {/* 옷: 신발 → 하의 → 상의(또는 원피스) → 아우터 순서로 겹칩니다. */}
+        {worn.shoes && <ClothingImage box={boxes.shoes} url={worn.shoes} />}
+        {hasDress ? (
+          <ClothingImage box={boxes.dress} url={worn.dress} />
+        ) : (
+          <>
+            {worn.bottom && <ClothingImage box={boxes.bottom} url={worn.bottom} />}
+            {worn.top && <ClothingImage box={boxes.top} url={worn.top} />}
+          </>
+        )}
+        {worn.outer && worn.outer !== 'none' && <ClothingImage box={boxes.outer} url={worn.outer} />}
+
+        {/* 빈 칸 표시. 아우터 안내는 어깨 쪽, 상의 안내는 허리 쪽에 두어 겹치지 않게 합니다. */}
+        {emptySlots.map((slot) => (
+          <EmptySlot
+            key={slot}
+            box={boxes[slot]}
+            label={EMPTY_LABEL[slot]}
+            labelY={
+              slot === 'outer' ? SHOULDER_Y + 14 : slot === 'top' ? (waistY + hipY) / 2 : undefined
+            }
           />
         ))}
 

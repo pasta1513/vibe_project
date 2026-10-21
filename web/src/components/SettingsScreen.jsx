@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api.js'
-import { CATEGORIES, CATEGORY_LABEL, KEYWORD_ROWS } from '../labels.js'
+import { CATEGORIES, CATEGORY_LABEL, KEYWORD_ROWS, formatDate } from '../labels.js'
 import AlertDialog from './AlertDialog.jsx'
 import Button from './Button.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
@@ -26,15 +26,6 @@ const TYPE_GENDERS = [
 
 // 구분 탭은 보기만 합니다. 구분은 고정이라 고치거나 지울 수 없습니다. (PRD §4)
 const KEYWORD_TABS = [{ kind: 'category', label: '구분' }, ...KEYWORD_ROWS]
-
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
-
-// 날짜 표기: 10월 20일(화) (SCREEN-SPEC §2.2)
-function formatDate(iso) {
-  const [y, m, d] = iso.split('-').map(Number)
-  const day = new Date(y, m - 1, d).getDay()
-  return `${m}월 ${d}일(${WEEKDAYS[day]})`
-}
 
 // 지울 수 없음 안내: 어떤 옷이나 기록이 쓰는지 적습니다. (SCREEN-SPEC §2.6)
 function InUseMessage({ message, usedBy }) {
