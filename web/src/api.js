@@ -13,6 +13,8 @@ const SCORE_TIMEOUT_MS = 40000
 const RECOMMEND_TIMEOUT_MS = 55000
 // 종류 단어 더하기 = 일반 요청 5초 + AI 성별 정하기 15초
 const TYPE_WORD_TIMEOUT_MS = 20000
+// 키워드·태그 더하기 = 일반 요청 5초 + AI 비슷한 단어 판단 5초 (P-24, P-28에서 다시 맞춤)
+const WORD_TIMEOUT_MS = 10000
 
 function fail(kind, message) {
   return { result: 'error', error: { kind, message } }
@@ -54,14 +56,14 @@ export const api = {
   // body: { kind, name, category(종류 단어만), confirmed(비슷한 단어 질문에서 [더하기]) }
   addKeyword: (body) =>
     request('POST', '/api/keywords', body, {
-      timeoutMs: body.kind === 'type' ? TYPE_WORD_TIMEOUT_MS : DEFAULT_TIMEOUT_MS,
+      timeoutMs: body.kind === 'type' ? TYPE_WORD_TIMEOUT_MS : WORD_TIMEOUT_MS,
     }),
   renameKeyword: (id, name) => request('PATCH', `/api/keywords/${id}`, { name }),
   setKeywordGender: (id, gender) => request('PATCH', `/api/keywords/${id}`, { gender }),
   deleteKeyword: (id) => request('DELETE', `/api/keywords/${id}`),
 
   getTags: () => request('GET', '/api/tags'),
-  addTag: (body) => request('POST', '/api/tags', body),
+  addTag: (body) => request('POST', '/api/tags', body, { timeoutMs: WORD_TIMEOUT_MS }),
   renameTag: (id, name) => request('PATCH', `/api/tags/${id}`, { name }),
   deleteTag: (id) => request('DELETE', `/api/tags/${id}`),
 
