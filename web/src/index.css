@@ -643,7 +643,7 @@ button {
 }
 
 /* 점수 확인 단계: 옷 고르는 부분은 작게 줄어듭니다. (SCREEN-SPEC §5.4) */
-.dressup--score .dressup__closet {
+.dressup--compact .dressup__closet {
   width: 96px;
   align-items: center;
 }
@@ -807,4 +807,82 @@ button {
   margin-left: var(--space-1);
   font-weight: var(--weight-bold);
   color: var(--color-text);
+}
+
+/* 추천 보기 (SCREEN-SPEC §5.3) */
+.rec-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.rec-list__cards {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.rec-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 220px;
+  padding: var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.rec-card__star {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  border: none;
+  background: none;
+  font-size: var(--text-lg);
+  color: var(--color-star-empty);
+}
+
+.rec-card__star--on {
+  color: var(--color-star);
+}
+
+.rec-card__mannequin {
+  width: 110px;
+  height: 220px;
+}
+
+.rec-card .stars {
+  font-size: var(--text-md);
+}
+
+.rec-card__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.rec-list__notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.rec-list__notice p {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.rec-card__actions .btn {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  white-space: nowrap;
 }

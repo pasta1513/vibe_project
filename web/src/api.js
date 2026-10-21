@@ -9,6 +9,8 @@ const UPLOAD_TIMEOUT_MS = 90000
 const WEATHER_TIMEOUT_MS = 10000
 // 점수 확인하기 = 날씨 10초 + AI 점수 30초
 const SCORE_TIMEOUT_MS = 40000
+// 추천받기 = 날씨 10초 + AI 추천 45초
+const RECOMMEND_TIMEOUT_MS = 55000
 // 종류 단어 더하기 = 일반 요청 5초 + AI 성별 정하기 15초
 const TYPE_WORD_TIMEOUT_MS = 20000
 
@@ -78,6 +80,9 @@ export const api = {
     return request('GET', `/api/weather?${query}`, undefined, { timeoutMs: WEATHER_TIMEOUT_MS })
   },
   // body: { outfit: { top, bottom, dress, shoes, outer }, date, region, tag_id }
+  // body: { date, region, tag_id }
+  recommend: (body) =>
+    request('POST', '/api/recommendations', body, { timeoutMs: RECOMMEND_TIMEOUT_MS }),
   score: (body) => request('POST', '/api/scores', body, { timeoutMs: SCORE_TIMEOUT_MS }),
 
   getClothes: () => request('GET', '/api/clothes'),

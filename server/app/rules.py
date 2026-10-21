@@ -56,3 +56,24 @@ def particle(word: str, after_consonant: str, after_vowel: str) -> str:
     if not 0xAC00 <= last <= 0xD7A3:
         return after_vowel
     return after_consonant if (last - 0xAC00) % 28 else after_vowel
+
+
+def missing_for_outfit(categories: set) -> Optional[dict]:
+    """코디 한 벌을 만들 옷이 있는지 봅니다. (PRD §5 옷이 부족할 때)
+
+    categories: 옷장(지운 옷 제외)에 있는 구분들.
+    있으면 None. 없으면 {"missing": 먼저 등록할 구분들, "dress_alternative": 원피스로도 채울 수 있는지}.
+    아우터는 없어도 됩니다. 아우터는 "입지 않음"이 됩니다.
+    """
+    missing = []
+    dress_alternative = False
+    if "dress" not in categories:
+        lacking = [c for c in ("top", "bottom") if c not in categories]
+        if lacking:
+            missing += lacking
+            dress_alternative = True
+    if "shoes" not in categories:
+        missing.append("shoes")
+    if not missing:
+        return None
+    return {"missing": missing, "dress_alternative": dress_alternative}

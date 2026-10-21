@@ -18,16 +18,13 @@ export function Stars({ score }) {
   )
 }
 
-// 점수 카드 (SCREEN-SPEC §5.4): 날짜, 점수, 코멘트 한 줄. 한 줄을 누르면 옷마다 평가가 펼쳐집니다.
+// 이유나 코멘트 한 줄. 누르면 옷마다 자세한 내용이 펼쳐집니다. (PRD §6 이유와 코멘트)
 // result: API-SPEC §2.4의 점수 결과 { score, note_type, summary, details }
-function ScoreCard({ date, result, onEdit }) {
+export function NoteToggle({ result }) {
   const [open, setOpen] = useState(false)
   const details = Object.entries(SLOT_LABEL).filter(([slot]) => result.details[slot])
-
   return (
-    <aside className="score-card" aria-label="점수 카드">
-      <h3 className="score-card__date">{formatDate(date)}</h3>
-      <Stars score={result.score} />
+    <>
       <button
         type="button"
         className="score-card__summary"
@@ -45,6 +42,17 @@ function ScoreCard({ date, result, onEdit }) {
           ))}
         </ul>
       )}
+    </>
+  )
+}
+
+// 점수 카드 (SCREEN-SPEC §5.4): 날짜, 점수, 코멘트 한 줄
+function ScoreCard({ date, result, onEdit }) {
+  return (
+    <aside className="score-card" aria-label="점수 카드">
+      <h3 className="score-card__date">{formatDate(date)}</h3>
+      <Stars score={result.score} />
+      <NoteToggle result={result} />
       <div className="score-card__actions">
         <Button onClick={onEdit}>수정하기</Button>
         {/* 확정하기는 P-19, 즐겨찾기는 P-21에서 붙입니다. (사람이 정함, 2026-10-21) */}

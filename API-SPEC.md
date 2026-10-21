@@ -4,7 +4,7 @@
 사용자 행동마다 화면이 보내는 것, 서버가 할 일, 받는 것, 성공했을 때 화면, 실패 종류, 다음 행동을 적습니다.
 프로그램 문법은 최소한으로 하고 쉬운 말로 적습니다. 화면 모습은 SCREEN-SPEC에, 저장할 정보의 뜻은 DATA-MODEL에 적습니다.
 
-- 상태: 초안 (2026-10-20), 승인됨 (2026-10-20), 수정 (2026-10-20: TEST-PLAN을 쓰며 이름 띄어쓰기 정리와 빈 이름 실패, 필수 키워드 경고창, 옷이 0벌일 때 새 옷 입기, 확정하기와 즐겨찾기 넣기의 코디 구성 검사 더함. D-006), 재승인 (2026-10-20), 수정 (2026-10-20: §10 날씨 배경 가짓수를 DESIGN에 맞춰 정함), 재승인 (2026-10-20), 수정 (2026-10-20: §2.1 응답의 실제 모양과 §12 요청 주소 더함, P-12), 재승인 (2026-10-20), 수정 (2026-10-20: §10 사진 파일 종류와 크기 정함, P-15), 재승인 (2026-10-20), 수정 (2026-10-21: §8 지역 목록, 지울 수 없음의 used_by, 더하기의 gender_failed와 confirmed, P-16), 재승인 (2026-10-21), 수정 (2026-10-21: P-17에서 날씨 받기와 점수 확인하기의 칸 이름, 현재 위치를 미룸), 재승인 (2026-10-21)
+- 상태: 초안 (2026-10-20), 승인됨 (2026-10-20), 수정 (2026-10-20: TEST-PLAN을 쓰며 이름 띄어쓰기 정리와 빈 이름 실패, 필수 키워드 경고창, 옷이 0벌일 때 새 옷 입기, 확정하기와 즐겨찾기 넣기의 코디 구성 검사 더함. D-006), 재승인 (2026-10-20), 수정 (2026-10-20: §10 날씨 배경 가짓수를 DESIGN에 맞춰 정함), 재승인 (2026-10-20), 수정 (2026-10-20: §2.1 응답의 실제 모양과 §12 요청 주소 더함, P-12), 재승인 (2026-10-20), 수정 (2026-10-20: §10 사진 파일 종류와 크기 정함, P-15), 재승인 (2026-10-20), 수정 (2026-10-21: §8 지역 목록, 지울 수 없음의 used_by, 더하기의 gender_failed와 confirmed, P-16), 재승인 (2026-10-21), 수정 (2026-10-21: P-17에서 날씨 받기와 점수 확인하기의 칸 이름, 현재 위치를 미룸), 재승인 (2026-10-21), 수정 (2026-10-21: P-18에서 추천받기의 칸 이름), 재승인 (2026-10-21)
 - 근거 결정: [DECISIONS.md](DECISIONS.md)의 D-002, D-003, D-004, D-005, D-006
 - 관련 작업: [PLAN.md](PLAN.md)의 P-08
 - 기준 문서: [SCREEN-SPEC.md](SCREEN-SPEC.md), [PRD.md](PRD.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DATA-MODEL.md](DATA-MODEL.md)
@@ -277,7 +277,7 @@ SCREEN-SPEC에 있지만 화면 안에서만 바뀌는 행동입니다.
 | 4 | [✕]로 창 닫기 (임시 사진 버리기) | `DELETE /api/uploads/{id}` |
 | 2.4 | 사진과 2D 이미지 받아 오기 | `GET /api/photos/{파일 이름}` |
 | 5.1 | 날짜 바꾸기, 지역 바꾸기 (날씨 받기). 묻는 값: `date` (YYYY-MM-DD), `region` (사용자가 바꾼 지역일 때만) | `GET /api/weather` |
-| 5.2 | 추천받기 / 점수 확인하기. 점수 확인하기가 보내는 것: `outfit` (`top`, `bottom`, `dress`, `shoes`, `outer`. 아우터 "입지 않음"은 비움), `date`, `region` (바꾼 지역일 때만), `tag_id` (없을 수 있음). 받는 것: `weather`, `result` | `POST /api/recommendations` / `POST /api/scores` |
+| 5.2 | 추천받기 / 점수 확인하기. 추천받기가 보내는 것: `date`, `region` (바꾼 지역일 때만), `tag_id` (없으면 실패 `tag_required`). 받는 것: `weather`, `outfits` (코디마다 `outfit`, `score`, `note_type`, `summary`, `details`, 즐겨찾기 표시 `favorite_id`), 3벌 미만 표시 `fewer_than_three`, 옷이 부족하면 `insufficient` (`missing`: 먼저 등록할 구분, `dress_alternative`: 원피스로도 채울 수 있는지. 이때 `weather`는 없음). 점수 확인하기가 보내는 것: `outfit` (`top`, `bottom`, `dress`, `shoes`, `outer`. 아우터 "입지 않음"은 비움), `date`, `region` (바꾼 지역일 때만), `tag_id` (없을 수 있음). 받는 것: `weather`, `result` | `POST /api/recommendations` / `POST /api/scores` |
 | 5.3 | 확정하기. [바꾸기]는 같은 내용에 `"confirmed": true`를 붙여 다시 보냄 | `POST /api/diary` |
 | 6 | 코디 일기 목록 / 입혀 보기 / 지우기 | `GET /api/diary` / `POST /api/diary/{id}/try-on` / `DELETE /api/diary/{id}` |
 | 5.4 | 즐겨찾기 넣기 (점수 확인 단계, 추천 카드) / 코디 일기 카드에서 넣기 / 빼기 | `POST /api/favorites` / `POST /api/favorites/from-diary/{id}` / `DELETE /api/favorites/{id}` |

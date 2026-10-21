@@ -3,6 +3,7 @@ import Button from './Button.jsx'
 import ErrorLine from './ErrorLine.jsx'
 
 // 조건 띠: 날짜, 지역, 날씨, 스타일 태그, [추천받기] (SCREEN-SPEC §5.1)
+// recommending: 추천을 기다리는 동안 "추천을 고르는 중…"이 보이고 다시 누를 수 없습니다. (SCREEN-SPEC §2.7)
 // locked: 점수 확인 단계에서는 잠깁니다. 바꾸려면 [수정하기]로 돌아갑니다.
 // weather: { data, loading, error } — data는 API-SPEC §2.4의 날씨 묶음
 function ConditionBar({
@@ -17,6 +18,8 @@ function ConditionBar({
   tags,
   tagId,
   onTag,
+  onRecommend,
+  recommending,
   locked,
 }) {
   const w = weather.data
@@ -78,9 +81,8 @@ function ConditionBar({
             </option>
           ))}
         </select>
-        {/* 추천받기는 P-18에서 붙입니다. (사람이 정함, 2026-10-21) */}
-        <Button disabled title="준비 중이에요">
-          추천받기 (준비 중)
+        <Button disabled={locked || recommending} onClick={onRecommend}>
+          {recommending ? '추천을 고르는 중…' : '추천받기'}
         </Button>
       </div>
       {weather.error && <ErrorLine message={weather.error} onRetry={onRetryWeather} />}
