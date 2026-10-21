@@ -43,8 +43,11 @@ python -m venv .venv
 
 ```bash
 cd web
-npm install
+npm ci
 ```
+
+- `python` 명령이 버전을 보여 주지 않으면(Windows 스토어 바로가기) `python` 대신 `py -3.12`를 씁니다. (예: `py -3.12 -m venv .venv`)
+- `npm ci`는 `package-lock.json`에 적힌 버전 그대로 설치합니다.
 
 ## 실행 방법
 
@@ -74,7 +77,7 @@ npm run dev
 1. AWS 콘솔에서 직접 합니다. (AI는 계정 작업과 키 입력을 하지 않습니다.)
    - Amazon Bedrock 콘솔에서 Nova Lite를 쓸 수 있는지 확인합니다.
    - Bedrock API 키를 만듭니다.
-2. `server/.env` 파일을 만들고 아래 값을 적습니다. 이 파일은 git에 올라가지 않습니다. (D-004)
+2. `server/.env.example`을 복사해 `server/.env`를 만들고, 키를 채운 뒤 `AI_PROVIDER`를 `bedrock`으로 바꿉니다. `.env`는 git에 올라가지 않습니다. (D-004) 채운 모습은 아래와 같습니다.
 
 ```
 AI_PROVIDER=bedrock
@@ -89,7 +92,8 @@ OPENWEATHERMAP_API_KEY=<OpenWeatherMap API 키>
 - `AI_PROVIDER`: `bedrock`이면 진짜 AI, 없거나 `fake`면 가짜 AI
 - `AWS_REGION`, `BEDROCK_MODEL_ID`: 적지 않으면 위의 값을 씁니다. 서울은 Nova Lite를 바로 쓸 수 없어 아시아·태평양 묶음(`apac.`)으로 부르며, 요청은 도쿄, 서울, 오사카, 뭄바이, 싱가포르, 시드니 중 한 곳에서 처리될 수 있습니다.
 - 값을 바꾼 뒤에는 서버를 다시 켭니다.
-- 지금(P-23)은 연결만 준비했고, AI가 하는 일은 P-24 ~ P-27에서 하나씩 Bedrock으로 옮깁니다. 옮기기 전까지는 `AI_PROVIDER=bedrock`이어도 가짜 AI가 답합니다.
+- 지금 `AI_PROVIDER=bedrock`이면 종류 단어의 성별, 비슷한 단어 판단, 코디 점수는 Nova Lite가 답합니다 (P-24, P-25). 코디 추천과 사진 키워드 미리 고르기는 P-26, P-27에서 옮기며, 그 전까지는 가짜 AI가 답합니다.
+- git에서 새로 받은 PC에는 `server/.env`가 없습니다. 위 순서대로 직접 다시 만들어 넣습니다. 없으면 가짜 AI로 켜집니다.
 
 ## 확인과 기록
 
