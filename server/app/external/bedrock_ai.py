@@ -21,28 +21,36 @@ from . import ExternalError
 DEFAULT_REGION = "ap-northeast-2"
 DEFAULT_MODEL_ID = "apac.amazon.nova-lite-v1:0"
 
-_client = None
+# 실패로 볼 때까지 기다리는 시간(초). API-SPEC §2.3 (P-28에서 잰 시간으로 정함, 사람이 정함 2026-10-21)
+TIMEOUTS = {"similar": 10, "gender": 5, "pick": 10, "score": 15, "recommend": 20, "ping": 10}
+
+_clients = {}
 
 
-def _get_client():
-    """Bedrock 런타임 클라이언트. 처음 부를 때 한 번 만듭니다."""
-    global _client
-    if _client is None:
+def _get_client(timeout: int):
+    """Bedrock 런타임 클라이언트. 기다리는 시간마다 처음 부를 때 한 번 만듭니다.
+
+    자동으로 한 번 더 하지 않습니다 (모두 1번, total_max_attempts 1). 화면에 [다시 시도]가 있고,
+    다시 하면 기다리는 시간이 두 배가 되기 때문입니다. (사람이 정함, 2026-10-21)
+    botocore의 max_attempts는 "다시 하는 횟수"라서 1이어도 모두 2번 부릅니다. 그래서 total_max_attempts를 씁니다.
+    """
+    if timeout not in _clients:
         region = os.environ.get("AWS_REGION", DEFAULT_REGION)
-        # 실패로 볼 때까지 기다리는 시간은 API-SPEC §2.3을 따르도록 일마다 정합니다. (P-28에서 다시 맞춤)
-        config = Config(connect_timeout=5, read_timeout=60, retries={"max_attempts": 2})
-        _client = boto3.client("bedrock-runtime", region_name=region, config=config)
-    return _client
+        config = Config(connect_timeout=min(5, timeout), read_timeout=timeout,
+                        retries={"total_max_attempts": 1})
+        _clients[timeout] = boto3.client("bedrock-runtime", region_name=region, config=config)
+    return _clients[timeout]
 
 
 def model_id() -> str:
     return os.environ.get("BEDROCK_MODEL_ID", DEFAULT_MODEL_ID)
 
 
-def converse_text(system: str, user_text: str, max_tokens: int = 512) -> str:
+def converse_text(system: str, user_text: str, max_tokens: int = 512,
+                  timeout: int = TIMEOUTS["ping"]) -> str:
     """글 한 덩어리를 보내고 글 답을 받습니다. 실패하면 ExternalError("ai_failed")."""
     try:
-        response = _get_client().converse(
+        response = _get_client(timeout).converse(
             modelId=model_id(),
             system=[{"text": system}],
             messages=[{"role": "user", "content": [{"text": user_text}]}],
@@ -60,7 +68,7 @@ def ping() -> str:
 
 
 def converse_tool(system: str, user_text, tool_name: str, description: str,
-                  schema: dict, max_tokens: int = 300) -> dict:
+                  schema: dict, timeout: int, max_tokens: int = 300) -> dict:
     """"답하기" 도구 하나를 꼭 쓰게 해서 정해진 모양(JSON)의 답을 받습니다.
 
     Nova Lite는 Bedrock의 structured outputs를 지원하지 않아 도구 입력으로 받습니다. (D-013)
@@ -68,11 +76,13 @@ def converse_tool(system: str, user_text, tool_name: str, description: str,
     stop sequence "</tool>"를 둡니다. (Amazon Nova 사용자 안내서 "Choosing a tool")
     같은 질문에 같은 답이 나오도록 temperature는 0으로 둡니다.
     user_text: 글 한 덩어리, 또는 글과 사진 블록의 목록 (사진은 P-25부터)
+    timeout: 실패로 볼 때까지 기다리는 시간(초). TIMEOUTS에서 일마다 고릅니다.
     돌려주는 것: 도구 입력(dict). 실패하면 ExternalError. 값이 맞는지는 ai.py가 검사합니다.
+    시간을 넘기면 botocore의 ReadTimeoutError(BotoCoreError)가 나서 ExternalError가 됩니다.
     """
     content = [{"text": user_text}] if isinstance(user_text, str) else user_text
     try:
-        response = _get_client().converse(
+        response = _get_client(timeout).converse(
             modelId=model_id(),
             system=[{"text": system}],
             messages=[{"role": "user", "content": content}],
@@ -113,7 +123,7 @@ def decide_gender(word, category):
         {"type": "object",
          "properties": {"gender": {"type": "string", "enum": ["female", "male", "both"]}},
          "required": ["gender"]},
-        max_tokens=100,
+        timeout=TIMEOUTS["gender"], max_tokens=100,
     )
     return answer.get("gender")
 
@@ -145,7 +155,7 @@ def find_similar(name, candidates):
          "properties": {"existing": {"type": "string",
                                      "description": "목록에 적힌 그대로의 이름, 없으면 빈 문자열"}},
          "required": ["existing"]},
-        max_tokens=100,
+        timeout=TIMEOUTS["similar"], max_tokens=100,
     )
     return answer.get("existing") or None
 
@@ -191,7 +201,7 @@ def pick_keywords(photo_path, candidates):
          "properties": {"category": {"type": "string", "enum": list(SLOT_NAMES)},
                         **{field: id_list for field in PICK_KINDS}},
          "required": ["category", *PICK_KINDS]},
-        max_tokens=300,
+        timeout=TIMEOUTS["pick"], max_tokens=300,
     )
     keyword_ids = []
     for field in PICK_KINDS:
@@ -256,7 +266,7 @@ def recommend(closet, weather, tag):
              },
              "required": ["kind", *SLOT_NAMES, "weather_fit", "tag_fit", "score", "summary", "details"]}}},
          "required": ["outfits"]},
-        max_tokens=2000,
+        timeout=TIMEOUTS["recommend"], max_tokens=2000,
     )
     results = []
     for item in answer.get("outfits") or []:
@@ -369,6 +379,6 @@ def score(outfit, weather, tag, items=None):
                          "required": worn},
          },
          "required": ["weather_fit", "tag_fit", "harmony", "score", "summary", "details"]},
-        max_tokens=600,
+        timeout=TIMEOUTS["score"], max_tokens=600,
     )
     return answer
