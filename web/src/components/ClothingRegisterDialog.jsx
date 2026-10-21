@@ -229,7 +229,10 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onR
 
         {upload && (
           <div className="dialog__actions">
-            {registerError && <ErrorLine message={registerError} />}
+            {/* 등록 실패: 한 줄과 [다시 시도] (SCREEN-SPEC §2.7, T-59) */}
+            {registerError && (
+              <ErrorLine message={registerError} onRetry={registering ? undefined : handleRegister} />
+            )}
             <Button variant="primary" disabled={registering} onClick={handleRegister}>
               {registering ? '등록하는 중…' : '등록하기'}
             </Button>

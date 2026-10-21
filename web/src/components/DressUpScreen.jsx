@@ -81,6 +81,8 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
   const [favoriteError, setFavoriteError] = useState(null)
   // 확정한 뒤 화면에 옷 그림을 넘길 때 씁니다.
   const imageOfRef = useRef({})
+  // 마지막으로 보낸 확정하기 요청 내용
+  const lastConfirm = useRef(null)
 
   // 가장 마지막에 보낸 날씨 요청만 반영합니다. (날짜를 빠르게 바꿀 때)
   const weatherSeq = useRef(0)
@@ -186,6 +188,8 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
   // 확정하기: 화면이 들고 있던 코디, 날짜, 날씨, 태그, 점수 결과를 보냅니다. (D-006)
   // 같은 날짜에 기록이 있으면 묻고, [바꾸기]를 누르면 "확인함"을 붙여 다시 보냅니다.
   async function sendConfirm(body) {
+    // 실패하면 [다시 시도]가 같은 내용(같은 날짜 [바꾸기]였으면 "확인함"까지)을 다시 보냅니다. (SCREEN-SPEC §2.7, T-58)
+    lastConfirm.current = body
     setConfirming(true)
     setConfirmError(null)
     const res = await api.confirmOutfit(body)
@@ -411,7 +415,12 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
           </p>
         )}
         {recommendError && <ErrorLine message={recommendError} onRetry={requestRecommend} />}
-        {confirmError && <ErrorLine message={confirmError} />}
+        {confirmError && (
+          <ErrorLine
+            message={confirmError}
+            onRetry={confirming ? undefined : () => sendConfirm(lastConfirm.current)}
+          />
+        )}
         {favoriteError && <ErrorLine message={favoriteError} />}
         <div className="dressup__body">
           {recommendStage ? (
