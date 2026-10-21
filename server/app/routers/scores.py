@@ -7,11 +7,13 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
+from .. import photos
 from ..db import get_session
 from ..external import ExternalError, ai
 from ..models import Clothing, StyleTag
 from ..responses import ApiError, ok
 from ..rules import SLOTS, check_outfit, particle
+from .recommendations import closet_for_ai
 from .weather import daily_weather
 
 router = APIRouter(prefix="/api/scores")
@@ -55,6 +57,25 @@ def check_outfit_or_fail(session: Session, outfit: dict) -> None:
         raise ApiError(problem, OUTFIT_ERRORS[problem])
 
 
+def outfit_items(session: Session, outfit: dict) -> list[dict]:
+    """AI에 넘길 칸마다의 옷 정보: 칸, 구분, 키워드, 2D 이미지 파일 (P-25, 사람이 정함 2026-10-21)"""
+    closet = {c["id"]: c for c in closet_for_ai(session)}
+    clothes = {c.id: c for c in session.exec(
+        select(Clothing).where(Clothing.id.in_([i for i in outfit.values() if i is not None]))).all()}
+    items = []
+    for slot in SLOTS:
+        clothing_id = outfit.get(slot)
+        if clothing_id is None:
+            continue
+        items.append({
+            "slot": slot,
+            "category": clothes[clothing_id].category,
+            "keywords": closet.get(clothing_id, {}).get("keywords", {}),
+            "image_path": photos.find_file(clothes[clothing_id].image_path),
+        })
+    return items
+
+
 @router.post("")
 def score_outfit(body: ScoreIn, session: Session = Depends(get_session)):
     outfit = body.outfit.model_dump()
@@ -67,7 +88,7 @@ def score_outfit(body: ScoreIn, session: Session = Depends(get_session)):
 
     weather = daily_weather(session, body.day, body.region)
     try:
-        result = ai.score(outfit, weather, tag.name if tag else None)
+        result = ai.score(outfit, weather, tag.name if tag else None, outfit_items(session, outfit))
     except ExternalError:
         raise ApiError("score_failed", "점수를 받지 못했어요.", 502)
     return ok({"weather": weather, "result": result})

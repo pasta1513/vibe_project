@@ -103,18 +103,23 @@ def recommend(closet: list[dict], weather: dict, tag: str) -> list[dict]:
     return results
 
 
-def score(outfit: dict, weather: dict, tag) -> dict:
+def score(outfit: dict, weather: dict, tag, items: list[dict] | None = None) -> dict:
     """코디 한 벌의 점수와 코멘트를 받습니다. 태그가 없으면(None) 태그 기준은 빼고 묻습니다.
 
+    items: 칸마다 옷 정보 {"slot", "category", "keywords", "image_path"} (P-25)
     돌려주는 것: {"score", "note_type": "comment", "summary", "details"}
     점수가 범위 밖이면 ExternalError("ai_invalid")를 냅니다.
+    입지 않은 칸의 평가는 버립니다.
     """
-    answer = provider.score(outfit, weather, tag)
+    answer = provider.score(outfit, weather, tag, items or [])
     if not answer or not _valid_score(answer.get("score")) or not answer.get("summary"):
         raise ExternalError("ai_invalid")
+    worn = {slot for slot, clothing_id in outfit.items() if clothing_id is not None}
+    details = answer.get("details") or {}
     return {
         "score": round(answer["score"], 1),
         "note_type": "comment",
         "summary": answer["summary"],
-        "details": answer.get("details") or {},
+        "details": {slot: text for slot, text in details.items()
+                    if slot in worn and isinstance(text, str) and text},
     }

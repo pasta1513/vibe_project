@@ -77,7 +77,7 @@ def recommend(closet, weather, tag):
     return outfits
 
 
-def score(outfit, weather, tag):
+def score(outfit, weather, tag, items=None):
     if should_fake_fail("score"):
         raise ExternalError("ai_failed")
     return {
