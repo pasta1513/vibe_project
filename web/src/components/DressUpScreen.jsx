@@ -80,7 +80,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
   const [favoriting, setFavoriting] = useState(false)
   const [favoriteError, setFavoriteError] = useState(null)
   // 확정한 뒤 화면에 옷 그림을 넘길 때 씁니다.
-  const imageOfRef = useRef({})
+  const clothingOfRef = useRef({})
   // 마지막으로 보낸 확정하기 요청 내용
   const lastConfirm = useRef(null)
 
@@ -202,9 +202,9 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
       setConfirmError(res.error.message)
       return
     }
-    imageOfRef.current = imageOf
+    clothingOfRef.current = clothingOf
   const worn = Object.fromEntries(
-      Object.entries(body.outfit).map(([slot, id]) => [slot, id ? imageOfRef.current[id] : null]),
+      Object.entries(body.outfit).map(([slot, id]) => [slot, id ? clothingOfRef.current[id] : null]),
     )
     if (!body.outfit.outer) worn.outer = 'none'
     onConfirmed({ date: res.data.date, weather: res.data.weather, worn })
@@ -342,12 +342,12 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
 
   if (!clothes) return null
 
-  // 마네킹에 올릴 2D 이미지 주소
-  const imageOf = Object.fromEntries(
-    CATEGORIES.flatMap((c) => clothes[c.code].map((item) => [item.id, item.image_url])),
+  // 마네킹에 입힐 옷 한 벌 정보 (의상 틀, 대표 색, 2D 이미지 주소, D-016)
+  const clothingOf = Object.fromEntries(
+    CATEGORIES.flatMap((c) => clothes[c.code].map((item) => [item.id, item])),
   )
   const worn = Object.fromEntries(
-    Object.entries(outfit).map(([slot, id]) => [slot, id === 'none' ? 'none' : id ? imageOf[id] : null]),
+    Object.entries(outfit).map(([slot, id]) => [slot, id === 'none' ? 'none' : id ? clothingOf[id] : null]),
   )
   const scoreStage = stage === 'score'
   const recommendStage = stage === 'recommend'
@@ -426,7 +426,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
           {recommendStage ? (
             <RecommendList
               recommendation={recommendation.data}
-              imageOf={imageOf}
+              clothingOf={clothingOf}
               mannequin={mannequin}
               onTryOn={tryOn}
               tagId={recommendation.conditions.tagId}

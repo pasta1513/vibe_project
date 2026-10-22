@@ -6,19 +6,30 @@ import Button from './Button.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import KeywordChips from './KeywordChips.jsx'
+import Mannequin from './Mannequin.jsx'
 import WordAdder, { GENDER_FAILED } from './WordAdder.jsx'
 
 // 옷 등록 창 (SCREEN-SPEC §6.2)
 // [+ 더하기]로 더한 단어는 이 창의 목록에 바로 붙고 켜진 채로 보입니다. 구분 줄에는 [+ 더하기]가 없습니다.
 const EMPTY_PICK = { category: null, color: [], type: [], material: [], season: [], pattern: [] }
 
-function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onRegistered }) {
+// 서버(outfits.py)와 같은 규칙으로 의상 틀을 고릅니다: 표에서 위에 있는 틀, 맞는 단어가 없으면 구분의 기본 틀 (D-016)
+function pickTemplate(table, category, typeNames) {
+  const found = table.templates.find(
+    (t) => t.category === category && t.types.some((name) => typeNames.includes(name)),
+  )
+  return found ? found.code : table.defaults[category]
+}
+
+function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTable, onClose, onRegistered }) {
+  const { gender } = mannequin
   const fileInput = useRef(null)
-  const [upload, setUpload] = useState(null) // { upload_id, photo_url, image_url }
+  const [upload, setUpload] = useState(null) // { upload_id, photo_url, image_url, main_color }
   const [lastFile, setLastFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null) // { message, retry }
-  const [showOriginal, setShowOriginal] = useState(false)
+  // 왼쪽에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진, 'mannequin' 마네킹에 입혀 보기 (D-016)
+  const [view, setView] = useState('image')
   const [pickFailed, setPickFailed] = useState(false)
   const [pick, setPick] = useState(EMPTY_PICK)
   const [alert, setAlert] = useState(null)
@@ -46,7 +57,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onR
     }
     const data = res.data
     setUpload(data)
-    setShowOriginal(false)
+    setView('image')
     if (data.picked) {
       // AI가 미리 고른 구분과 키워드를 켭니다.
       const byId = Object.fromEntries(
@@ -124,6 +135,19 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onR
     onClose()
   }
 
+  // 마네킹 미리보기: 고른 구분과 종류로 틀을 정하고 대표 색으로 입힙니다. 원피스는 상의·하의 칸을 함께 차지합니다.
+  const typeNames = keywords.type.filter((t) => pick.type.includes(t.id)).map((t) => t.name)
+  const preview =
+    upload && outfitTable && pick.category && typeNames.length > 0
+      ? {
+          [pick.category]: {
+            image_url: upload.image_url,
+            main_color: upload.main_color,
+            outfit_template: pickTemplate(outfitTable, pick.category, typeNames),
+          },
+        }
+      : null
+
   const types = sortTypesByGender(
     keywords.type.filter((t) => t.category === pick.category),
     gender,
@@ -151,13 +175,27 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onR
             {upload ? (
               <>
                 <div className="photo-box">
-                  <img
-                    src={showOriginal ? upload.photo_url : upload.image_url}
-                    alt={showOriginal ? '원래 사진' : '2D 이미지'}
-                  />
+                  {view === 'mannequin' ? (
+                    preview ? (
+                      <Mannequin className="photo-box__mannequin" {...mannequin} outfit={preview} title="옷을 입힌 미리보기" />
+                    ) : (
+                      <p className="sub-text">구분과 종류를 고르면 보여요.</p>
+                    )
+                  ) : (
+                    <img
+                      src={view === 'original' ? upload.photo_url : upload.image_url}
+                      alt={view === 'original' ? '원래 사진' : '2D 이미지'}
+                    />
+                  )}
                 </div>
-                <Button onClick={() => setShowOriginal(!showOriginal)}>
-                  {showOriginal ? '2D 이미지 보기' : '원래 사진 보기'}
+                {view === 'mannequin' && (
+                  <p className="sub-text">작은 글자나 로고는 정확하지 않을 수 있어요.</p>
+                )}
+                <Button onClick={() => setView(view === 'original' ? 'image' : 'original')}>
+                  {view === 'original' ? '2D 이미지 보기' : '원래 사진 보기'}
+                </Button>
+                <Button onClick={() => setView(view === 'mannequin' ? 'image' : 'mannequin')}>
+                  {view === 'mannequin' ? '2D 이미지 보기' : '마네킹에 입혀 보기'}
                 </Button>
                 <Button disabled={uploading} onClick={() => fileInput.current.click()}>
                   사진 다시 올리기

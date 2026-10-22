@@ -52,6 +52,7 @@ async def upload_photo(file: UploadFile = File(...),
         "upload_id": upload_id,
         "photo_url": photos.url_for(original.name),
         "image_url": photos.url_for(image.name),
+        "main_color": imaging.main_color(image),
         "picked": picked,
     })
 

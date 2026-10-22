@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import Session, select
 
-from .. import photos
+from .. import outfits, photos
 from ..db import get_session
+from ..external import imaging
 from ..models import CATEGORIES, Clothing, ClothingKeyword, Keyword
 from ..responses import ApiError, ok
 from .keywords import keyword_data
@@ -40,6 +41,9 @@ def clothing_summary(clothing: Clothing) -> dict:
         "category": clothing.category,
         "image_url": photos.url_for(clothing.image_path),
         "is_deleted": clothing.is_deleted,
+        # 마네킹에 입힐 캐릭터 의상 (D-016)
+        "outfit_template": clothing.outfit_template,
+        "main_color": clothing.main_color,
     }
 
 
@@ -113,8 +117,11 @@ def register_clothing(body: ClothingIn, session: Session = Depends(get_session))
     if set(files) != {"original", "image"}:
         raise ApiError("upload_missing", "올린 사진이 없어졌어요. 사진을 다시 올려 주세요.")
 
+    type_names = [k.name for k in keywords if k.kind == "type"]
     clothing = Clothing(category=body.category, photo_path=files["original"].name,
-                        image_path=files["image"].name)
+                        image_path=files["image"].name,
+                        outfit_template=outfits.pick_template(body.category, type_names),
+                        main_color=imaging.main_color(files["image"]))
     session.add(clothing)
     session.flush()
     for keyword in keywords:

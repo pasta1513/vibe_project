@@ -42,6 +42,9 @@ class Clothing(SQLModel, table=True):
     category: str = Field(index=True)
     photo_path: str
     image_path: str
+    # 캐릭터 의상 (D-016). P-31 전에 만든 DB에는 서버를 켤 때 칸을 더하고 채웁니다 (db.py).
+    outfit_template: Optional[str] = None
+    main_color: Optional[str] = None
     is_deleted: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

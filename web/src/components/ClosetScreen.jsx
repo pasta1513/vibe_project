@@ -7,7 +7,7 @@ import ClothingRegisterDialog from './ClothingRegisterDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
 
 // 옷장 (옷 관리): 옷장이 화면 전체로 커집니다. (SCREEN-SPEC §6.1)
-function ClosetScreen({ gender, showToast }) {
+function ClosetScreen({ mannequin, outfitTable, showToast }) {
   const [clothes, setClothes] = useState(null)
   const [keywords, setKeywords] = useState(null)
   const [error, setError] = useState(null)
@@ -96,7 +96,8 @@ function ClosetScreen({ gender, showToast }) {
       {registering && keywords && (
         <ClothingRegisterDialog
           keywords={keywords}
-          gender={gender}
+          mannequin={mannequin}
+          outfitTable={outfitTable}
           onClose={() => {
             // 등록 창에서 [+ 더하기]로 더한 단어가 옷 상세에도 보이도록 목록을 다시 받습니다.
             setRegistering(false)

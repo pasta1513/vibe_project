@@ -16,7 +16,7 @@ function tiltOf(id) {
 
 function DiaryCard({ entry, onTryOn, onDelete, onFavorite }) {
   const worn = Object.fromEntries(
-    Object.entries(entry.outfit).map(([slot, item]) => [slot, item ? item.image_url : null]),
+    Object.entries(entry.outfit).map(([slot, item]) => [slot, item ?? null]),
   )
   if (!entry.outfit.outer) worn.outer = 'none'
   const look = WEATHER_LABEL[entry.weather.condition]

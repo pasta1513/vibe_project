@@ -7,7 +7,7 @@ import { NoteToggle, Stars } from './ScoreCard.jsx'
 
 // 추천 보기 (SCREEN-SPEC §5.3): 추천 코디를 입은 마네킹이 가로로 최대 3개 놓입니다.
 // recommendation: API-SPEC §5.2 추천받기의 받는 것 { outfits, fewer_than_three, insufficient }
-// imageOf: 옷 번호 → 2D 이미지 주소
+// clothingOf: 옷 번호 → 옷 한 벌 정보 (마네킹에 입힘, D-016)
 
 // 받침이 있으면 "을", 없으면 "를"
 function objectParticle(word) {
@@ -27,10 +27,10 @@ function missingText({ missing, dress_alternative: dressAlternative }) {
   return `${parts.join(', ')}${objectParticle(lastWord)}`
 }
 
-function RecommendCard({ item, imageOf, mannequin, index, tagId, onTryOn, onConfirm, confirming, onFavorite }) {
+function RecommendCard({ item, clothingOf, mannequin, index, tagId, onTryOn, onConfirm, confirming, onFavorite }) {
   const { outfit } = item
   const worn = Object.fromEntries(
-    Object.entries(outfit).map(([slot, id]) => [slot, id ? imageOf[id] : null]),
+    Object.entries(outfit).map(([slot, id]) => [slot, id ? clothingOf[id] : null]),
   )
   // 아우터가 없는 코디는 아우터 칸이 처음부터 "입지 않음"입니다. (PRD §5 추천 결과)
   if (!outfit.outer) worn.outer = 'none'
@@ -58,7 +58,7 @@ function RecommendCard({ item, imageOf, mannequin, index, tagId, onTryOn, onConf
 
 function RecommendList({
   recommendation,
-  imageOf,
+  clothingOf,
   mannequin,
   onTryOn,
   tagId,
@@ -86,7 +86,7 @@ function RecommendList({
             key={index}
             item={item}
             index={index}
-            imageOf={imageOf}
+            clothingOf={clothingOf}
             mannequin={mannequin}
             onTryOn={onTryOn}
             tagId={tagId}

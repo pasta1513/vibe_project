@@ -3,7 +3,8 @@ import { useId } from 'react'
 // 마네킹과 기본 잠옷 (DESIGN §5.1, §5.2).
 // 성별마다 기본 그림 하나를 두고, 키와 체형은 비율로 늘이거나 줄입니다. 머리는 그대로 둡니다.
 //
-// outfit: 칸마다 옷의 2D 이미지 주소. { top, bottom, dress, shoes, outer }
+// outfit: 칸마다 옷 한 벌 정보 { image_url, outfit_template, main_color }. { top, bottom, dress, shoes, outer }
+//   의상 틀이 있으면 캐릭터 의상으로 그리고(D-016), 없으면 2D 이미지를 얹습니다. 2D 이미지 주소(문자열)도 받습니다.
 //   비어 있으면 null, 아우터 "입지 않음"은 'none'. 원피스는 상의와 하의 칸을 함께 차지합니다. (PRD §6 마네킹)
 // showEmpty: 빈 칸에 점선과 "하의를 골라 주세요"를 겹쳐 보입니다. (SCREEN-SPEC §2.5, DESIGN §4.1)
 // fadedSlots: 지운 옷이 든 칸. 그 옷을 흐리게 보입니다. (SCREEN-SPEC §2.4)
@@ -73,6 +74,124 @@ function Hair({ gender, back }) {
   // 짧은 머리
   return back ? null : (
     <path d="M -42 44 A 42 42 0 0 1 42 44 Q 34 24 4 24 Q -30 22 -42 44 Z" fill={HAIR} />
+  )
+}
+
+// 대표 색을 조금 어둡게 한 테두리 색 (DESIGN §5.5)
+function darker(hex, amount = 0.3) {
+  const n = parseInt(hex.slice(1), 16)
+  const ch = (shift) => Math.round(((n >> shift) & 255) * (1 - amount))
+  return `rgb(${ch(16)}, ${ch(8)}, ${ch(0)})`
+}
+
+// 캐릭터 의상 틀 9개 (D-016, DESIGN §5.5). 잠옷처럼 마네킹의 몸 치수로 그려서 18가지 모양에 저절로 맞습니다.
+// 돌려주는 것: 틀을 이루는 path 목록
+function outfitPaths(template, d) {
+  const { sh, wa, hip, sy, waistY, hipY, armX, armW, armTop, wristY, legX, legW, pantW, ankleY } = d
+  const legLen = ankleY - hipY
+  const sleeve = (bottomY, extra = 0) =>
+    [-1, 1].map((s) => {
+      const x = s * armX - (armW + extra) / 2
+      const w = armW + extra
+      const r = w / 2
+      return `M ${x} ${armTop + r} A ${r} ${r} 0 0 1 ${x + w} ${armTop + r} L ${x + w} ${bottomY} L ${x} ${bottomY} Z`
+    })
+  const legs = (bottomY) => [
+    `M ${-hip} ${hipY - 10} L ${hip} ${hipY - 10} L ${hip} ${hipY + 16} L ${-hip} ${hipY + 16} Z`,
+    ...[-1, 1].map((s) => {
+      const x = s * legX - pantW / 2
+      return `M ${x} ${hipY} L ${x + pantW} ${hipY} L ${x + pantW} ${bottomY} L ${x} ${bottomY} Z`
+    }),
+  ]
+  // 앞이 열린 아우터의 한쪽 판. s = -1(왼쪽), 1(오른쪽)
+  const outerHalf = (s, hemY) => {
+    const p = (x, y) => `${s * x} ${y}`
+    return [
+      `M ${p(13, sy - 1)}`,
+      `L ${p(sh + 3, sy + 1)}`,
+      `Q ${p(sh + 5, sy + 2)} ${p(sh + 5, sy + 10)}`,
+      `Q ${p(sh + 5, (sy + 10 + waistY) / 2)} ${p(wa + 5, waistY)}`,
+      `Q ${p(hip + 6, (waistY + hipY) / 2)} ${p(hip + 6, hipY)}`,
+      `L ${p(hip + 7, hemY)}`,
+      `L ${p(3, hemY)}`,
+      `L ${p(3, sy + 42)}`,
+      'Z',
+    ].join(' ')
+  }
+  switch (template) {
+    case 'top_short':
+      return [...sleeve(armTop + (wristY - armTop) * 0.38, 4), torsoPath(sh, wa, hip, sy, waistY, hipY)]
+    case 'top_long':
+      return [...sleeve(wristY), torsoPath(sh, wa, hip, sy, waistY, hipY)]
+    case 'bottom_pants':
+      return legs(ankleY)
+    case 'bottom_shorts':
+      return legs(hipY + legLen * 0.32)
+    case 'bottom_skirt': {
+      const hem = hipY + legLen * 0.5
+      const flare = hip * 1.4
+      return [
+        `M ${-wa - 2} ${hipY - 12} L ${wa + 2} ${hipY - 12} L ${flare} ${hem - 4} Q ${flare} ${hem} ${flare - 4} ${hem} L ${-flare + 4} ${hem} Q ${-flare} ${hem} ${-flare} ${hem - 4} Z`,
+      ]
+    }
+    case 'dress': {
+      const hem = hipY + legLen * 0.62
+      const flare = hip * 1.45
+      return [
+        ...sleeve(armTop + (wristY - armTop) * 0.3, 4),
+        [
+          `M ${-sh + 6} ${sy}`,
+          `L ${sh - 6} ${sy}`,
+          `Q ${sh} ${sy} ${sh} ${sy + 8}`,
+          `Q ${sh} ${(sy + 8 + waistY) / 2} ${wa} ${waistY}`,
+          `L ${flare} ${hem - 4}`,
+          `Q ${flare} ${hem} ${flare - 4} ${hem}`,
+          `L ${-flare + 4} ${hem}`,
+          `Q ${-flare} ${hem} ${-flare} ${hem - 4}`,
+          `L ${-wa} ${waistY}`,
+          `Q ${-sh} ${(sy + 8 + waistY) / 2} ${-sh} ${sy + 8}`,
+          `Q ${-sh} ${sy} ${-sh + 6} ${sy}`,
+          'Z',
+        ].join(' '),
+      ]
+    }
+    case 'outer_short':
+    case 'outer_long': {
+      const hem = template === 'outer_long' ? hipY + legLen * 0.55 : hipY + 22
+      return [...sleeve(wristY + 2, 5), outerHalf(-1, hem), outerHalf(1, hem)]
+    }
+    case 'shoes':
+      return [-1, 1].map((s) => {
+        const cx = s * (legX + 3)
+        const rx = legW / 2 + 8
+        const top = ankleY - 3
+        const bottom = ankleY + 18
+        return `M ${cx - rx} ${bottom - 6} Q ${cx - rx} ${top} ${cx} ${top} Q ${cx + rx} ${top} ${cx + rx} ${bottom - 6} Q ${cx + rx} ${bottom} ${cx + rx - 6} ${bottom} L ${cx - rx + 6} ${bottom} Q ${cx - rx} ${bottom} ${cx - rx} ${bottom - 6} Z`
+      })
+    default:
+      return null
+  }
+}
+
+// 칸 하나의 옷. 의상 틀이 있으면 틀을 대표 색으로 그리고, 없으면 2D 이미지를 칸 상자에 얹습니다.
+// item: 옷 한 벌 정보 { image_url, outfit_template, main_color } 또는 2D 이미지 주소(문자열)
+function ClothingShape({ item, box, dims, faded }) {
+  const paths = typeof item === 'object' && item.main_color ? outfitPaths(item.outfit_template, dims) : null
+  if (!paths) {
+    return <ClothingImage box={box} url={typeof item === 'object' ? item.image_url : item} faded={faded} />
+  }
+  return (
+    <g
+      opacity={faded ? 0.4 : 1}
+      fill={item.main_color}
+      stroke={darker(item.main_color)}
+      strokeWidth={1.5}
+      strokeLinejoin="round"
+    >
+      {paths.map((d, i) => (
+        <path key={i} d={d} />
+      ))}
+    </g>
   )
 }
 
@@ -173,6 +292,14 @@ function Mannequin({
 
   const worn = outfit ?? {}
   const hasDress = Boolean(worn.dress)
+  const dims = { sh, wa, hip, sy: SHOULDER_Y, waistY, hipY, armX, armW, armTop, wristY, legX, legW, pantW, ankleY }
+  // 옷을 입은 칸의 잠옷은 그리지 않고 팔다리를 살색으로 둡니다. 반팔이나 치마 아래로 잠옷이 보이지 않게 합니다.
+  const coversTop = hasDress || Boolean(worn.top)
+  const coversBottom = hasDress || Boolean(worn.bottom)
+  const pajamaFill = `url(#${patternId})`
+  const slotShape = (slot) => (
+    <ClothingShape item={worn[slot]} box={boxes[slot]} dims={dims} faded={fadedSlots.includes(slot)} />
+  )
   const emptySlots = showEmpty
     ? ['shoes', 'bottom', 'top', 'outer'].filter((slot) => {
         if ((slot === 'top' || slot === 'bottom') && hasDress) return false
@@ -200,17 +327,17 @@ function Mannequin({
           <ellipse key={`foot${s}`} cx={s * (legX + 3)} cy={ankleY + 8} rx={legW / 2 + 6} ry={9} fill={SHOE} />
         ))}
 
-        {/* 잠옷 바지 */}
-        <rect x={-hip} y={hipY - 4} width={hip * 2} height={26} rx={6} fill={`url(#${patternId})`} />
+        {/* 잠옷 바지. 하의나 원피스를 입으면 다리만 살색으로 */}
+        {!coversBottom && <rect x={-hip} y={hipY - 4} width={hip * 2} height={26} rx={6} fill={pajamaFill} />}
         {[-1, 1].map((s) => (
           <rect
             key={`leg${s}`}
-            x={s * legX - pantW / 2}
+            x={s * legX - (coversBottom ? legW : pantW) / 2}
             y={hipY + 4}
-            width={pantW}
+            width={coversBottom ? legW : pantW}
             height={ankleY - hipY}
-            rx={pantW / 2}
-            fill={`url(#${patternId})`}
+            rx={(coversBottom ? legW : pantW) / 2}
+            fill={coversBottom ? SKIN : pajamaFill}
           />
         ))}
 
@@ -221,7 +348,7 @@ function Mannequin({
         <rect x={-8 * w} y={78} width={16 * w} height={16} fill={SKIN} />
 
         {/* 잠옷 윗옷 */}
-        <path d={torsoPath(sh, wa, hip, SHOULDER_Y, waistY, hipY)} fill={`url(#${patternId})`} />
+        {!coversTop && <path d={torsoPath(sh, wa, hip, SHOULDER_Y, waistY, hipY)} fill={pajamaFill} />}
 
         {/* 소매와 손 (동그란 벙어리장갑 모양) */}
         {[-1, 1].map((s) => (
@@ -232,14 +359,14 @@ function Mannequin({
               width={armW}
               height={wristY - armTop}
               rx={armW / 2}
-              fill={`url(#${patternId})`}
+              fill={coversTop ? SKIN : pajamaFill}
             />
             <ellipse cx={s * armX} cy={wristY + 6} rx={armW / 2 + 1} ry={11} fill={SKIN} />
           </g>
         ))}
 
         {/* 칼라 */}
-        {[-1, 1].map((s) => (
+        {!coversTop && [-1, 1].map((s) => (
           <path
             key={`collar${s}`}
             d={`M ${s * 2} ${SHOULDER_Y - 2} L ${s * 18} ${SHOULDER_Y + 1} L ${s * 5} ${SHOULDER_Y + 15} Z`}
@@ -251,20 +378,16 @@ function Mannequin({
         ))}
 
         {/* 옷: 신발 → 하의 → 상의(또는 원피스) → 아우터 순서로 겹칩니다. */}
-        {worn.shoes && <ClothingImage box={boxes.shoes} url={worn.shoes} faded={fadedSlots.includes('shoes')} />}
+        {worn.shoes && slotShape('shoes')}
         {hasDress ? (
-          <ClothingImage box={boxes.dress} url={worn.dress} faded={fadedSlots.includes('dress')} />
+          slotShape('dress')
         ) : (
           <>
-            {worn.bottom && (
-              <ClothingImage box={boxes.bottom} url={worn.bottom} faded={fadedSlots.includes('bottom')} />
-            )}
-            {worn.top && <ClothingImage box={boxes.top} url={worn.top} faded={fadedSlots.includes('top')} />}
+            {worn.bottom && slotShape('bottom')}
+            {worn.top && slotShape('top')}
           </>
         )}
-        {worn.outer && worn.outer !== 'none' && (
-          <ClothingImage box={boxes.outer} url={worn.outer} faded={fadedSlots.includes('outer')} />
-        )}
+        {worn.outer && worn.outer !== 'none' && slotShape('outer')}
 
         {/* 빈 칸 표시. 아우터 안내는 어깨 쪽, 상의 안내는 허리 쪽에 두어 겹치지 않게 합니다. */}
         {emptySlots.map((slot) => (

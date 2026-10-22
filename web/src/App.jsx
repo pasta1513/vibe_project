@@ -20,6 +20,8 @@ function App() {
   const [loadError, setLoadError] = useState(null)
   const [mannequin, setMannequin] = useState(null)
   const [regions, setRegions] = useState([])
+  // 의상 틀 표: 등록 창 미리보기가 서버와 같은 규칙으로 틀을 고릅니다. (D-016)
+  const [outfitTable, setOutfitTable] = useState(null)
   const [activeMenu, setActiveMenu] = useState(null)
   // 확정한 뒤 화면 (SCREEN-SPEC §5.6). 메뉴를 누르면 사라집니다. 앱을 다시 켜면 처음 화면입니다.
   const [confirmed, setConfirmed] = useState(null)
@@ -37,6 +39,7 @@ function App() {
     if (res.result === 'ok') {
       setMannequin(res.data.mannequin)
       setRegions(res.data.regions)
+      setOutfitTable({ templates: res.data.outfit_templates, defaults: res.data.outfit_defaults })
       setStatus('ready')
     } else {
       setLoadError(res.error.message)
@@ -115,7 +118,7 @@ function App() {
             {showMenu && !fullScreen && <Mannequin className="stage__mannequin" {...mannequin} />}
           </>
         )}
-        {closetOpen && <ClosetScreen gender={mannequin.gender} showToast={setToast} />}
+        {closetOpen && <ClosetScreen mannequin={mannequin} outfitTable={outfitTable} showToast={setToast} />}
         {dressUpOpen && (
           <DressUpScreen
             key={dressUpKey}

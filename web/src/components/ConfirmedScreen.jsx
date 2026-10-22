@@ -4,7 +4,7 @@ import WeatherScene from './WeatherScene.jsx'
 
 // 확정한 뒤 화면 (SCREEN-SPEC §5.6): 날씨 배경, 확정한 옷을 입은 마네킹, 위에 작게 날짜와 날씨.
 // 점수와 이유·코멘트는 보이지 않습니다. 메뉴를 누르면 사라집니다.
-// confirmed: { date, weather: { region, min_temp, max_temp, condition }, worn: 칸 → 2D 이미지 주소 }
+// confirmed: { date, weather: { region, min_temp, max_temp, condition }, worn: 칸 → 옷 한 벌 정보 }
 function ConfirmedScreen({ confirmed, mannequin }) {
   const { date, weather, worn } = confirmed
   const look = WEATHER_LABEL[weather.condition]

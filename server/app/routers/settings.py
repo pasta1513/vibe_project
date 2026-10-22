@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlmodel import Session
 
 from ..db import get_session
+from ..outfits import DEFAULTS, TEMPLATES
 from ..models import Settings
 from ..responses import ApiError, ok
 
@@ -29,9 +30,14 @@ class RegionIn(BaseModel):
     region: str
 
 
+def _outfit_table() -> dict:
+    """등록 창 미리보기가 서버와 같은 규칙으로 틀을 고르게 합니다. (D-016)"""
+    return {"outfit_templates": TEMPLATES, "outfit_defaults": DEFAULTS}
+
+
 def _settings_data(settings: Settings | None) -> dict:
     if settings is None:
-        return {"mannequin": None, "home_region": None, "regions": REGIONS}
+        return {"mannequin": None, "home_region": None, "regions": REGIONS, **_outfit_table()}
     return {
         "mannequin": {
             "gender": settings.mannequin_gender,
@@ -40,6 +46,7 @@ def _settings_data(settings: Settings | None) -> dict:
         },
         "home_region": settings.home_region,
         "regions": REGIONS,
+        **_outfit_table(),
     }
 
 

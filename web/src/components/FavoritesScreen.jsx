@@ -27,7 +27,7 @@ function moveTo(list, id, index) {
 
 function FavoriteHanger({ fav, dragging, onPointerDown, onTryOn, onRemove }) {
   const worn = Object.fromEntries(
-    Object.entries(fav.outfit).map(([slot, item]) => [slot, item ? item.image_url : null]),
+    Object.entries(fav.outfit).map(([slot, item]) => [slot, item ?? null]),
   )
   if (!fav.outfit.outer) worn.outer = 'none'
   return (

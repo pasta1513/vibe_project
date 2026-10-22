@@ -39,6 +39,37 @@ def make_2d_image(photo_path: Path, image_path: Path) -> None:
         raise ExternalError("imaging_failed", type(exc).__name__) from None
 
 
+# 대표 색을 고르지 못했을 때 (사진이 없거나 모두 투명함). 마네킹 칸이 비어 보이지 않게 회색으로 칠합니다. (제안)
+FALLBACK_COLOR = "#9E9E9A"
+
+
+def main_color(image_path: Path | None) -> str:
+    """2D 이미지의 불투명한 부분에서 가장 많은 색을 #RRGGBB로 돌려줍니다. (D-016)
+
+    색을 8개로 줄인 뒤 세므로 무늬가 있어도 가장 넓은 색이 나옵니다.
+    P-30 전에 만든 2D 이미지는 배경이 남아 있어서, 셀 때 메모리 안에서 배경을 한 번 더 지웁니다 (파일은 그대로).
+    """
+    try:
+        with Image.open(image_path) as source:
+            image = ImageOps.exif_transpose(source).convert("RGBA")
+    except (OSError, ValueError, TypeError, Image.DecompressionBombError):
+        return FALLBACK_COLOR
+    image.thumbnail((256, 256))
+    remove_background(image)
+    alpha = image.getchannel("A")
+    reduced = image.convert("RGB").quantize(colors=8)
+    counts = {}
+    for index, a in zip(reduced.getdata(), alpha.getdata()):
+        if a >= 128:
+            counts[index] = counts.get(index, 0) + 1
+    if not counts:
+        return FALLBACK_COLOR
+    palette = reduced.getpalette()
+    best = max(counts, key=counts.get)
+    r, g, b = palette[best * 3:best * 3 + 3]
+    return f"#{r:02X}{g:02X}{b:02X}"
+
+
 def remove_background(image: Image.Image, tolerance: int = TOLERANCE) -> float:
     """RGBA 이미지의 배경을 투명하게 바꿉니다. 지운 비율(0~1)을 돌려주고, 지우지 않았으면 0입니다."""
     width, height = image.size
