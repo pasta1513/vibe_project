@@ -1,20 +1,21 @@
 // 서버 요청 도구. 응답의 공통 모양(API-SPEC §2.1)을 그대로 돌려줍니다.
 //   { result: 'ok', data } | { result: 'confirm', confirm } | { result: 'error', error: { kind, message } }
 
-// 실패로 볼 때까지 기다리는 시간 (API-SPEC §2.3)
+// 실패로 볼 때까지 기다리는 시간 (API-SPEC §2.3, P-28에서 실제로 재서 맞춤)
+// AI 한 번 = 서버 한도 + 형식 오류로 다시 묻는 2초. 화면은 서버가 다 기다린 뒤에도 남도록 더해서 올립니다.
 const DEFAULT_TIMEOUT_MS = 5000
-// 사진 올리기 = 2D 이미지화 60초 + AI 키워드 미리 고르기 30초
-const UPLOAD_TIMEOUT_MS = 90000
+// 사진 올리기 = 2D 이미지화 60초 + AI 키워드 미리 고르기 (2+5)초 = 67초
+const UPLOAD_TIMEOUT_MS = 70000
 // 날씨 받기 (API-SPEC §2.3)
 const WEATHER_TIMEOUT_MS = 10000
-// 점수 확인하기 = 날씨 10초 + AI 점수 30초
-const SCORE_TIMEOUT_MS = 40000
-// 추천받기 = 날씨 10초 + AI 추천 45초
+// 점수 확인하기 = 날씨 10초 + AI 점수 (2+10)초 + 빠진 칸 다시 묻기 (2+10)초 = 34초
+const SCORE_TIMEOUT_MS = 35000
+// 추천받기 = 날씨 10초 + 추천 AI (2+15)초 + 평가 AI (2+10)초 + 다시 묻기 (2+10)초 = 51초
 const RECOMMEND_TIMEOUT_MS = 55000
-// 종류 단어 더하기 = 일반 요청 5초 + AI 비슷한 단어 판단 5초 + AI 성별 정하기 15초 (P-25a)
-const TYPE_WORD_TIMEOUT_MS = 25000
-// 키워드·태그 더하기 = 일반 요청 5초 + AI 비슷한 단어 판단 5초 (P-24, P-28에서 다시 맞춤)
-const WORD_TIMEOUT_MS = 10000
+// 종류 단어 더하기 = 일반 요청 5초 + 비슷한 단어 (2+5)초 + 성별 (2+5)초 = 19초
+const TYPE_WORD_TIMEOUT_MS = 20000
+// 키워드·태그 더하기 = 일반 요청 5초 + 비슷한 단어 (2+5)초 = 12초
+const WORD_TIMEOUT_MS = 15000
 
 function fail(kind, message) {
   return { result: 'error', error: { kind, message } }

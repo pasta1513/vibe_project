@@ -11,6 +11,7 @@ AI가 하는 일 다섯 가지(성별, 비슷한 단어, 점수, 추천, 키워�
 """
 
 import os
+import time
 
 import boto3
 from botocore.config import Config
@@ -24,18 +25,22 @@ DEFAULT_MODEL_ID = "apac.amazon.nova-lite-v1:0"
 # 실패로 볼 때까지 기다리는 시간(초). API-SPEC §2.3의 AI 시간과 같습니다. (P-25a, P-28에서 실제로 재서 다시 맞춤)
 # 서버가 화면보다 먼저 포기해야, 화면이 실패를 보인 뒤에 서버가 몰래 저장하는 일이 없습니다.
 TIMEOUTS = {
+    # P-28에서 일마다 20번 잰 가장 긴 시간(첫 호출 포함)의 3배, 최소 5초, 5초 단위로 올림 (사람이 정함, 2026-10-22).
+    # 잰 가장 긴 시간: 비슷한 단어 1.0초, 성별 0.8초, 점수 2.7초, 추천 AI 4.4초, 추천 안의 평가 3.2초, 키워드 1.6초
     "similar": 5,
-    "gender": 15,
-    "keywords": 30,
-    "score": 30,
-    # 추천받기의 AI 45초 = 추천 AI 25초 + 평가 AI 20초 (3벌을 동시에 평가). (P-26)
-    "recommend": 25,
-    "recommend_score": 20,
-    # 평가 AI가 꼭 채울 칸을 빼먹었을 때 한 번 더 묻는 짧은 시간. 첫 답이 10초 안에 왔을 때만 묻습니다 (ai.py).
-    # 점수 확인하기 10(날씨)+10+10, 추천받기의 평가 10+10으로 화면 시간 안에 듭니다. (사람이 정함, 2026-10-22)
+    "gender": 5,
+    "keywords": 5,
+    "score": 10,
+    # 추천받기 = 추천 AI 15초 + 평가 AI 10초 (3벌을 동시에 평가). (P-26, P-28)
+    "recommend": 15,
+    "recommend_score": 10,
+    # 평가 AI가 꼭 채울 칸을 빼먹었을 때 한 번 더 묻는 시간. 첫 답이 10초 안에 왔을 때만 묻습니다 (ai.py).
     "score_retry": 10,
     "ping": 15,
 }
+# 답 형식이 깨져(ModelErrorException) 이 시간 안에 바로 실패하면 한 번만 다시 묻습니다.
+# 접속 실패나 시간 초과는 다시 묻지 않습니다 (P-25a). (사람이 정함, 2026-10-22, P-28)
+MODEL_ERROR_RETRY_WITHIN = 2
 CONNECT_TIMEOUT = 3
 
 _clients = {}
@@ -54,6 +59,21 @@ def _get_client(task: str):
     return _clients[task]
 
 
+def _converse(task: str, **request):
+    """Bedrock Converse를 부릅니다. 답 형식이 깨진 오류가 바로 나면 한 번만 다시 묻습니다. (P-28)
+
+    Nova Lite가 가끔 "Model produced invalid sequence as part of ToolUse"로 0.4초쯤에 실패합니다 (측정 157번 중 3번).
+    """
+    started = time.monotonic()
+    try:
+        return _get_client(task).converse(**request)
+    except ClientError as exc:
+        code = exc.response.get("Error", {}).get("Code")
+        if code != "ModelErrorException" or time.monotonic() - started > MODEL_ERROR_RETRY_WITHIN:
+            raise
+    return _get_client(task).converse(**request)
+
+
 def model_id() -> str:
     return os.environ.get("BEDROCK_MODEL_ID", DEFAULT_MODEL_ID)
 
@@ -61,7 +81,8 @@ def model_id() -> str:
 def converse_text(task: str, system: str, user_text: str, max_tokens: int = 512) -> str:
     """글 한 덩어리를 보내고 글 답을 받습니다. 실패하면 ExternalError("ai_failed")."""
     try:
-        response = _get_client(task).converse(
+        response = _converse(
+            task,
             modelId=model_id(),
             system=[{"text": system}],
             messages=[{"role": "user", "content": [{"text": user_text}]}],
@@ -92,7 +113,8 @@ def converse_tool(task: str, system: str, user_text, tool_name: str, description
     """
     content = [{"text": user_text}] if isinstance(user_text, str) else user_text
     try:
-        response = _get_client(task).converse(
+        response = _converse(
+            task,
             modelId=model_id(),
             system=[{"text": system}],
             messages=[{"role": "user", "content": content}],
