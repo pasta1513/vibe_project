@@ -92,69 +92,72 @@ function ClosetScreen({ mannequin, outfitTable, showToast }) {
 
   return (
     <section className="closet-screen" aria-label="옷장" style={{ '--src': `url(${closetBg})` }}>
-      <div className={`cl${detailId !== null ? ' cl--dim' : ''}`}>
-        <svg className="cl__hanger" viewBox="0 0 46 40" aria-hidden="true">
-          <path d="M23 12a4 4 0 1 1 4-4c0 3-4 3-4 7L4 28c-2 1.5-1 4 1.5 4h35c2.5 0 3.5-2.5 1.5-4L23 15" />
-        </svg>
-        <h2 className="cl__title">내 옷장</h2>
-        <p className="cl__count">{clothes ? `총 ${total}개의 의상이 있어요.` : '옷장을 여는 중…'}</p>
-        <div className="cl__sep" aria-hidden="true" />
+      {/* 옷 등록은 시안 07_4처럼 옷장 목록 자리에 넓게 뜹니다. (P-38) */}
+      {!registering && (
+        <div className={`cl${detailId !== null ? ' cl--dim' : ''}`}>
+          <svg className="cl__hanger" viewBox="0 0 46 40" aria-hidden="true">
+            <path d="M23 12a4 4 0 1 1 4-4c0 3-4 3-4 7L4 28c-2 1.5-1 4 1.5 4h35c2.5 0 3.5-2.5 1.5-4L23 15" />
+          </svg>
+          <h2 className="cl__title">내 옷장</h2>
+          <p className="cl__count">{clothes ? `총 ${total}개의 의상이 있어요.` : '옷장을 여는 중…'}</p>
+          <div className="cl__sep" aria-hidden="true" />
 
-        <nav className="cl__cats" aria-label="구분">
-          {filters.map((f) => (
-            <button
-              key={f.code}
-              type="button"
-              className={`cl__cat${filter === f.code ? ' cl__cat--on' : ''}`}
-              aria-pressed={filter === f.code}
-              onClick={() => setFilter(f.code)}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                {CATEGORY_ICONS[f.code]}
-              </svg>
-              {f.label}
-              <span className="cl__cat-n">{f.n}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="cl__grid-area">
-          {error && <ErrorLine message={error} onRetry={load} />}
-          {clothes && (
-            <div className="cl__grid">
-              <button type="button" className="cl__add" onClick={() => setRegistering(true)}>
-                <span className="cl__add-plus" aria-hidden="true">
-                  +
-                </span>
-                옷 추가하기
+          <nav className="cl__cats" aria-label="구분">
+            {filters.map((f) => (
+              <button
+                key={f.code}
+                type="button"
+                className={`cl__cat${filter === f.code ? ' cl__cat--on' : ''}`}
+                aria-pressed={filter === f.code}
+                onClick={() => setFilter(f.code)}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  {CATEGORY_ICONS[f.code]}
+                </svg>
+                {f.label}
+                <span className="cl__cat-n">{f.n}</span>
               </button>
-              {shown.length === 0 && (
-                <p className="cl__empty">
-                  {filter === 'all'
-                    ? '아직 등록한 옷이 없어요.'
-                    : `아직 등록한 ${LABEL[filter]}${subjectParticle(LABEL[filter])} 없어요.`}
-                </p>
-              )}
-              {shown.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`cl__card${detailId === item.id ? ' cl__card--sel' : ''}`}
-                  onClick={() => setDetailId(item.id)}
-                  aria-label={`${LABEL[item.category]} ${(tags[item.id] ?? []).join(' ')}`}
-                >
-                  <img src={item.image_url} alt="" />
-                  <span className="cl__tags">
-                    {(tags[item.id] ?? []).slice(0, 2).map((t) => (
-                      <b key={t}>#{t}</b>
-                    ))}
+            ))}
+          </nav>
+
+          <div className="cl__grid-area">
+            {error && <ErrorLine message={error} onRetry={load} />}
+            {clothes && (
+              <div className="cl__grid">
+                <button type="button" className="cl__add" onClick={() => setRegistering(true)}>
+                  <span className="cl__add-plus" aria-hidden="true">
+                    +
                   </span>
+                  옷 추가하기
                 </button>
-              ))}
-            </div>
-          )}
+                {shown.length === 0 && (
+                  <p className="cl__empty">
+                    {filter === 'all'
+                      ? '아직 등록한 옷이 없어요.'
+                      : `아직 등록한 ${LABEL[filter]}${subjectParticle(LABEL[filter])} 없어요.`}
+                  </p>
+                )}
+                {shown.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`cl__card${detailId === item.id ? ' cl__card--sel' : ''}`}
+                    onClick={() => setDetailId(item.id)}
+                    aria-label={`${LABEL[item.category]} ${(tags[item.id] ?? []).join(' ')}`}
+                  >
+                    <img src={item.image_url} alt="" />
+                    <span className="cl__tags">
+                      {(tags[item.id] ?? []).slice(0, 2).map((t) => (
+                        <b key={t}>#{t}</b>
+                      ))}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {registering && keywords && (
         <ClothingRegisterDialog
