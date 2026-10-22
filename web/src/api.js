@@ -6,6 +6,8 @@
 const DEFAULT_TIMEOUT_MS = 5000
 // 사진 올리기 = 2D 이미지화 5초 + AI 키워드 미리 고르기 10초 (2D 이미지화는 P-32에서 잰 시간으로 정함)
 const UPLOAD_TIMEOUT_MS = 15000
+// 배경 고치고 적용 = 대표 색과 무늬 다시 만들기 5초 (API-SPEC §2.3, P-34)
+const EDIT_TIMEOUT_MS = 5000
 // 날씨 받기 (API-SPEC §2.3)
 const WEATHER_TIMEOUT_MS = 10000
 // 점수 확인하기 = 날씨 10초 + AI 점수 15초
@@ -75,6 +77,12 @@ export const api = {
     return request('POST', '/api/uploads', form, { timeoutMs: UPLOAD_TIMEOUT_MS })
   },
   discardUpload: (uploadId) => request('DELETE', `/api/uploads/${uploadId}`),
+  // 배경 고치고 적용 (API-SPEC §4, P-34): 고친 2D 이미지(PNG Blob)
+  applyEditedImage: (uploadId, blob) => {
+    const form = new FormData()
+    form.append('file', blob, 'image.png')
+    return request('PUT', `/api/uploads/${uploadId}/image`, form, { timeoutMs: EDIT_TIMEOUT_MS })
+  },
 
   // 날짜 'YYYY-MM-DD'. region은 사용자가 바꾼 지역이 있을 때만 보냅니다. (없으면 서버가 내 지역 → 서울)
   getWeather: (date, region) => {

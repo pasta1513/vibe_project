@@ -1,8 +1,10 @@
 """사진 올리기와 임시 사진 버리기 (API-SPEC §4)."""
 
+import io
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
+from PIL import Image
 from sqlmodel import Session, select
 
 from .. import photos
@@ -58,6 +60,45 @@ async def upload_photo(file: UploadFile = File(...),
         "main_color": imaging.main_color(image),
         "pattern_url": photos.url_for(pattern.name) if has_pattern else None,
         "picked": picked,
+    })
+
+
+# 배경 고치고 적용 (API-SPEC §4, P-34): 화면이 고친 2D 이미지(PNG)로 임시 2D 이미지를 바꿉니다.
+# 사용자가 고친 이미지는 배경을 다시 지우지 않고, 대표 색과 무늬 그림만 다시 만듭니다.
+@router.put("/{upload_id}/image")
+async def apply_edited_image(upload_id: str, file: UploadFile = File(...)):
+    content = await file.read(photos.MAX_BYTES + 1)
+    if len(content) > photos.MAX_BYTES:
+        raise ApiError("too_big", "10MB보다 작은 이미지만 적용할 수 있어요.")
+    if photos.detect_extension(content[:16]) != "png":
+        raise ApiError("not_png", "PNG 이미지만 적용할 수 있어요.")
+    files = photos.temp_files(upload_id)
+    if not {"original", "image"} <= set(files):
+        raise ApiError("upload_missing", "올린 사진이 없어졌어요. 사진을 다시 올려 주세요.")
+    try:
+        with Image.open(io.BytesIO(content)) as edited:
+            edited.load()
+            size = edited.size
+            edited = edited.convert("RGBA")
+    except (OSError, ValueError, Image.DecompressionBombError):
+        raise ApiError("not_png", "PNG 이미지만 적용할 수 있어요.") from None
+    if size != imaging.working_size(files["original"]):
+        raise ApiError("size_mismatch", "이미지 크기가 맞지 않아요. [초기화]한 뒤 다시 고쳐 주세요.")
+
+    # 다 쓴 뒤에 바꿔서, 쓰다가 실패해도 이전 2D 이미지가 남게 합니다.
+    image = files["image"]
+    staged = image.with_name(image.stem + ".tmp.png")
+    edited.save(staged, "PNG")
+    staged.replace(image)
+    pattern = photos.TEMP_DIR / f"{upload_id}-pattern.svg"
+    pattern.unlink(missing_ok=True)
+    has_pattern = imaging.make_pattern(image, pattern, remove=False)
+    # 같은 파일 이름이라 브라우저가 이전 그림을 다시 쓰지 않게 주소 뒤에 버전을 붙입니다.
+    version = f"?v={image.stat().st_mtime_ns}"
+    return ok({
+        "image_url": photos.url_for(image.name) + version,
+        "main_color": imaging.main_color(image, remove=False),
+        "pattern_url": photos.url_for(pattern.name) + version if has_pattern else None,
     })
 
 

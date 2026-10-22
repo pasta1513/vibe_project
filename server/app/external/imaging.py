@@ -47,11 +47,12 @@ def make_2d_image(photo_path: Path, image_path: Path) -> None:
 FALLBACK_COLOR = "#9E9E9A"
 
 
-def main_color(image_path: Path | None) -> str:
+def main_color(image_path: Path | None, remove: bool = True) -> str:
     """2D 이미지의 불투명한 부분에서 가장 많은 색을 #RRGGBB로 돌려줍니다. (D-016)
 
     색을 8개로 줄인 뒤 세므로 무늬가 있어도 가장 넓은 색이 나옵니다.
     P-30 전에 만든 2D 이미지는 배경이 남아 있어서, 셀 때 메모리 안에서 배경을 한 번 더 지웁니다 (파일은 그대로).
+    remove=False: 사용자가 고친 2D 이미지 (P-34). 복원한 가장자리를 다시 지우지 않습니다.
     """
     try:
         with Image.open(image_path) as source:
@@ -59,11 +60,12 @@ def main_color(image_path: Path | None) -> str:
     except (OSError, ValueError, TypeError, Image.DecompressionBombError):
         return FALLBACK_COLOR
     image.thumbnail((256, 256))
-    remove_background(image)
+    if remove:
+        remove_background(image)
     alpha = image.getchannel("A")
     reduced = image.convert("RGB").quantize(colors=8)
     counts = {}
-    for index, a in zip(reduced.getdata(), alpha.getdata()):
+    for index, a in zip(reduced.get_flattened_data(), alpha.get_flattened_data()):
         if a >= 128:
             counts[index] = counts.get(index, 0) + 1
     if not counts:
@@ -149,7 +151,7 @@ MAX_PATTERN_BYTES = 200 * 1024
 _PATTERN_ATTRS = {"d", "fill", "transform"}
 
 
-def make_pattern(image_path: Path | None, pattern_path: Path) -> bool:
+def make_pattern(image_path: Path | None, pattern_path: Path, remove: bool = True) -> bool:
     """2D 이미지의 옷 부분으로 무늬 그림(SVG)을 만들어 저장합니다. 만들지 못하면 False.
 
     투명한 칸은 vtracer가 건너뛰어서 배경과 옷 안쪽의 빈 곳은 채워지지 않습니다.
@@ -161,7 +163,8 @@ def make_pattern(image_path: Path | None, pattern_path: Path) -> bool:
         with Image.open(image_path) as source:
             image = ImageOps.exif_transpose(source).convert("RGBA")
         image.thumbnail((MAX_SIDE, MAX_SIDE))
-        remove_background(image)  # P-30 전에 만든 2D 이미지는 배경이 남아 있음
+        if remove:  # P-30 전에 만든 2D 이미지는 배경이 남아 있음. 사용자가 고친 이미지는 그대로 (P-34)
+            remove_background(image)
         box = image.getchannel("A").getbbox()
         if box is None:
             return False
@@ -181,6 +184,14 @@ def make_pattern(image_path: Path | None, pattern_path: Path) -> bool:
             pattern_path.write_text(svg, encoding="utf-8")
             return True
     return False
+
+
+def working_size(photo_path: Path) -> tuple[int, int]:
+    """원래 사진을 2D 이미지 크기로 줄인 가로·세로. 고친 2D 이미지가 이 크기인지 봅니다. (P-34)"""
+    with Image.open(photo_path) as photo:
+        image = ImageOps.exif_transpose(photo)
+        image.thumbnail((MAX_SIDE, MAX_SIDE))
+        return image.size
 
 
 def _only_paths(svg: str) -> bool:

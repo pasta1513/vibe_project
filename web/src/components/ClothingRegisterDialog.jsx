@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { api } from '../api.js'
 import { CATEGORIES, KEYWORD_ROWS, sortTypesByGender } from '../labels.js'
 import AlertDialog from './AlertDialog.jsx'
+import BackgroundEditor from './BackgroundEditor.jsx'
 import Button from './Button.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
@@ -29,7 +30,8 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
   const [lastFile, setLastFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null) // { message, retry }
-  // 왼쪽에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진, 'mannequin' 마네킹에 입혀 보기 (D-016), 'fit' 모습 조절 (P-33)
+  // 왼쪽에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진, 'mannequin' 마네킹에 입혀 보기 (D-016), 'fit' 모습 조절 (P-33),
+  // 'edit' 배경 고치기 (P-34)
   const [view, setView] = useState('image')
   // [모습 조절]로 바꾼 틀과 피팅값. 조절하지 않았으면 null이고, 등록할 때 보내지 않습니다. 구분을 바꾸면 버립니다.
   const [custom, setCustom] = useState(null)
@@ -181,7 +183,17 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
               hidden
               onChange={handleFileChange}
             />
-            {upload ? (
+            {upload && view === 'edit' ? (
+              <BackgroundEditor
+                upload={upload}
+                onApplied={(data) => {
+                  // 고친 2D 이미지와 다시 만든 대표 색·무늬로 바꿉니다. 원래 사진은 그대로입니다.
+                  setUpload({ ...upload, ...data })
+                  setView('image')
+                }}
+                onCancel={() => setView('image')}
+              />
+            ) : upload ? (
               <>
                 {view === 'fit' && previewItem ? (
                   <OutfitFitter
@@ -220,6 +232,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
                 <Button onClick={() => setView(view === 'mannequin' || view === 'fit' ? 'image' : 'mannequin')}>
                   {view === 'mannequin' || view === 'fit' ? '2D 이미지 보기' : '마네킹에 입혀 보기'}
                 </Button>
+                <Button onClick={() => setView('edit')}>배경 고치기</Button>
                 <Button disabled={uploading} onClick={() => fileInput.current.click()}>
                   사진 다시 올리기
                 </Button>

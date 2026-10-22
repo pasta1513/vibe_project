@@ -401,6 +401,57 @@ button {
   height: 100%;
 }
 
+/* 배경 고치기 (P-34, SCREEN-SPEC §6.2, DESIGN §5.6) */
+.bg-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 240px;
+}
+
+.bg-editor__stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 투명한 곳: 흰색과 연회색 8px 체크무늬 */
+.bg-editor__canvas {
+  max-width: 100%;
+  max-height: 100%;
+  touch-action: none;
+  background-color: #ffffff;
+  background-image: conic-gradient(#e8e6e1 25%, transparent 0 50%, #e8e6e1 0 75%, transparent 0);
+  background-size: 16px 16px;
+  cursor: none;
+}
+
+.bg-editor__canvas--pick {
+  cursor: crosshair;
+}
+
+.bg-editor__ring {
+  position: absolute;
+  display: none;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.bg-editor__tools,
+.bg-editor__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.bg-editor__tool--on {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
 /* 마네킹 모습 조절 (P-33, SCREEN-SPEC §6.2, §6.3) */
 .fitter {
   display: flex;
