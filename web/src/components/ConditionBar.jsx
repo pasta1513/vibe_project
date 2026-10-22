@@ -6,6 +6,17 @@ import ErrorLine from './ErrorLine.jsx'
 // recommending: 추천을 기다리는 동안 "추천을 고르는 중…"이 보이고 다시 누를 수 없습니다. (SCREEN-SPEC §2.7)
 // locked: 점수 확인 단계에서는 잠깁니다. 바꾸려면 [수정하기]로 돌아갑니다.
 // weather: { data, loading, error } — data는 API-SPEC §2.4의 날씨 묶음
+// persona, requestText: 추천의 페르소나와 요청 글. 저장하지 않습니다. (P-38)
+
+// 페르소나 (P-38, 사람이 정함 2026-10-22). 기본은 전문가입니다.
+const PERSONAS = [
+  ['expert', '전문가'],
+  ['friend', '친구'],
+  ['my_style', '내 스타일'],
+]
+// 요청 글 길이 한도. 서버도 같은 한도로 다시 검사합니다. (사람이 정함, 2026-10-22)
+const REQUEST_MAX = 200
+
 function ConditionBar({
   date,
   dates,
@@ -18,6 +29,10 @@ function ConditionBar({
   tags,
   tagId,
   onTag,
+  persona,
+  onPersona,
+  requestText,
+  onRequestText,
   onRecommend,
   recommending,
   locked,
@@ -81,10 +96,34 @@ function ConditionBar({
             </option>
           ))}
         </select>
+        <span className="condition__divider" aria-hidden="true" />
+        <select
+          className="condition__select"
+          aria-label="추천 페르소나"
+          value={persona}
+          disabled={locked}
+          onChange={(event) => onPersona(event.target.value)}
+        >
+          {PERSONAS.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
         <Button disabled={locked || recommending} onClick={onRecommend}>
           {recommending ? '추천을 고르는 중…' : '추천받기'}
         </Button>
       </div>
+      <input
+        className="condition__request"
+        type="text"
+        aria-label="요청 글"
+        placeholder="원하는 상황이나 분위기 (선택) 예: 소개팅이라 깔끔하게"
+        maxLength={REQUEST_MAX}
+        value={requestText}
+        disabled={locked}
+        onChange={(event) => onRequestText(event.target.value)}
+      />
       {weather.error && <ErrorLine message={weather.error} onRetry={onRetryWeather} />}
       {w && w.is_default_region && !locked && (
         <p className="condition__notice">서울 날씨예요. 설정에서 내 지역을 저장해 주세요.</p>

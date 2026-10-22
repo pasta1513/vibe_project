@@ -50,6 +50,8 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
   const [date, setDate] = useState(initial?.date ?? DATES[0])
   const [chosenRegion, setChosenRegion] = useState(null) // 사용자가 조건 띠에서 바꾼 지역
   const [tagId, setTagId] = useState(initial?.tag_id ?? null)
+  const [persona, setPersona] = useState('expert') // 추천 페르소나, 기본은 전문가 (P-38)
+  const [requestText, setRequestText] = useState('') // 추천 요청 글, 저장하지 않음 (P-38)
   const [weather, setWeather] = useState({ data: null, loading: true, error: null })
 
   // 입혀 보기로 열면 그 코디를 입힙니다. 저장된 기록에서 아우터가 비어 있으면 "입지 않음"입니다.
@@ -157,6 +159,12 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
     setTagId(id)
   }
 
+  // 페르소나도 조건이라 바꾸면 목록을 닫습니다. 요청 글은 고쳐도 목록을 닫지 않습니다. (P-38)
+  function changePersona(value) {
+    leaveRecommend()
+    setPersona(value)
+  }
+
   // 추천받기. 태그를 고르지 않았으면 먼저 고르라고 알립니다. (SCREEN-SPEC §5.1)
   async function requestRecommend() {
     if (tagId == null) {
@@ -165,15 +173,26 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
     }
     setRecommending(true)
     setRecommendError(null)
-    const res = await api.recommend({ date, region: chosenRegion, tag_id: tagId })
+    const res = await api.recommend({
+      date,
+      region: chosenRegion,
+      tag_id: tagId,
+      persona,
+      request: requestText.trim() || null,
+    })
     setRecommending(false)
+    // "내 스타일"인데 즐겨찾기가 없으면 다시 시도로는 풀리지 않아 경고창으로 알립니다.
+    if (res.result === 'error' && res.error.kind === 'no_favorites') {
+      setAlert(res.error.message)
+      return
+    }
     if (res.result !== 'ok') {
       setRecommendError(res.error.message)
       return
     }
     const got = res.data.weather ?? weather.data
     if (res.data.weather) setWeather({ data: res.data.weather, loading: false, error: null })
-    setRecommendation({ data: res.data, conditions: { date, chosenRegion, tagId, weather: got } })
+    setRecommendation({ data: res.data, conditions: { date, chosenRegion, tagId, persona, weather: got } })
     setStage('recommend')
   }
 
@@ -273,6 +292,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
     setDate(c.date)
     setChosenRegion(c.chosenRegion)
     setTagId(c.tagId)
+    setPersona(c.persona)
     if (c.weather) setWeather({ data: c.weather, loading: false, error: null })
     else loadWeather(c.date, c.chosenRegion)
     setStage('recommend')
@@ -404,6 +424,10 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
           tags={tags}
           tagId={tagId}
           onTag={changeTag}
+          persona={persona}
+          onPersona={changePersona}
+          requestText={requestText}
+          onRequestText={setRequestText}
           onRecommend={requestRecommend}
           recommending={recommending}
           locked={scoreStage}

@@ -101,6 +101,19 @@ function RecommendList({
           옷이 부족해 {recommendation.outfits.length}벌만 추천했어요. 옷을 더 등록하면 추천이 다양해져요.
         </p>
       )}
+      {/* 사면 좋을 옷: 옷장에 맞는 옷이 모자랄 때만 AI가 줍니다. 없으면 칸도 보이지 않습니다. (P-38) */}
+      {recommendation.shopping?.length > 0 && (
+        <section className="rec-shopping" aria-label="사면 좋을 옷">
+          <p className="rec-shopping__title">이런 옷이 있으면 더 좋아요</p>
+          <ul className="rec-shopping__list">
+            {recommendation.shopping.map((item, index) => (
+              <li key={index}>
+                <strong>{item.name}</strong> {item.reason}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

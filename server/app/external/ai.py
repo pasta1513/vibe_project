@@ -84,14 +84,38 @@ def find_similar(name: str, candidates: list[str]):
     return answer if answer in candidates and answer != name else None
 
 
-def recommend(closet: list[dict], weather: dict, tag: str) -> list[dict]:
+MAX_SHOPPING = 2
+
+
+def _clean_shopping(items) -> list[dict]:
+    """사면 좋을 옷: 이름과 이유가 모두 있는 것만 2개까지. 모양이 틀려도 추천 코디는 그대로 나갑니다. (P-38)"""
+    cleaned = []
+    for item in items if isinstance(items, list) else []:
+        if len(cleaned) == MAX_SHOPPING:
+            break
+        if not isinstance(item, dict):
+            continue
+        name, reason = item.get("name"), item.get("reason")
+        if isinstance(name, str) and isinstance(reason, str) and name.strip() and reason.strip():
+            cleaned.append({"name": name.strip(), "reason": reason.strip()})
+    return cleaned
+
+
+def recommend(closet: list[dict], weather: dict, tag: str, request: str | None = None,
+              persona: str = "expert", favorites: list[dict] | None = None) -> dict:
     """코디를 최대 3벌 추천받습니다.
 
     closet: 지운 옷을 뺀 옷 목록. 옷마다 {"id", "category", "keywords"}.
-    돌려주는 것: [{"outfit", "score", "note_type": "reason", "summary", "details"}, ...]
+    request: 사용자가 쓴 요청 글 (없으면 None). persona: expert, friend, my_style.
+    favorites: "내 스타일"일 때 취향으로 넘기는 즐겨찾기 (recommendations.favorites_for_ai). (P-38)
+    돌려주는 것: {"outfits": [{"outfit", "score", "note_type": "reason", "summary", "details"}, ...],
+                 "shopping": [{"name", "reason"}, ...]}
     검사를 통과하지 못한 코디는 빼고, 하나도 남지 않으면 ExternalError("ai_invalid")를 냅니다.
     """
-    answers = provider.recommend(closet, weather, tag)
+    reply = provider.recommend(closet, weather, tag, request=request, persona=persona,
+                               favorites=favorites)
+    reply = reply if isinstance(reply, dict) else {}
+    answers = reply.get("outfits") if isinstance(reply.get("outfits"), list) else []
     categories = {item["id"]: item["category"] for item in closet}
     results, seen, dropped = [], set(), Counter()
     for answer in answers or []:
@@ -118,7 +142,7 @@ def recommend(closet: list[dict], weather: dict, tag: str) -> list[dict]:
     log.info("추천: AI 답 %d벌, 통과 %d벌, 뺀 이유 %s", len(answers or []), len(results), dict(dropped))
     if not results:
         raise ExternalError("ai_invalid")
-    return results
+    return {"outfits": results, "shopping": _clean_shopping(reply.get("shopping"))}
 
 
 def score(outfit: dict, weather: dict, tag, items: list[dict] | None = None) -> dict:

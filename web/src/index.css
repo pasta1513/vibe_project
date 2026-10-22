@@ -1272,3 +1272,33 @@ button {
   font-size: var(--text-sm);
   white-space: nowrap;
 }
+
+/* 추천 요청 글과 사면 좋을 옷 (P-38) */
+.condition__request {
+  font: inherit;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.rec-shopping {
+  width: 100%;
+  max-width: 720px;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.rec-shopping__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-md);
+}
+
+.rec-shopping__list {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-sm);
+}
