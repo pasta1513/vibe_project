@@ -33,7 +33,7 @@
 - 서버: Python + FastAPI (D-003)
 - 저장소: SQLite 파일 하나 + 사진 폴더 (D-003)
 - API 키: 서버 폴더의 `.env` 파일에 둡니다. `.env`는 git에 올리지 않고, 화면에는 키를 보내지 않습니다. (D-004)
-- 사용 예정 (미확정): 날씨 정보는 OpenWeatherMap API를 사용할 예정입니다.
+- 날씨: OpenWeatherMap의 무료 5 Day / 3 Hour Forecast. `server/.env`의 `WEATHER_PROVIDER`로 가짜와 진짜를 고릅니다. (D-014)
 - 실행 방법: 개발 중에는 서버(`server/`, 8000)와 화면(`web/`, 5173)을 따로 켭니다. 설치 도구는 `venv` + `pip`, `npm`입니다. (D-008)
 - 가짜 부품: AI, 2D 이미지화, 날씨는 진짜를 연결하기 전까지 가짜로 만듭니다. 가짜를 진짜로 바꾸는 일은 사람이 정한 뒤에 합니다. (D-007)
 - DB 도구: SQLModel. 설치할 때 버전을 고정합니다. DB 구조를 바꾸는 도구(Alembic)는 진짜 AI를 연결하기 전에 정합니다. (D-009)

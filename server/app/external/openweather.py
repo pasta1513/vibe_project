@@ -32,6 +32,10 @@ REGION_COORDS = {
     "경남": (35.2383, 128.6924), "제주": (33.4890, 126.4983),
 }
 
+# 하루 상태는 활동 시간(06시~21시)에 걸친 칸만 보고 고릅니다. 칸이 시작하는 시각 06·09·12·15·18시입니다.
+# 새벽에 잠깐 온 비로 하루가 "비"가 되지 않게 합니다. 기온은 하루 전체 칸으로 계산합니다. (사람이 정함, 2026-10-22)
+ACTIVE_HOURS = range(6, 21)
+
 _cache = {}  # 지역 → (받은 시각, 예보, 지금 날씨)
 
 
@@ -73,7 +77,7 @@ def _kind(weather_id: int) -> str:
 
 
 def _condition(kinds: list[str]) -> str:
-    """하루 상태 하나: 눈 칸이 있으면 눈 → 비 칸이 있으면 비 → 흐린 칸이 절반 이상이면 흐림 → 맑음. (제안)"""
+    """하루 상태 하나: 눈 칸이 있으면 눈 → 비 칸이 있으면 비 → 흐린 칸이 절반 이상이면 흐림 → 맑음. (D-014)"""
     if "snow" in kinds:
         return "snow"
     if "rain" in kinds:
@@ -88,21 +92,30 @@ def daily_from(forecast: dict, current: dict, day: date, today: date) -> dict:
 
     예보 시각은 UTC라서 응답의 시간대(city.timezone, 초)를 더해 그 지역 날짜로 묶습니다.
     오늘은 지금 날씨를 한 칸 더 넣습니다. 칸이 하나도 없으면 실패입니다.
+    상태는 활동 시간(ACTIVE_HOURS) 칸으로 고르고, 오늘 저녁처럼 그런 칸이 없으면 남은 칸 모두로 고릅니다.
     """
     offset = timedelta(seconds=forecast.get("city", {}).get("timezone", 0))
-    temps, kinds = [], []
+    temps, kinds, active_kinds = [], [], []
     for step in forecast.get("list", []):
         local = datetime.fromtimestamp(step["dt"], tz=timezone.utc) + offset
         if local.date() != day:
             continue
         temps += [step["main"]["temp_min"], step["main"]["temp_max"]]
-        kinds.append(_kind(step["weather"][0]["id"]))
+        kind = _kind(step["weather"][0]["id"])
+        kinds.append(kind)
+        if local.hour in ACTIVE_HOURS:
+            active_kinds.append(kind)
     if day == today and current.get("main"):
         temps.append(current["main"]["temp"])
-        kinds.append(_kind(current["weather"][0]["id"]))
+        kind = _kind(current["weather"][0]["id"])
+        kinds.append(kind)
+        now = datetime.fromtimestamp(current["dt"], tz=timezone.utc) + offset if "dt" in current else None
+        if now is not None and now.hour in ACTIVE_HOURS:
+            active_kinds.append(kind)
     if not temps:
         raise ExternalError("weather_failed", "그날의 예보가 없습니다.")
-    return {"min_temp": round(min(temps)), "max_temp": round(max(temps)), "condition": _condition(kinds)}
+    return {"min_temp": round(min(temps)), "max_temp": round(max(temps)),
+            "condition": _condition(active_kinds or kinds)}
 
 
 def get_daily_weather(day: date, region: str) -> dict:

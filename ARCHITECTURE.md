@@ -74,7 +74,7 @@
 
 | 서비스 | 쓰는 곳 | 상태 |
 | --- | --- | --- |
-| OpenWeatherMap | 날씨 | 무료 5 Day / 3 Hour Forecast와 Current Weather (D-014, 제안). `WEATHER_PROVIDER`가 `fake`면 가짜 날씨 |
+| OpenWeatherMap | 날씨 | 무료 5 Day / 3 Hour Forecast와 Current Weather (D-014). `WEATHER_PROVIDER`가 `fake`면 가짜 날씨 |
 | AI (Amazon Bedrock, Amazon Nova Lite) | 키워드 미리 고르기, 종류 단어의 성별 정하기, 비슷한 단어 판단, 추천, 점수 | 정함 (D-013). 연결함 (P-23 ~ P-27). 옷 사진을 보냄 (D-013, 키워드 미리 고르기는 원래 사진, 점수는 2D 이미지) |
 | 2D 이미지화 도구 | 배경 지우기와 2D 이미지 만들기 | 미정. 내 PC에서 돌리는 도구일 수도, 외부 서비스일 수도 있음 |
 
