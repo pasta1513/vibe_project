@@ -236,13 +236,7 @@ button {
   gap: var(--space-2);
 }
 
-/* 마네킹 고르기 (SCREEN-SPEC §3) */
-.picker__body {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-}
-
+/* 설정의 마네킹 모양 고르기 줄 (SCREEN-SPEC §9). 첫 실행 화면은 styles/onboarding.css (P-38) */
 .picker__rows {
   display: flex;
   flex-direction: column;
@@ -259,11 +253,6 @@ button {
   width: 48px;
   font-size: var(--text-md);
   color: var(--color-text-sub);
-}
-
-.picker__preview {
-  width: 160px;
-  height: 320px;
 }
 
 /* 칩 (시안 .chip, .tags .opt): 알약 모양 베이지, 고르면 연한 코랄 + 코랄 테두리 */
