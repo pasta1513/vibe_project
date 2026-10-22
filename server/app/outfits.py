@@ -28,6 +28,11 @@ DEFAULTS = {"top": "top_long", "bottom": "bottom_pants", "dress": "dress",
             "outer": "outer_short", "shoes": "shoes"}
 
 
+def belongs(code: str, category: str) -> bool:
+    """그 구분의 틀인지. 피팅에서 틀은 같은 구분 안에서만 바꿀 수 있습니다. (P-33)"""
+    return any(t["code"] == code and t["category"] == category for t in TEMPLATES)
+
+
 def pick_template(category: str, type_names: list[str]) -> str:
     """구분과 고른 종류 단어 이름들로 틀 코드를 고릅니다."""
     names = set(type_names)

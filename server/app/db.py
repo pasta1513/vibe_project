@@ -38,7 +38,7 @@ def init_db():
 # 이미 있는 DB에 나중에 생긴 칸을 빈 값으로 더합니다. create_all은 있는 표에 칸을 더하지 않습니다.
 # DB 구조를 바꾸는 도구(Alembic)는 매일 쓰기 시작할 때 정합니다. (D-009, 사람이 정함 2026-10-22 P-31)
 _LATER_COLUMNS = {"clothing": {"outfit_template": "VARCHAR", "main_color": "VARCHAR",
-                               "pattern_path": "VARCHAR"}}
+                               "pattern_path": "VARCHAR", "fit": "VARCHAR"}}
 
 
 def _add_missing_columns():

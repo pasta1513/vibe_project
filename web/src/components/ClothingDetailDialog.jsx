@@ -5,6 +5,8 @@ import Button from './Button.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import KeywordChips from './KeywordChips.jsx'
+import Mannequin from './Mannequin.jsx'
+import OutfitFitter from './OutfitFitter.jsx'
 
 // 옷 상세 (SCREEN-SPEC §6.3)
 const OPTIONAL_ROWS = KEYWORD_ROWS.filter((row) => !row.required)
@@ -19,10 +21,12 @@ function LockIcon() {
   )
 }
 
-function ClothingDetailDialog({ clothingId, keywords, onClose, onDeleted, onSaved }) {
+function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, onClose, onDeleted, onSaved }) {
   const [detail, setDetail] = useState(null)
   const [loadError, setLoadError] = useState(null)
-  const [showOriginal, setShowOriginal] = useState(false)
+  // 왼쪽에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진, 'mannequin' 마네킹에 입혀 보기, 'fit' 모습 조절 (P-33)
+  const [view, setView] = useState('image')
+  const [look, setLook] = useState(null) // 조절 중인 { outfit_template, fit }. 저장하면 detail에 반영
   const [optional, setOptional] = useState({ material: [], season: [], pattern: [] })
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState(null)
@@ -34,6 +38,7 @@ function ClothingDetailDialog({ clothingId, keywords, onClose, onDeleted, onSave
       return
     }
     setDetail(res.data)
+    setLook({ outfit_template: res.data.outfit_template, fit: res.data.fit })
     const kw = res.data.keywords
     setOptional({
       material: kw.material.map((k) => k.id),
@@ -58,6 +63,21 @@ function ClothingDetailDialog({ clothingId, keywords, onClose, onDeleted, onSave
     setBusy(false)
     if (res.result === 'ok') {
       setDetail({ ...detail, keywords: res.data })
+      onSaved()
+    } else {
+      setActionError(res.error.message)
+    }
+  }
+
+  // 마네킹 모습 저장 (API-SPEC §4, P-33)
+  async function handleSaveLook() {
+    setBusy(true)
+    setActionError(null)
+    const res = await api.saveFit(clothingId, look)
+    setBusy(false)
+    if (res.result === 'ok') {
+      setDetail({ ...detail, ...res.data })
+      setLook({ outfit_template: res.data.outfit_template, fit: res.data.fit })
       onSaved()
     } else {
       setActionError(res.error.message)
@@ -90,15 +110,46 @@ function ClothingDetailDialog({ clothingId, keywords, onClose, onDeleted, onSave
         {detail && (
           <div className="register__body">
             <div className="register__photo">
-              <div className="photo-box">
-                <img
-                  src={showOriginal ? detail.photo_url : detail.image_url}
-                  alt={showOriginal ? '원래 사진' : '2D 이미지'}
+              {view === 'fit' && outfitTable ? (
+                <OutfitFitter
+                  mannequin={mannequin}
+                  item={{ ...detail, ...look }}
+                  templates={outfitTable.templates.filter((t) => t.category === detail.category)}
+                  onChange={setLook}
                 />
-              </div>
-              <Button onClick={() => setShowOriginal(!showOriginal)}>
-                {showOriginal ? '2D 이미지 보기' : '원래 사진 보기'}
+              ) : (
+                <div className="photo-box">
+                  {view === 'mannequin' ? (
+                    <Mannequin
+                      className="photo-box__mannequin"
+                      {...mannequin}
+                      outfit={{ [detail.category]: { ...detail, ...look } }}
+                      title="옷을 입힌 미리보기"
+                    />
+                  ) : (
+                    <img
+                      src={view === 'original' ? detail.photo_url : detail.image_url}
+                      alt={view === 'original' ? '원래 사진' : '2D 이미지'}
+                    />
+                  )}
+                </div>
+              )}
+              <Button onClick={() => setView(view === 'original' ? 'image' : 'original')}>
+                {view === 'original' ? '2D 이미지 보기' : '원래 사진 보기'}
               </Button>
+              <Button onClick={() => setView(view === 'mannequin' || view === 'fit' ? 'image' : 'mannequin')}>
+                {view === 'mannequin' || view === 'fit' ? '2D 이미지 보기' : '마네킹에 입혀 보기'}
+              </Button>
+              {(view === 'mannequin' || view === 'fit') && (
+                <>
+                  <Button onClick={() => setView(view === 'fit' ? 'mannequin' : 'fit')}>
+                    {view === 'fit' ? '조절 닫기' : '모습 조절'}
+                  </Button>
+                  <Button variant="primary" disabled={busy} onClick={handleSaveLook}>
+                    모습 저장
+                  </Button>
+                </>
+              )}
             </div>
 
             <div className="register__keywords">

@@ -3,7 +3,7 @@ import { useEffect, useId, useState } from 'react'
 // 마네킹과 기본 잠옷 (DESIGN §5.1, §5.2).
 // 성별마다 기본 그림 하나를 두고, 키와 체형은 비율로 늘이거나 줄입니다. 머리는 그대로 둡니다.
 //
-// outfit: 칸마다 옷 한 벌 정보 { image_url, outfit_template, main_color, pattern_url }. { top, bottom, dress, shoes, outer }
+// outfit: 칸마다 옷 한 벌 정보 { image_url, outfit_template, main_color, pattern_url, fit }. { top, bottom, dress, shoes, outer }
 //   의상 틀이 있으면 캐릭터 의상으로 그리고(D-016), 없으면 2D 이미지를 얹습니다. 2D 이미지 주소(문자열)도 받습니다.
 //   비어 있으면 null, 아우터 "입지 않음"은 'none'. 원피스는 상의와 하의 칸을 함께 차지합니다. (PRD §6 마네킹)
 // showEmpty: 빈 칸에 점선과 "하의를 골라 주세요"를 겹쳐 보입니다. (SCREEN-SPEC §2.5, DESIGN §4.1)
@@ -259,15 +259,26 @@ function ClothingShape({ item, box, dims, faded }) {
   }
   const area = outfitBox(info.outfit_template, dims)
   const shapes = paths.map((d, i) => <path key={i} d={d} />)
+  // 피팅값 (P-33, DESIGN §5.5): 옷은 틀 상자 가운데를 중심으로 옮기고 늘이고 기울입니다.
+  // 무늬는 틀 모양 안에서만 따로 옮기고 늘입니다. 값은 틀 상자 크기에 대한 비율이라 18가지 모양에 같은 느낌입니다.
+  const fit = { x: 0, y: 0, sx: 1, sy: 1, rotate: 0, px: 0, py: 0, ps: 1, ...(info.fit ?? {}) }
+  const cx = area.x + area.w / 2
+  const cy = area.y + area.h / 2
+  const outfitTransform =
+    `translate(${cx + fit.x * area.w} ${cy + fit.y * area.h}) rotate(${fit.rotate}) ` +
+    `scale(${fit.sx} ${fit.sy}) translate(${-cx} ${-cy})`
+  const patternTransform =
+    `translate(${cx + fit.px * area.w} ${cy + fit.py * area.h}) scale(${fit.ps}) translate(${-cx} ${-cy}) ` +
+    `translate(${area.x} ${area.y})` + (pattern ? ` scale(${area.w / pattern.w} ${area.h / pattern.h})` : '')
   return (
-    <g opacity={faded ? 0.4 : 1}>
+    <g opacity={faded ? 0.4 : 1} transform={outfitTransform} data-fit-box={`${area.w} ${area.h}`}>
       <defs>
         <clipPath id={clipId}>{shapes}</clipPath>
       </defs>
       <g fill={info.main_color}>{shapes}</g>
-      {pattern && area && (
+      {pattern && (
         <g clipPath={`url(#${clipId})`}>
-          <g transform={`translate(${area.x} ${area.y}) scale(${area.w / pattern.w} ${area.h / pattern.h})`}>
+          <g transform={patternTransform}>
             {pattern.paths.map((p, i) => (
               <path key={i} d={p.d} fill={p.fill ?? undefined} transform={p.transform ?? undefined} />
             ))}

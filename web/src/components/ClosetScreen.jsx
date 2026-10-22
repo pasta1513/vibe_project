@@ -110,6 +110,8 @@ function ClosetScreen({ mannequin, outfitTable, showToast }) {
         <ClothingDetailDialog
           clothingId={detailId}
           keywords={keywords}
+          mannequin={mannequin}
+          outfitTable={outfitTable}
           onClose={() => setDetailId(null)}
           onDeleted={handleDeleted}
           onSaved={() => showToast('저장되었습니다.')}

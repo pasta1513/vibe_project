@@ -401,6 +401,49 @@ button {
   height: 100%;
 }
 
+/* 마네킹 모습 조절 (P-33, SCREEN-SPEC §6.2, §6.3) */
+.fitter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 240px;
+}
+
+.fitter__stage {
+  cursor: grab;
+  touch-action: none;
+}
+
+.fitter__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.fitter__row > span:first-child {
+  flex: 0 0 84px;
+  color: var(--color-text-sub);
+}
+
+.fitter__row input[type='range'],
+.fitter__row select {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-accent);
+}
+
+.fitter__value {
+  flex: 0 0 36px;
+  text-align: right;
+}
+
+.fitter__choice {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .photo-box--empty {
   border: 2px dashed var(--color-dashed);
   font-size: var(--text-md);

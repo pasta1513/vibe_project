@@ -108,5 +108,7 @@ export const api = {
   getClothing: (id) => request('GET', `/api/clothes/${id}`),
   registerClothing: (body) => request('POST', '/api/clothes', body),
   saveOptionalKeywords: (id, body) => request('PATCH', `/api/clothes/${id}/keywords`, body),
+  // 마네킹 모습 조절 저장 (API-SPEC §4, P-33)
+  saveFit: (id, body) => request('PUT', `/api/clothes/${id}/fit`, body),
   deleteClothing: (id) => request('DELETE', `/api/clothes/${id}`),
 }

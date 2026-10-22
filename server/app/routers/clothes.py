@@ -1,9 +1,10 @@
 """옷장 (API-SPEC §4)."""
 
+import json
 from typing import Literal
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlmodel import Session, select
 
 from .. import outfits, photos
@@ -19,10 +20,34 @@ OPTIONAL_KINDS = ("material", "season", "pattern")
 KIND_NAMES = {"category": "구분", "color": "색", "type": "종류"}
 
 
+class FitIn(BaseModel):
+    """피팅값 (DATA-MODEL §3, P-33). 위치는 틀 상자 크기에 대한 비율, 기울기는 도. 범위 밖이면 입력 오류입니다."""
+    model_config = ConfigDict(extra="forbid")
+
+    x: float = Field(0, ge=-0.2, le=0.2)
+    y: float = Field(0, ge=-0.2, le=0.2)
+    sx: float = Field(1, ge=0.8, le=1.2)
+    sy: float = Field(1, ge=0.8, le=1.2)
+    rotate: float = Field(0, ge=-10, le=10)
+    px: float = Field(0, ge=-0.5, le=0.5)
+    py: float = Field(0, ge=-0.5, le=0.5)
+    ps: float = Field(1, ge=0.5, le=2.0)
+
+
 class ClothingIn(BaseModel):
     upload_id: str
     category: Literal["top", "bottom", "shoes", "outer", "dress"] | None = None
     keyword_ids: list[int] = []
+    # 등록 창에서 모습을 조절했을 때만 보냅니다. 없으면 종류 단어로 틀을 고르고 피팅값은 기본값입니다. (P-33)
+    outfit_template: str | None = None
+    fit: FitIn | None = None
+
+
+class FitSaveIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    outfit_template: str
+    fit: FitIn | None = None
 
 
 class OptionalKeywordsIn(BaseModel):
@@ -45,6 +70,7 @@ def clothing_summary(clothing: Clothing) -> dict:
         "outfit_template": clothing.outfit_template,
         "main_color": clothing.main_color,
         "pattern_url": photos.url_for(clothing.pattern_path) if clothing.pattern_path else None,
+        "fit": json.loads(clothing.fit) if clothing.fit else None,
     }
 
 
@@ -114,6 +140,9 @@ def register_clothing(body: ClothingIn, session: Session = Depends(get_session))
     if any(k.kind == "type" and k.category != body.category for k in keywords):
         raise ApiError("type_category_mismatch", "고른 구분에 맞지 않는 종류가 있어요.")
 
+    if body.outfit_template is not None and not outfits.belongs(body.outfit_template, body.category):
+        raise ApiError("wrong_template", "고른 구분에 맞지 않는 모양이에요.")
+
     files = photos.temp_files(body.upload_id)
     if not {"original", "image"} <= set(files):
         raise ApiError("upload_missing", "올린 사진이 없어졌어요. 사진을 다시 올려 주세요.")
@@ -121,7 +150,8 @@ def register_clothing(body: ClothingIn, session: Session = Depends(get_session))
     type_names = [k.name for k in keywords if k.kind == "type"]
     clothing = Clothing(category=body.category, photo_path=files["original"].name,
                         image_path=files["image"].name,
-                        outfit_template=outfits.pick_template(body.category, type_names),
+                        outfit_template=body.outfit_template or outfits.pick_template(body.category, type_names),
+                        fit=_fit_text(body.fit),
                         main_color=imaging.main_color(files["image"]),
                         pattern_path=files["pattern"].name if "pattern" in files else None)
     session.add(clothing)
@@ -141,6 +171,31 @@ def register_clothing(body: ClothingIn, session: Session = Depends(get_session))
         for target, original in moved:
             target.replace(original)
         raise
+    session.refresh(clothing)
+    return ok(clothing_summary(clothing))
+
+
+def _fit_text(fit: FitIn | None) -> str | None:
+    """기본값과 같으면 저장하지 않습니다."""
+    if fit is None or fit == FitIn():
+        return None
+    return json.dumps(fit.model_dump())
+
+
+# 마네킹 모습 조절하고 저장 (옷 상세, P-33)
+@router.put("/{clothing_id}/fit")
+def save_fit(clothing_id: int, body: FitSaveIn, session: Session = Depends(get_session)):
+    clothing = session.get(Clothing, clothing_id)
+    if clothing is None:
+        raise ApiError("clothing_not_found", "그 옷을 찾지 못했어요.", 404)
+    if clothing.is_deleted:
+        raise ApiError("already_deleted", "이미 지운 옷이에요.")
+    if not outfits.belongs(body.outfit_template, clothing.category):
+        raise ApiError("wrong_template", "이 옷의 구분에 맞지 않는 모양이에요.")
+    clothing.outfit_template = body.outfit_template
+    clothing.fit = _fit_text(body.fit)
+    session.add(clothing)
+    session.commit()
     session.refresh(clothing)
     return ok(clothing_summary(clothing))
 

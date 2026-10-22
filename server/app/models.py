@@ -46,6 +46,7 @@ class Clothing(SQLModel, table=True):
     outfit_template: Optional[str] = None
     main_color: Optional[str] = None
     pattern_path: Optional[str] = None  # 무늬 그림. 만들지 못하면 없음 (P-32)
+    fit: Optional[str] = None  # 피팅값 JSON. 없으면 기본값 (P-33, DATA-MODEL §3)
     is_deleted: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

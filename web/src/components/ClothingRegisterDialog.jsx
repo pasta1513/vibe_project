@@ -7,6 +7,7 @@ import ConfirmDialog from './ConfirmDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import KeywordChips from './KeywordChips.jsx'
 import Mannequin from './Mannequin.jsx'
+import OutfitFitter from './OutfitFitter.jsx'
 import WordAdder, { GENDER_FAILED } from './WordAdder.jsx'
 
 // 옷 등록 창 (SCREEN-SPEC §6.2)
@@ -28,8 +29,10 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
   const [lastFile, setLastFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null) // { message, retry }
-  // 왼쪽에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진, 'mannequin' 마네킹에 입혀 보기 (D-016)
+  // 왼쪽에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진, 'mannequin' 마네킹에 입혀 보기 (D-016), 'fit' 모습 조절 (P-33)
   const [view, setView] = useState('image')
+  // [모습 조절]로 바꾼 틀과 피팅값. 조절하지 않았으면 null이고, 등록할 때 보내지 않습니다. 구분을 바꾸면 버립니다.
+  const [custom, setCustom] = useState(null)
   const [pickFailed, setPickFailed] = useState(false)
   const [pick, setPick] = useState(EMPTY_PICK)
   const [alert, setAlert] = useState(null)
@@ -58,6 +61,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
     const data = res.data
     setUpload(data)
     setView('image')
+    setCustom(null)
     if (data.picked) {
       // AI가 미리 고른 구분과 키워드를 켭니다.
       const byId = Object.fromEntries(
@@ -87,6 +91,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
     // 구분을 바꾸면 새 구분에 맞지 않는 종류 단어는 꺼집니다.
     const allowed = new Set(keywords.type.filter((t) => t.category === category).map((t) => t.id))
     setPick({ ...pick, category, type: pick.type.filter((id) => allowed.has(id)) })
+    setCustom(null)
   }
 
   function handleAdded(kind, word, failed) {
@@ -118,6 +123,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
       upload_id: upload.upload_id,
       category: pick.category,
       keyword_ids: keywordIds,
+      ...(custom ?? {}),
     })
     setRegistering(false)
     if (res.result === 'ok') onRegistered(res.data)
@@ -137,17 +143,19 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
 
   // 마네킹 미리보기: 고른 구분과 종류로 틀을 정하고 대표 색으로 입힙니다. 원피스는 상의·하의 칸을 함께 차지합니다.
   const typeNames = keywords.type.filter((t) => pick.type.includes(t.id)).map((t) => t.name)
-  const preview =
+  const previewItem =
     upload && outfitTable && pick.category && typeNames.length > 0
       ? {
-          [pick.category]: {
-            image_url: upload.image_url,
-            main_color: upload.main_color,
-            pattern_url: upload.pattern_url,
-            outfit_template: pickTemplate(outfitTable, pick.category, typeNames),
-          },
+          category: pick.category,
+          image_url: upload.image_url,
+          main_color: upload.main_color,
+          pattern_url: upload.pattern_url,
+          outfit_template: pickTemplate(outfitTable, pick.category, typeNames),
+          fit: null,
+          ...(custom ?? {}),
         }
       : null
+  const preview = previewItem ? { [pick.category]: previewItem } : null
 
   const types = sortTypesByGender(
     keywords.type.filter((t) => t.category === pick.category),
@@ -175,8 +183,16 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
             />
             {upload ? (
               <>
+                {view === 'fit' && previewItem ? (
+                  <OutfitFitter
+                    mannequin={mannequin}
+                    item={previewItem}
+                    templates={outfitTable.templates.filter((t) => t.category === pick.category)}
+                    onChange={setCustom}
+                  />
+                ) : (
                 <div className="photo-box">
-                  {view === 'mannequin' ? (
+                  {view === 'mannequin' || view === 'fit' ? (
                     preview ? (
                       <Mannequin className="photo-box__mannequin" {...mannequin} outfit={preview} title="옷을 입힌 미리보기" />
                     ) : (
@@ -189,14 +205,20 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
                     />
                   )}
                 </div>
+                )}
                 {view === 'mannequin' && (
                   <p className="sub-text">작은 글자나 로고는 정확하지 않을 수 있어요.</p>
+                )}
+                {(view === 'mannequin' || view === 'fit') && previewItem && (
+                  <Button onClick={() => setView(view === 'fit' ? 'mannequin' : 'fit')}>
+                    {view === 'fit' ? '조절 닫기' : '모습 조절'}
+                  </Button>
                 )}
                 <Button onClick={() => setView(view === 'original' ? 'image' : 'original')}>
                   {view === 'original' ? '2D 이미지 보기' : '원래 사진 보기'}
                 </Button>
-                <Button onClick={() => setView(view === 'mannequin' ? 'image' : 'mannequin')}>
-                  {view === 'mannequin' ? '2D 이미지 보기' : '마네킹에 입혀 보기'}
+                <Button onClick={() => setView(view === 'mannequin' || view === 'fit' ? 'image' : 'mannequin')}>
+                  {view === 'mannequin' || view === 'fit' ? '2D 이미지 보기' : '마네킹에 입혀 보기'}
                 </Button>
                 <Button disabled={uploading} onClick={() => fileInput.current.click()}>
                   사진 다시 올리기
