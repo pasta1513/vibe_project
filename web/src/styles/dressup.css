@@ -1,0 +1,1015 @@
+/* 새 옷 입기 (SCREEN-SPEC §5). 시안 style/html의 08_1(따뜻한: 옷 고르기), 08_1(파스텔: 추천), 12(점수 확인)를
+   그대로 옮깁니다. 위치는 1536×1024 캔버스 좌표. 배경은 시안 PNG에서 가운데 캐릭터 자리를 메운 그림. (P-38) */
+
+.du {
+  position: absolute;
+  inset: 0;
+  background-image: var(--src);
+  background-size: 1536px 1024px;
+  color: var(--color-heading);
+  --du-panel: #fcf6ef;
+  --du-chip: #f3e9df;
+  --du-chip-hover: #efdfd1;
+  --du-coral: #ee6a5a;
+  --du-coral-soft: #fbe3dc;
+  --du-coral-line: #f1a596;
+  --du-muted: #8a7466;
+  --du-star: #f6a623;
+}
+
+.du button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.du button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ── 왼쪽 "의상 선택" (시안 .closet) ── */
+.du-closet {
+  position: absolute;
+  left: 88px;
+  top: 132px;
+  width: 458px;
+  height: 870px;
+  border-radius: 22px;
+  background: var(--du-panel);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+
+.du-closet h2 {
+  position: absolute;
+  left: 32px;
+  top: 16px;
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.du-closet__chips {
+  position: absolute;
+  left: 30px;
+  top: 64px;
+  width: 390px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 13px;
+}
+
+.du-chip {
+  width: 86px;
+  height: 36px;
+  border: none;
+  border-radius: 18px;
+  background: var(--du-chip);
+  font-size: 15px;
+  color: var(--color-heading);
+  transition: background 0.15s;
+}
+
+.du-chip:hover:not(.du-chip--on) {
+  background: var(--du-chip-hover);
+}
+
+.du-chip--on {
+  background: var(--du-coral);
+  color: #fff;
+}
+
+.du-closet__grid {
+  position: absolute;
+  left: 24px;
+  top: 168px;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 119px);
+  grid-auto-rows: 103px;
+  gap: 10px 15px;
+  align-content: start;
+  padding: 2px 4px 8px 2px;
+  overflow-y: auto;
+}
+
+.du-item {
+  position: relative;
+  padding: 6px;
+  border: none;
+  border-radius: 12px;
+  background: #fcf8f5;
+  box-shadow: var(--shadow-item);
+  overflow: hidden;
+  font-size: 14px;
+  color: var(--du-muted);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.du-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-item-hover);
+}
+
+.du-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.du-item--worn {
+  outline: 3px solid var(--du-coral-line);
+}
+
+.du-closet__empty {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--du-muted);
+}
+
+/* ── 말풍선과 마네킹 ── */
+.du-bubble {
+  position: absolute;
+  left: 610px;
+  top: 272px;
+  width: 126px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fffaf4;
+  font-size: 14px;
+  transform: rotate(-8deg);
+  box-shadow: 0 3px 10px rgba(150, 100, 70, 0.12);
+  z-index: 1;
+}
+
+.du-bubble::after {
+  content: '';
+  position: absolute;
+  right: 22px;
+  bottom: -9px;
+  border: 10px solid transparent;
+  border-top-color: #fffaf4;
+  border-bottom: 0;
+  transform: skewX(-25deg);
+}
+
+.du-mannequin {
+  position: absolute;
+  left: 660px;
+  top: 250px;
+  width: 260px;
+  height: 580px;
+}
+
+/* ── 오른쪽 날씨·스타일·날짜 (시안 .side) ── */
+.du-side {
+  position: absolute;
+  left: 1098px;
+  top: 192px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 22px 22px;
+  border-radius: 22px;
+  background: var(--du-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+.du-side__city {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.du-side__city select {
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-heading);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.du-side__city svg {
+  width: 24px;
+  height: 24px;
+}
+
+.du-side__notice {
+  margin: 2px 0 0 8px;
+  font-size: 12px;
+  color: var(--du-muted);
+}
+
+.du-side__weather {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  min-height: 112px;
+  padding: 10px 0 0 12px;
+}
+
+.du-side__icon {
+  width: 80px;
+  height: 80px;
+  flex: none;
+}
+
+.du-side__winfo {
+  padding-top: 4px;
+  font-size: 18px;
+  line-height: 1.75;
+}
+
+.du-side__winfo b {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.du-side__winfo small {
+  margin-left: 10px;
+  font-size: 19px;
+}
+
+.du-side__hr {
+  height: 1px;
+  margin: 8px 2px 16px;
+  background: var(--color-border);
+}
+
+.du-side__sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 2px 12px 4px;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.du-side__more {
+  border: none;
+  background: none;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--du-muted);
+}
+
+.du-side__opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px 12px;
+  margin: 0 0 8px 1px;
+}
+
+.du-tag,
+.du-date {
+  height: 42px;
+  border: none;
+  border-radius: 21px;
+  background: var(--du-chip);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-heading);
+}
+
+.du-tag {
+  width: 90px;
+  padding: 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.du-date {
+  width: 90px;
+  font-size: 15px;
+}
+
+.du-tag:hover:not(.du-tag--on),
+.du-date:hover:not(.du-date--on) {
+  background: var(--du-chip-hover);
+}
+
+.du-tag--on {
+  background: var(--du-coral-soft);
+  color: var(--du-coral);
+  box-shadow: inset 0 0 0 2px var(--du-coral-line);
+}
+
+.du-date--on {
+  background: var(--du-coral);
+  color: #fff;
+}
+
+.du-side__ai {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 296px;
+  height: 75px;
+  margin: 14px 0 0 2px;
+  border: none;
+  border-radius: 38px;
+  background: var(--du-coral);
+  color: #fff;
+  font-size: 19px;
+  font-weight: 500;
+  box-shadow: 0 4px 10px rgba(238, 106, 90, 0.3);
+  transition: transform 0.15s, filter 0.15s;
+}
+
+.du-side__ai:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.du-side__ai svg {
+  width: 40px;
+  height: 30px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+/* ── 알림 줄 ── */
+.du-notices {
+  position: absolute;
+  left: 560px;
+  top: 128px;
+  width: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+.du-notices .error-line {
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(255, 250, 245, 0.95);
+  box-shadow: var(--shadow-item);
+}
+
+/* ── 아래 [점수 확인하기]와 [추천 다시 보기] ── */
+.du-score {
+  position: absolute;
+  left: 621px;
+  top: 843px;
+  width: 309px;
+  height: 69px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px solid var(--du-coral-line);
+  border-radius: 35px;
+  background: #fffaf5;
+  color: var(--du-coral);
+  font-size: 24px;
+  font-weight: 700;
+  box-shadow: var(--shadow-panel);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.du-score:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: #fff;
+}
+
+.du-review {
+  position: absolute;
+  left: 948px;
+  top: 853px;
+  width: 140px;
+  height: 50px;
+  border: 1.5px solid #efc9bb;
+  border-radius: 25px;
+  background: #fdf6ef;
+  color: var(--color-heading);
+  font-size: 15px;
+}
+
+/* ── 추천 보기 (시안 08_1 파스텔): 옷 패널과 날씨 패널이 작아지고 아래에 추천 카드 ── */
+.du--recommend .du-closet {
+  left: 92px;
+  top: 224px;
+  width: 388px;
+  height: 466px;
+}
+
+.du--recommend .du-closet h2 {
+  left: 28px;
+  font-size: 22px;
+}
+
+.du--recommend .du-closet__chips {
+  left: 28px;
+  top: 61px;
+  width: 340px;
+  gap: 11px 12px;
+}
+
+.du--recommend .du-chip {
+  width: 72px;
+  height: 34px;
+  font-size: 14px;
+}
+
+.du--recommend .du-closet__grid {
+  left: 27px;
+  top: 164px;
+  grid-template-columns: repeat(3, 101px);
+  grid-auto-rows: 85px;
+  gap: 12px 14px;
+}
+
+.du--recommend .du-bubble {
+  left: 604px;
+  top: 248px;
+  width: 128px;
+  height: 60px;
+}
+
+.du--recommend .du-mannequin {
+  left: 690px;
+  top: 250px;
+  width: 190px;
+  height: 455px;
+}
+
+.du--recommend .du-side {
+  left: 1101px;
+  top: 150px;
+  width: 332px;
+  padding: 12px 22px 16px;
+}
+
+.du--recommend .du-side__weather {
+  min-height: 96px;
+}
+
+.du--recommend .du-side__icon {
+  width: 66px;
+  height: 66px;
+}
+
+.du--recommend .du-side__winfo {
+  font-size: 15px;
+}
+
+.du--recommend .du-side__hr {
+  margin: 4px 2px 10px;
+}
+
+.du--recommend .du-side__sec {
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.du--recommend .du-tag,
+.du--recommend .du-date {
+  width: 85px;
+  height: 36px;
+  font-size: 14px;
+}
+
+.du--recommend .du-side__opts {
+  gap: 8px 8px;
+}
+
+.du--recommend .du-side__ai {
+  width: 280px;
+  height: 56px;
+  margin-top: 8px;
+  font-size: 17px;
+}
+
+.du-reco {
+  position: absolute;
+  left: 67px;
+  top: 715px;
+  width: 1400px;
+  height: 278px;
+  border-radius: 24px;
+  background: #fdf6ec;
+  box-shadow: var(--shadow-panel);
+}
+
+.du-reco h3 {
+  position: absolute;
+  left: 35px;
+  top: 18px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.du-reco h3 small {
+  margin-left: 12px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--du-muted);
+}
+
+.du-reco__badge {
+  min-width: 32px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--du-coral);
+  color: #fff;
+  font-size: 15px;
+}
+
+.du-reco__notice {
+  position: absolute;
+  left: 35px;
+  top: 70px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 15px;
+}
+
+.du-rcard {
+  position: absolute;
+  top: 58px;
+  width: 430px;
+  height: 203px;
+  border-radius: 12px;
+  background: #fdf5eb;
+  box-shadow: 0 2px 8px rgba(150, 100, 70, 0.08);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.du-rcard:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 0 0 1.5px var(--du-coral-line), 0 6px 14px rgba(150, 100, 70, 0.14);
+}
+
+.du-rcard__no {
+  position: absolute;
+  left: 14px;
+  top: 13px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f3e9df;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.du-rcard:first-of-type .du-rcard__no {
+  background: var(--du-coral);
+  color: #fff;
+}
+
+.du-rcard__fav {
+  position: absolute;
+  right: 10px;
+  top: 4px;
+}
+
+.du-rcard__fav .rec-card__star {
+  position: static;
+  font-size: 24px;
+}
+
+.du-rcard__mannequin {
+  position: absolute;
+  left: 44px;
+  top: 14px;
+  width: 135px;
+  height: 178px;
+}
+
+.du-rcard__rate {
+  position: absolute;
+  left: 200px;
+  top: 46px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.du-stars {
+  color: var(--du-star);
+  letter-spacing: 1px;
+}
+
+.du-stars i {
+  font-style: normal;
+  color: #e6d7c8;
+}
+
+.du-rcard__rate em {
+  font-style: normal;
+  font-size: 14px;
+  color: var(--du-muted);
+}
+
+.du-rcard__text {
+  position: absolute;
+  left: 200px;
+  top: 76px;
+  width: 214px;
+  max-height: 72px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 14px;
+  line-height: 1.7;
+  letter-spacing: -0.5px;
+  text-align: left;
+  color: var(--color-heading);
+  overflow: hidden;
+}
+
+.du-rcard__details {
+  position: absolute;
+  left: 190px;
+  top: 76px;
+  z-index: 1;
+  width: 230px;
+  max-height: 120px;
+  margin: 0;
+  padding: 8px 12px;
+  list-style: none;
+  border-radius: 10px;
+  background: #fffaf5;
+  box-shadow: var(--shadow-item-hover);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-y: auto;
+}
+
+.du-rcard__actions {
+  position: absolute;
+  left: 200px;
+  bottom: 14px;
+  display: flex;
+  gap: 8px;
+}
+
+.du-reco__btn {
+  height: 34px;
+  padding: 0 16px;
+  border: 1.5px solid #efc9bb;
+  border-radius: 17px;
+  background: #fdf6ef;
+  color: var(--color-heading);
+  font-size: 14px;
+}
+
+.du-reco__btn--primary {
+  border-color: var(--du-coral);
+  background: var(--du-coral);
+  color: #fff;
+}
+
+/* ── 점수 확인 (시안 12) ── */
+.du--score .du-mannequin {
+  left: 560px;
+  top: 240px;
+  width: 260px;
+  height: 560px;
+}
+
+.du-today {
+  position: absolute;
+  left: 110px;
+  top: 162px;
+  width: 348px;
+  height: 670px;
+  border-radius: 22px;
+  background: #fbf1e8;
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+
+.du-today h2 {
+  position: absolute;
+  left: 33px;
+  top: 18px;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.du-today__d {
+  position: absolute;
+  left: 33px;
+  top: 55px;
+  font-size: 17px;
+  color: var(--du-muted);
+}
+
+.du-today__wx {
+  position: absolute;
+  left: 0;
+  top: 90px;
+  width: 348px;
+  height: 100px;
+  background: #fcf5ee;
+}
+
+.du-today__city {
+  position: absolute;
+  left: 33px;
+  top: 16px;
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.du-today__icon {
+  position: absolute;
+  left: 96px;
+  top: 14px;
+  width: 66px;
+  height: 66px;
+}
+
+.du-today__t {
+  position: absolute;
+  left: 177px;
+  top: 22px;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.du-today__t small {
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.du-today__r {
+  position: absolute;
+  left: 177px;
+  top: 56px;
+  font-size: 15px;
+  color: var(--du-muted);
+}
+
+.du-today__items {
+  position: absolute;
+  left: 22px;
+  top: 204px;
+  bottom: 12px;
+  width: 316px;
+  margin: 0;
+  padding: 0 4px 0 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.du-today__it {
+  position: relative;
+  flex: none;
+  width: 308px;
+  height: 102px;
+  border-radius: 14px;
+  background: #fcf5ef;
+  box-shadow: 0 1px 4px rgba(150, 100, 70, 0.06);
+}
+
+.du-today__thumb {
+  position: absolute;
+  left: 2px;
+  top: 1px;
+  width: 106px;
+  height: 100px;
+  padding: 6px;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.du-today__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.du-today__it b {
+  position: absolute;
+  left: 128px;
+  top: 20px;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.du-today__it span:not(.du-today__thumb) {
+  position: absolute;
+  left: 128px;
+  top: 53px;
+  font-size: 15px;
+  color: var(--du-muted);
+}
+
+.du-result {
+  position: absolute;
+  left: 886px;
+  top: 162px;
+  width: 580px;
+  height: 653px;
+  border-radius: 22px;
+  background: #fcf3ea;
+  box-shadow: var(--shadow-panel);
+}
+
+.du-result h2 {
+  position: absolute;
+  left: 29px;
+  top: 18px;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.du-result__stars {
+  position: absolute;
+  left: 40px;
+  top: 74px;
+  display: flex;
+  gap: 6px;
+}
+
+.du-result__stars svg {
+  width: 42px;
+  height: 42px;
+}
+
+.du-result__stars path {
+  fill: #ece3da;
+}
+
+.du-result__stars .on path {
+  fill: var(--du-star);
+}
+
+.du-result__score {
+  position: absolute;
+  left: 307px;
+  top: 62px;
+  font-size: 50px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.du-result__score small {
+  margin-left: 6px;
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--du-muted);
+  letter-spacing: 0;
+}
+
+/* 시안 PNG에서 잘라 쓴 마스코트 */
+.du-result__mascot {
+  position: absolute;
+  left: 24px;
+  top: 156px;
+  width: 104px;
+  height: 88px;
+  background-image: var(--src);
+  background-size: 1536px 1024px;
+  background-position: -910px -318px;
+}
+
+.du-result__say {
+  position: absolute;
+  left: 148px;
+  top: 141px;
+  width: 408px;
+  min-height: 97px;
+  margin: 0;
+  padding: 13px 19px;
+  border-radius: 16px;
+  background: #f9d9cf;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.du-result__say::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 36px;
+  border: 8px solid transparent;
+  border-right: 12px solid #f9d9cf;
+  border-left: 0;
+}
+
+.du-result__sub {
+  position: absolute;
+  left: 29px;
+  top: 268px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.du-result__cmt {
+  position: absolute;
+  left: 28px;
+  top: 307px;
+  width: 528px;
+  max-height: 320px;
+  margin: 0;
+  padding: 13px 20px 13px 36px;
+  border-radius: 14px;
+  background: #f5ece4;
+  font-size: 14.5px;
+  line-height: 1.8;
+  letter-spacing: -0.4px;
+  color: var(--color-text);
+  overflow-y: auto;
+}
+
+.du-result__cmt b {
+  margin-right: 6px;
+  font-weight: 700;
+}
+
+.du-bottom {
+  position: absolute;
+  left: 360px;
+  top: 856px;
+  width: 933px;
+  height: 99px;
+  border-radius: 26px;
+  background: rgba(253, 244, 234, 0.92);
+  box-shadow: var(--shadow-panel);
+}
+
+.du-bb {
+  position: absolute;
+  top: 12px;
+  height: 73px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  border-radius: 37px;
+  font-size: 21px;
+  font-weight: 500;
+  transition: transform 0.15s, filter 0.15s;
+}
+
+.du-bb:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.du-bb svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.du-bb--line {
+  border: 1.5px solid #efc9bb;
+  background: #fdf6ef;
+  color: var(--color-heading);
+}
+
+.du-bb--line svg {
+  stroke: var(--color-heading);
+}
+
+.du-bb--primary {
+  border: none;
+  background: var(--du-coral);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(238, 106, 90, 0.3);
+}
+
+.du-bb--primary svg {
+  stroke: #fff;
+}

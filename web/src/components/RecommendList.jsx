@@ -18,7 +18,7 @@ function objectParticle(word) {
 
 // 옷이 부족할 때 먼저 등록할 구분. 상의·하의는 원피스로도 채울 수 있다고 함께 적습니다. (제안, 2026-10-21)
 // 예: "하의(또는 원피스)를", "신발을", "상의, 하의(또는 원피스), 신발을"
-function missingText({ missing, dress_alternative: dressAlternative }) {
+export function missingText({ missing, dress_alternative: dressAlternative }) {
   const upper = missing.filter((slot) => slot === 'top' || slot === 'bottom').map((s) => SLOT_LABEL[s])
   const parts = []
   if (upper.length > 0) parts.push(`${upper.join(', ')}${dressAlternative ? '(또는 원피스)' : ''}`)
