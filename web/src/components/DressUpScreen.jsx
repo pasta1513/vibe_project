@@ -397,7 +397,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
           dates={DATES}
           onDate={changeDate}
           regions={regions}
-          region={chosenRegion ?? weather.data?.region ?? null}
+          region={chosenRegion ?? weather.data?.area ?? weather.data?.region ?? null}
           onRegion={changeRegion}
           weather={weather}
           onRetryWeather={() => loadWeather(date, chosenRegion)}

@@ -48,6 +48,45 @@ export async function request(method, path, body, { timeoutMs = DEFAULT_TIMEOUT_
   }
 }
 
+// 현재 위치 (PRD §5, D-016). 날씨가 처음 필요할 때 브라우저에 한 번 묻고, 페이지를 새로 열 때까지 기억합니다.
+// 5초 안에 답이 없으면(권한 창을 그냥 둠) 이번에는 위치 없이 갑니다(내 지역 → 서울). 다음 요청 때 다시 봅니다.
+// 거절하면 위치 없이 갑니다. 위치는 내 PC 서버에만 보내고 저장하지 않습니다.
+const LOCATION_WAIT_MS = 5000
+let locationPromise = null
+
+export function currentLocation() {
+  if (locationPromise) return locationPromise
+  locationPromise = new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null)
+      return
+    }
+    const timer = setTimeout(() => {
+      locationPromise = null
+      resolve(null)
+    }, LOCATION_WAIT_MS)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(timer)
+        resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude })
+      },
+      () => {
+        clearTimeout(timer)
+        resolve(null)
+      },
+      { timeout: LOCATION_WAIT_MS, maximumAge: 10 * 60 * 1000 },
+    )
+  })
+  return locationPromise
+}
+
+// 고른 지역이 없을 때만 현재 위치를 함께 보냅니다. (API-SPEC §5.1)
+async function withLocation(body) {
+  if (body.region) return body
+  const location = await currentLocation()
+  return location ? { ...body, location } : body
+}
+
 export const api = {
   getSettings: () => request('GET', '/api/settings'),
   saveMannequin: (mannequin) => request('PUT', '/api/settings/mannequin', mannequin),
@@ -76,21 +115,30 @@ export const api = {
   },
   discardUpload: (uploadId) => request('DELETE', `/api/uploads/${uploadId}`),
 
-  // 날짜 'YYYY-MM-DD'. region은 사용자가 바꾼 지역이 있을 때만 보냅니다. (없으면 서버가 내 지역 → 서울)
-  getWeather: (date, region) => {
+  // 날짜 'YYYY-MM-DD'. region은 사용자가 바꾼 지역이 있을 때만 보냅니다. (없으면 현재 위치 → 내 지역 → 서울)
+  getWeather: async (date, region) => {
     const query = new URLSearchParams({ date })
     if (region) query.set('region', region)
+    else {
+      const location = await currentLocation()
+      if (location) {
+        query.set('lat', String(location.lat))
+        query.set('lon', String(location.lon))
+      }
+    }
     return request('GET', `/api/weather?${query}`, undefined, { timeoutMs: WEATHER_TIMEOUT_MS })
   },
   // body: { outfit: { top, bottom, dress, shoes, outer }, date, region, tag_id }
   // body: { date, region, tag_id }
-  recommend: (body) =>
-    request('POST', '/api/recommendations', body, { timeoutMs: RECOMMEND_TIMEOUT_MS }),
+  recommend: async (body) =>
+    request('POST', '/api/recommendations', await withLocation(body), { timeoutMs: RECOMMEND_TIMEOUT_MS }),
   getDiary: () => request('GET', '/api/diary'),
   deleteDiary: (id) => request('DELETE', `/api/diary/${id}`),
   // 입혀 보기 → 날짜 고르기. 고른 날짜의 날씨를 함께 받습니다.
-  tryOnDiary: (id, date) =>
-    request('POST', `/api/diary/${id}/try-on`, { date }, { timeoutMs: WEATHER_TIMEOUT_MS }),
+  tryOnDiary: async (id, date) =>
+    request('POST', `/api/diary/${id}/try-on`, await withLocation({ date }), {
+      timeoutMs: WEATHER_TIMEOUT_MS,
+    }),
   // 즐겨찾기 (API-SPEC §5.4, §7)
   getFavorites: () => request('GET', '/api/favorites'),
   // body: { outfit, tag_id }
@@ -98,11 +146,14 @@ export const api = {
   addFavoriteFromDiary: (entryId) => request('POST', `/api/favorites/from-diary/${entryId}`),
   removeFavorite: (id) => request('DELETE', `/api/favorites/${id}`),
   reorderFavorites: (ids) => request('PUT', '/api/favorites/order', { ids }),
-  tryOnFavorite: (id, date) =>
-    request('POST', `/api/favorites/${id}/try-on`, { date }, { timeoutMs: WEATHER_TIMEOUT_MS }),
+  tryOnFavorite: async (id, date) =>
+    request('POST', `/api/favorites/${id}/try-on`, await withLocation({ date }), {
+      timeoutMs: WEATHER_TIMEOUT_MS,
+    }),
   // 확정하기. body: { outfit, date, weather, tag_id, result, confirmed } (점수와 날씨는 화면이 보냄, D-006)
   confirmOutfit: (body) => request('POST', '/api/diary', body),
-  score: (body) => request('POST', '/api/scores', body, { timeoutMs: SCORE_TIMEOUT_MS }),
+  score: async (body) =>
+    request('POST', '/api/scores', await withLocation(body), { timeoutMs: SCORE_TIMEOUT_MS }),
 
   getClothes: () => request('GET', '/api/clothes'),
   getClothing: (id) => request('GET', `/api/clothes/${id}`),

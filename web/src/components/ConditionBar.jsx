@@ -89,6 +89,9 @@ function ConditionBar({
       {w && w.is_default_region && !locked && (
         <p className="condition__notice">서울 날씨예요. 설정에서 내 지역을 저장해 주세요.</p>
       )}
+      {w && w.is_current_location && !locked && (
+        <p className="condition__notice">현재 위치({w.area}) 날씨예요.</p>
+      )}
     </div>
   )
 }

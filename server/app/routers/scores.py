@@ -13,7 +13,7 @@ from ..models import Clothing, StyleTag
 from ..responses import ApiError, ok
 from ..rules import SLOTS, check_outfit, particle
 from .recommendations import closet_for_ai
-from .weather import daily_weather
+from .weather import LocationIn, daily_weather
 
 router = APIRouter(prefix="/api/scores")
 
@@ -37,7 +37,8 @@ class OutfitIn(BaseModel):
 class ScoreIn(BaseModel):
     outfit: OutfitIn
     day: date = Field(alias="date")
-    region: Optional[str] = None  # 사용자가 바꾼 지역. 없으면 내 지역 → 서울
+    region: Optional[str] = None  # 사용자가 바꾼 지역. 없으면 현재 위치 → 내 지역 → 서울
+    location: Optional[LocationIn] = None  # 현재 위치 (D-016). 고른 지역이 없을 때만 씀
     tag_id: Optional[int] = None  # 태그를 고르지 않았으면 없음
 
 
@@ -84,7 +85,7 @@ def score_outfit(body: ScoreIn, session: Session = Depends(get_session)):
         if tag is None:
             raise ApiError("tag_not_found", "그 태그를 찾지 못했어요.", 404)
 
-    weather = daily_weather(session, body.day, body.region)
+    weather = daily_weather(session, body.day, body.region, body.location)
     try:
         result = ai.score(outfit, weather, tag.name if tag else None, outfit_items(session, outfit))
     except ExternalError:

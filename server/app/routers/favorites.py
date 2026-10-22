@@ -16,7 +16,7 @@ from ..rules import SLOTS, outfit_key
 from .clothes import clothing_summary
 from .diary import deleted_slots
 from .scores import OutfitIn, check_outfit_or_fail
-from .weather import daily_weather
+from .weather import LocationIn, daily_weather
 
 router = APIRouter(prefix="/api/favorites")
 
@@ -32,7 +32,8 @@ class OrderIn(BaseModel):
 
 class TryOnIn(BaseModel):
     day: date = Field(alias="date")
-    region: Optional[str] = None  # 사용자가 바꾼 지역. 없으면 내 지역 → 서울
+    region: Optional[str] = None  # 사용자가 바꾼 지역. 없으면 현재 위치 → 내 지역 → 서울
+    location: Optional[LocationIn] = None  # 현재 위치 (D-016). 고른 지역이 없을 때만 씀
 
 
 def _slots(fav) -> dict:
@@ -146,7 +147,7 @@ def try_on(favorite_id: int, body: TryOnIn, session: Session = Depends(get_sessi
     gone = deleted_slots(slots, clothes)
     weather, weather_error = None, None
     try:
-        weather = daily_weather(session, body.day, body.region)
+        weather = daily_weather(session, body.day, body.region, body.location)
     except ApiError as e:
         if e.kind != "weather_failed":
             raise

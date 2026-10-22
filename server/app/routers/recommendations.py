@@ -12,14 +12,15 @@ from ..external import ExternalError, ai
 from ..models import Clothing, ClothingKeyword, Favorite, Keyword, StyleTag
 from ..responses import ApiError, ok
 from ..rules import SLOTS, missing_for_outfit, outfit_key
-from .weather import daily_weather
+from .weather import LocationIn, daily_weather
 
 router = APIRouter(prefix="/api/recommendations")
 
 
 class RecommendIn(BaseModel):
     day: date = Field(alias="date")
-    region: Optional[str] = None  # 사용자가 바꾼 지역. 없으면 내 지역 → 서울
+    region: Optional[str] = None  # 사용자가 바꾼 지역. 없으면 현재 위치 → 내 지역 → 서울
+    location: Optional[LocationIn] = None  # 현재 위치 (D-016). 고른 지역이 없을 때만 씀
     tag_id: Optional[int] = None  # 추천을 받을 때는 태그가 꼭 있어야 합니다. (PRD §5)
 
 
@@ -65,10 +66,10 @@ def recommend(body: RecommendIn, session: Session = Depends(get_session)):
                    "fewer_than_three": False})
 
     # ③ 날씨 ④ AI ⑤ 검사 (검사는 ai.recommend 안에서 합니다)
-    # 추천 AI가 고른 코디는 평가 AI가 2D 이미지와 키워드로 점수를 매깁니다. (P-26)
+    # 추천 AI가 고른 코디는 평가 AI가 키워드로 점수를 매깁니다. (P-26, D-015)
     from .scores import outfit_items  # scores.py가 이 파일을 불러오므로 여기서 불러옵니다.
 
-    weather = daily_weather(session, body.day, body.region)
+    weather = daily_weather(session, body.day, body.region, body.location)
     try:
         outfits = ai.recommend(closet, weather, tag.name,
                                items_for=lambda outfit: outfit_items(session, outfit))
