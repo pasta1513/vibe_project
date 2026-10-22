@@ -1,0 +1,2 @@
+# Windows 배치 파일은 줄 끝이 CRLF여야 goto 등이 바르게 동작합니다 (D-018, P-36)
+*.bat text eol=crlf

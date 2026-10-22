@@ -31,6 +31,8 @@ desktop.ini
 
 # 저장소 폴더: SQLite 파일과 사진 폴더 (ARCHITECTURE §2.5)
 data/
+# 개발 서버가 쓰는 저장 폴더 (D-018)
+data-dev/
 
 # Claude 앱의 미리보기 설정 (커밋하지 않음)
 .claude/

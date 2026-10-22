@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
-from .db import init_db
+from .db import PROJECT_DIR, init_db
 from .photos import clear_temp
 from .responses import install_error_handlers
 from .routers import (clothes, diary, favorites, keywords, photos, recommendations, scores, settings,
@@ -29,3 +30,10 @@ for module in (settings, keywords, tags, uploads, clothes, photos, weather, scor
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+# 매일 쓸 때: 빌드한 화면(web/dist)을 같은 서버가 내보냅니다 (D-018). /api 주소들보다 뒤에 둬야 합니다.
+# 빌드 결과가 없으면(개발할 때) 화면은 Vite(5173)가 내보내고, 이 서버는 /api만 맡습니다. (D-008)
+WEB_DIST = PROJECT_DIR / "web" / "dist"
+if WEB_DIST.is_dir():
+    app.mount("/", StaticFiles(directory=WEB_DIST, html=True), name="web")
