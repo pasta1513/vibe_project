@@ -1,7 +1,9 @@
 # 서버 패키지 (D-008, D-009). 버전을 고정합니다.
 # 직접 고른 패키지: fastapi, uvicorn, sqlmodel, python-multipart(사진 올리기, P-15),
 # boto3(Amazon Bedrock, P-23, D-013), python-dotenv(server/.env 읽기, P-23),
-# pillow(2D 이미지화의 배경 지우기, P-30, D-015), vtracer(무늬 그림, P-32, D-016). 나머지는 이들이 함께 설치한 것입니다.
+# pillow(2D 이미지화의 배경 지우기, P-30, D-015), vtracer(무늬 그림, P-32, D-016),
+# alembic(DB 구조 바꾸기, P-35, D-017). 나머지는 이들이 함께 설치한 것입니다.
+alembic==1.20.0
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
@@ -12,6 +14,8 @@ fastapi==0.150.0
 h11==0.16.0
 idna==3.20
 jmespath==1.1.0
+Mako==1.4.3
+MarkupSafe==3.0.4
 opentelemetry-api==1.45.1
 pillow==13.0.0
 pydantic==2.14.1

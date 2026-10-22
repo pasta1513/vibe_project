@@ -36,8 +36,9 @@
 - 날씨: OpenWeatherMap의 무료 5 Day / 3 Hour Forecast. `server/.env`의 `WEATHER_PROVIDER`로 가짜와 진짜를 고릅니다. (D-014)
 - 실행 방법: 개발 중에는 서버(`server/`, 8000)와 화면(`web/`, 5173)을 따로 켭니다. 설치 도구는 `venv` + `pip`, `npm`입니다. (D-008)
 - 가짜 부품: AI, 2D 이미지화, 날씨는 진짜를 연결하기 전까지 가짜로 만듭니다. 가짜를 진짜로 바꾸는 일은 사람이 정한 뒤에 합니다. (D-007)
-- DB 도구: SQLModel. 설치할 때 버전을 고정합니다. DB 구조를 바꾸는 도구(Alembic)는 진짜 AI를 연결하기 전에 정합니다. (D-009)
-- AI: Amazon Bedrock의 Amazon Nova Lite. 아직 연결하지 않았고 그동안 가짜입니다. (D-013, D-007)
+- DB 도구: SQLModel. 설치할 때 버전을 고정합니다. DB 구조는 Alembic으로 바꾸고, 구조를 바꿀 때마다 변경 파일(revision)을 만들어 승인받습니다. 저장 파일은 `data/app.db` (D-009, D-017)
+- 확인 작업: 진짜 데이터(`data/`)를 바꾸지 않도록 `DATA_DIR`로 다른 폴더를 씁니다. 진짜 데이터를 바꿔야 하면 먼저 묻습니다. (D-017)
+- AI: Amazon Bedrock의 Amazon Nova Lite. 연결함 (P-23 ~ P-28). `server/.env`의 `AI_PROVIDER`로 가짜와 고릅니다. (D-013)
 - 2D 이미지화: 서버에서 Pillow로 배경을 지운 투명 PNG (D-015). 캐릭터 의상은 SVG 틀 + 사진 색·무늬 (D-016)
 - 정해지지 않은 항목은 AI가 혼자 고르지 않습니다. 필요하면 후보를 제안하고 사람에게 묻습니다.
 
