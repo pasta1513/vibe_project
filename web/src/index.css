@@ -294,25 +294,6 @@ button {
   gap: var(--space-2);
 }
 
-/* 설정의 마네킹 모양 고르기 줄 (SCREEN-SPEC §9). 첫 실행 화면은 styles/onboarding.css (P-38) */
-.picker__rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.picker__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.picker__label {
-  width: 48px;
-  font-size: var(--text-md);
-  color: var(--color-text-sub);
-}
-
 /* 칩 (시안 .chip, .tags .opt): 알약 모양 베이지, 고르면 연한 코랄 + 코랄 테두리 */
 .chip {
   font-size: var(--text-sm);
@@ -1684,11 +1665,6 @@ button {
   color: var(--color-text-sub);
 }
 
-.chip--small {
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--text-xs);
-}
-
 .word-form {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1728,136 +1704,6 @@ select:focus-visible {
 .text-input::placeholder {
   color: var(--color-text-sub);
   opacity: 0.7;
-}
-
-/* 설정 (SCREEN-SPEC §9): 옷장처럼 화면 전체를 씁니다. */
-.settings {
-  position: absolute;
-  inset: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  padding: var(--space-6);
-  border: var(--border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  overflow-y: auto;
-}
-
-.settings__row {
-  display: flex;
-  gap: var(--space-6);
-  padding-bottom: var(--space-6);
-  border-bottom: var(--border);
-}
-
-.settings__row:last-of-type {
-  border-bottom: none;
-}
-
-.settings__label {
-  width: 96px;
-  flex-shrink: 0;
-  margin: 0;
-  padding-top: var(--space-2);
-  font-size: var(--text-md);
-  font-weight: var(--weight-bold);
-}
-
-.settings__content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  flex: 1;
-  min-width: 0;
-}
-
-.settings__mannequin {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-8);
-}
-
-.settings__preview {
-  width: 100px;
-  height: 200px;
-}
-
-.settings__region {
-  flex-direction: row;
-  align-items: center;
-}
-
-.settings__group-title {
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  color: var(--color-text-sub);
-}
-
-.tabs {
-  display: flex;
-  gap: var(--space-1);
-  border-bottom: var(--border);
-}
-
-.tab {
-  padding: var(--space-2) var(--space-4);
-  border: none;
-  border-bottom: 3px solid transparent;
-  background: none;
-  color: var(--color-text-sub);
-  cursor: pointer;
-}
-
-.tab--active {
-  border-bottom-color: var(--color-accent);
-  color: var(--color-heading);
-  font-weight: var(--weight-bold);
-}
-
-.word-list {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.word {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
-  border: var(--border);
-  border-radius: var(--radius-button);
-}
-
-.word--add,
-.word--editing {
-  padding: 0;
-  border: none;
-}
-
-.word__genders {
-  display: inline-flex;
-  gap: 2px;
-  margin-left: var(--space-1);
-}
-
-.icon-btn {
-  padding: var(--space-1);
-  border: none;
-  background: none;
-  color: var(--color-text-sub);
-  cursor: pointer;
-}
-
-.icon-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
 }
 
 /* 지울 수 없음 안내의 옷과 기록 목록 */
