@@ -5,6 +5,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from PIL import Image
+from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from .. import photos
@@ -44,9 +45,6 @@ async def upload_photo(file: UploadFile = File(...),
     except ExternalError:
         photos.discard_upload(upload_id)
         raise ApiError("imaging_failed", "2D 이미지를 만들지 못했어요.", 502)
-    # 무늬 그림 (D-016, P-32). 만들지 못해도 실패가 아니고, 마네킹에는 대표 색만 칠합니다.
-    pattern = photos.TEMP_DIR / f"{upload_id}-pattern.svg"
-    has_pattern = imaging.make_pattern(image, pattern)
 
     # AI가 원래 사진을 보고 구분과 키워드를 미리 고릅니다. 못 고르면 None입니다.
     candidates = [{"kind": k.kind, **keyword_data(k)}
@@ -58,13 +56,15 @@ async def upload_photo(file: UploadFile = File(...),
         "photo_url": photos.url_for(original.name),
         "image_url": photos.url_for(image.name),
         "main_color": imaging.main_color(image),
-        "pattern_url": photos.url_for(pattern.name) if has_pattern else None,
+        # 무늬는 화면이 2D 이미지로 만들어 PUT /api/uploads/{id}/pattern으로 보냅니다. (P-39)
+        "pattern_url": None,
         "picked": picked,
     })
 
 
 # 배경 고치고 적용 (API-SPEC §4, P-34): 화면이 고친 2D 이미지(PNG)로 임시 2D 이미지를 바꿉니다.
-# 사용자가 고친 이미지는 배경을 다시 지우지 않고, 대표 색과 무늬 그림만 다시 만듭니다.
+# 사용자가 고친 이미지는 배경을 다시 지우지 않고, 대표 색만 다시 만듭니다.
+# 이전 무늬는 고치기 전 이미지로 만든 것이라 지웁니다. 화면이 고친 이미지로 무늬를 다시 만들어 보냅니다. (P-39)
 @router.put("/{upload_id}/image")
 async def apply_edited_image(upload_id: str, file: UploadFile = File(...)):
     content = await file.read(photos.MAX_BYTES + 1)
@@ -90,16 +90,37 @@ async def apply_edited_image(upload_id: str, file: UploadFile = File(...)):
     staged = image.with_name(image.stem + ".tmp.png")
     edited.save(staged, "PNG")
     staged.replace(image)
-    pattern = photos.TEMP_DIR / f"{upload_id}-pattern.svg"
-    pattern.unlink(missing_ok=True)
-    has_pattern = imaging.make_pattern(image, pattern, remove=False)
+    (photos.TEMP_DIR / f"{upload_id}-pattern.svg").unlink(missing_ok=True)
     # 같은 파일 이름이라 브라우저가 이전 그림을 다시 쓰지 않게 주소 뒤에 버전을 붙입니다.
     version = f"?v={image.stat().st_mtime_ns}"
     return ok({
         "image_url": photos.url_for(image.name) + version,
         "main_color": imaging.main_color(image, remove=False),
-        "pattern_url": photos.url_for(pattern.name) + version if has_pattern else None,
+        "pattern_url": None,
     })
+
+
+class PatternIn(BaseModel):
+    # 무늬 그림(SVG 글자). 대표 색상만 쓸 때는 비워서 보내고, 그러면 무늬 파일을 지웁니다.
+    svg: str | None = Field(None, max_length=imaging.MAX_PATTERN_BYTES)
+
+
+# 무늬 저장 (API-SPEC §4, P-39): 화면이 2D 이미지로 만든 무늬 그림을 임시 무늬 파일로 저장합니다.
+@router.put("/{upload_id}/pattern")
+def save_pattern(upload_id: str, body: PatternIn):
+    files = photos.temp_files(upload_id)
+    if not {"original", "image"} <= set(files):
+        raise ApiError("upload_missing", "올린 사진이 없어졌어요. 사진을 다시 올려 주세요.")
+    pattern = photos.TEMP_DIR / f"{upload_id}-pattern.svg"
+    if body.svg is None:
+        pattern.unlink(missing_ok=True)
+        return ok({"pattern_url": None})
+    if not imaging.valid_pattern(body.svg):
+        raise ApiError("bad_pattern", "무늬가 너무 복잡해서 저장하지 못했어요. 색 수를 줄이거나 다른 무늬 표현을 골라 주세요.")
+    staged = pattern.with_name(pattern.stem + ".tmp.svg")
+    staged.write_text(body.svg, encoding="utf-8")
+    staged.replace(pattern)
+    return ok({"pattern_url": photos.url_for(pattern.name) + f"?v={pattern.stat().st_mtime_ns}"})
 
 
 # [✕]로 창 닫기: 임시 사진과 2D 이미지를 바로 버립니다.

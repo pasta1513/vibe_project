@@ -446,3 +446,22 @@
     - 실행하지 않음: 진짜로 즐겨찾기를 모두 뺀 상태 (확인용 데이터의 즐겨찾기를 지우게 되어서)
     - 고친 문서: SCREEN-SPEC §8, TEST-PLAN T-07, DESIGN §5.13
   - 다음: P-38 2단계는 모든 화면을 옮김. 남은 일은 사람이 정함 (문서 내용 승인, 푸시, 브랜치 합치기)
+
+## P-39 무늬 표현과 벡터 색상 수 (2026-10-22, 확인 중)
+
+- 목표: 옷 등록 창에서 moire-closet처럼 무늬 표현(자동 감지, 디테일 살리기, 줄무늬 정리)과 벡터 색상 수(3~10)를 고르고 바로 미리 본다
+- 정한 것 (사람이 정함, 2026-10-22): 02 칸은 원본 사진이 먼저, [2D 이미지]를 누르면 배경 고치기처럼 오른쪽 칸 전체가 무늬 칸. 무늬는 화면에서 moire와 같은 코드로 만들고 서버는 검사·저장만(D-019 제안). 새 옷만 새 방식, 기존 옷의 vtracer 무늬는 그대로. "대표 색상만" 체크박스. 무늬 표현과 색 수를 옷마다 저장
+- 만든 것
+  - 화면: 새 `web/src/vectorize.js`(moire-closet `vectorize.js`를 옮기고 우리 무늬 형식으로 내보냄), 새 `PatternPanel.jsx`, `ClothingRegisterDialog.jsx`(원본 사진 먼저, 무늬 칸, 사진을 올리거나 배경을 고치면 무늬를 바로 만들어 저장, 등록에 무늬 설정), `api.js`(`savePattern`), `index.css`(무늬 칸)
+  - 서버: `imaging.py`(vtracer 무늬 만들기를 지우고 `valid_pattern` 검사), `uploads.py`(사진 올리기·배경 고치기는 무늬를 만들지 않음, `PUT /api/uploads/{id}/pattern`), `clothes.py`(등록에 `pattern_mode`, `pattern_colors`, 대표 색상만이면 무늬 파일을 버림, 상세에 두 값), `models.py`
+  - DB: Alembic 변경 파일 `server/migrations/versions/b39c1a7e5d20_clothing_pattern_mode_and_colors.py` (옷 표에 `pattern_mode`, `pattern_colors` 칸 더하기, 비어 있어도 됨). 서버를 켜면 자동으로 적용됨(D-017)
+- 확인
+  - `npm run build` 통과, `npm run lint` 오류 0(경고 13개는 전과 같음). 서버 `import` 확인
+  - 무늬 검사 함수: 올바른 SVG만 통과, `<image>`·onload·`<script>`·곡선·`url()` 색·`<!ENTITY>`·크기 없음·400KB 넘음은 거절
+  - 확인용 서버(8090, `data-dev/style-check`)를 다시 켜서 DB에 새 칸 2개와 새 버전이 적용됨
+  - 줄무늬 상의 사진을 올림 → 원본 사진이 먼저, 03 마네킹에 자동 감지 무늬(7색). [2D 이미지] → 무늬 칸, 자동 감지가 줄무늬로 판단. 세 표현 × 색 3·7·10의 무늬 크기 2KB~210KB, 뽑은 색 수가 색 수와 같음. 대표 색상만이면 한 색과 조절 잠김. 디테일 살리기 7색 [적용] → 원본 사진 보기, 03에 같은 무늬 → 등록 → 상세에 `detail`/7, 무늬 파일 169KB(path 7개), 새 옷 입기 마네킹에 같은 무늬
+  - API로: 나쁜 SVG 3가지 `bad_pattern`, 없는 임시 사진 `upload_missing`, 올바른 SVG 저장, 대표 색상만으로 등록하면 무늬 없음과 `solid/7`, 색 수 11은 거절. 이 확인으로 만든 옷은 지움
+  - 이미 등록한 옷(id 1)의 vtracer 무늬는 그대로 보임
+- 실행하지 않음: 진짜 데이터(`data/app.db`)에 DB 변경 적용(사람이 정한 뒤, 매일 쓰는 앱 8080을 다시 켜면 적용됨), 배경 고치기 뒤 무늬 다시 만들기, 아주 복잡한 사진에서 400KB를 넘는 경우의 화면 줄, 옷 상세에서 무늬 고치기(이번에 넣지 않음)
+- 남은 것: D-019 확정, `requirements.txt`의 vtracer를 뺄지(패키지 삭제라 사람이 정함), 옷 상세에 같은 무늬 칸을 넣을지
+- 고친 문서: DECISIONS D-019(제안), PRD §4, SCREEN-SPEC §6.2, API-SPEC §4, DATA-MODEL §3·표, ARCHITECTURE, TEST-PLAN T-117 ~ T-119, README (상태 줄에 "수정", 내용 승인 대기)

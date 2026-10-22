@@ -1357,6 +1357,135 @@ button {
   color: #fff;
 }
 
+/* 02 · 2D 이미지와 무늬 (P-39): 오른쪽 칸 전체. 2D 이미지와 무늬를 나란히, 그 아래 마네킹과 조절 */
+.pt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.pt__boxes {
+  display: flex;
+  gap: 10px;
+}
+
+.pt__box {
+  position: relative;
+  flex: 1;
+  height: 190px;
+  margin: 0;
+  border-radius: 6px;
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #eee8e2 25%, transparent 25%), linear-gradient(-45deg, #eee8e2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eee8e2 75%), linear-gradient(-45deg, transparent 75%, #eee8e2 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  overflow: hidden;
+}
+
+.pt__box img {
+  width: 100%;
+  height: 100%;
+  padding: 8px 8px 26px;
+  object-fit: contain;
+}
+
+.pt__box figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 3px 0;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  text-align: center;
+}
+
+.pt__mannequin {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #faf6f1;
+}
+
+.pt__mannequin svg {
+  height: 100%;
+}
+
+.pt__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pt__label {
+  flex: 0 0 84px;
+  color: var(--color-text-sub);
+}
+
+.pt__seg {
+  display: flex;
+  gap: 6px;
+}
+
+.pt__seg button {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid #e6ddd2;
+  border-radius: 17px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-heading);
+  cursor: pointer;
+}
+
+.pt__seg button.on {
+  background: var(--reg-green);
+  border-color: var(--reg-green);
+  color: #fff;
+}
+
+.pt__seg button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pt__note {
+  margin: -4px 0 0 92px;
+  font-size: 12px;
+  color: var(--color-text-sub);
+}
+
+.pt__palette {
+  display: flex;
+  gap: 6px;
+  margin-left: 92px;
+}
+
+.pt__palette span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.pt__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.pt__check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--reg-green);
+}
+
 /* 시안의 슬라이더: 초록 채움과 동그란 손잡이 */
 .reg input[type='range'] {
   -webkit-appearance: none;

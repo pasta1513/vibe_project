@@ -565,3 +565,31 @@ PRD §3, §4, §6, §8, DESIGN §5.5, DATA-MODEL §3, ARCHITECTURE 흐름 1, API
 
 ### 유효 상태
 확정 (사람이 정함, 2026-10-22)
+
+## D-019. 무늬 그림은 화면에서 만들고 서버는 검사·저장만 한다 (제안)
+
+### 결정 내용 (제안, 사람이 확정 전)
+- 옷 등록 창에서 무늬 그림(캐릭터 의상의 무늬)을 화면(브라우저)이 배경을 지운 2D 이미지로 만든다. 같은 팀의 moire-closet `src/lib/vectorize.js`를 그대로 옮긴다: 옷 부분을 128×160으로 줄이고, k-평균으로 색을 N개로 묶고, 같은 색이 이어진 가로 구간을 위아래로 이어 직사각형 path로 만든다. (사람이 정함, 2026-10-22)
+- 사용자가 무늬 표현(자동 감지, 디테일 살리기, 줄무늬 정리), 벡터 색상 수(3~10, 처음 7), 대표 색상만(무늬 없이 한 색)을 고르고 바로 미리 본다. (사람이 정함, 2026-10-22)
+- 서버는 받은 SVG를 검사하고 저장만 한다: 크기가 있는 svg 안에 d와 fill만 가진 path, d는 M·h·v·Z와 숫자, fill은 #RRGGBB, `<!` 선언 없음, 400KB 이하. (제안)
+- 고른 무늬 표현과 색 수를 옷마다 저장한다 (`pattern_mode`, `pattern_colors`). (사람이 정함, 2026-10-22)
+- 새로 등록하는 옷은 이 방식만 쓴다. P-32~P-38에 서버 vtracer로 만든 무늬는 그대로 둔다. 서버의 vtracer 무늬 만들기 코드는 지웠고, `requirements.txt`의 vtracer는 패키지를 빼는 일이라 사람이 정할 때까지 남겨 둔다. (사람이 정함, 2026-10-22)
+
+### 결정 이유
+- 슬라이더를 움직일 때마다 서버를 부르지 않고 바로 미리 볼 수 있다.
+- moire-closet과 같은 결과가 나온다.
+- 무늬는 직사각형뿐이라 서버가 엄격하게 검사할 수 있다.
+
+### 비교한 다른 후보
+- (나) 서버에서 같은 계산을 Python으로: 지금 구조(D-016)를 지키지만 값을 바꿀 때마다 요청이 가고 moire와 결과가 조금 다를 수 있어 고르지 않음
+- vtracer를 모드 하나로 남기기: 고르지 않음
+
+### 적용 범위
+`web/src/vectorize.js`, `web/src/components/PatternPanel.jsx`, `ClothingRegisterDialog.jsx`, `server/app/external/imaging.py`, `server/app/routers/uploads.py`, `clothes.py`, `models.py`, `server/migrations/versions/b39c1a7e5d20_*`, PRD §4, SCREEN-SPEC §6.2, API-SPEC §4, DATA-MODEL §3·§9, ARCHITECTURE, TEST-PLAN T-117 ~ T-119
+
+### 관련 기준 문서
+- D-016 (무늬 그림을 서버가 만든다는 부분을 바꿈), D-017
+- [PLAN.md](PLAN.md) P-39
+
+### 유효 상태
+제안 (사람이 확정 전)

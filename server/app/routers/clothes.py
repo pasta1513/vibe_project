@@ -41,6 +41,9 @@ class ClothingIn(BaseModel):
     # 등록 창에서 모습을 조절했을 때만 보냅니다. 없으면 종류 단어로 틀을 고르고 피팅값은 기본값입니다. (P-33)
     outfit_template: str | None = None
     fit: FitIn | None = None
+    # 무늬 표현과 벡터 색상 수 (P-39). 'solid'(대표 색상만)이면 무늬 파일을 쓰지 않습니다.
+    pattern_mode: Literal["auto", "detail", "stripes", "solid"] | None = None
+    pattern_colors: int | None = Field(None, ge=3, le=10)
 
 
 class FitSaveIn(BaseModel):
@@ -91,6 +94,8 @@ def clothing_detail(session: Session, clothing: Clothing) -> dict:
         **clothing_summary(clothing),
         "photo_url": photos.url_for(clothing.photo_path),
         "keywords": grouped,
+        "pattern_mode": clothing.pattern_mode,
+        "pattern_colors": clothing.pattern_colors,
     }
 
 
@@ -147,13 +152,18 @@ def register_clothing(body: ClothingIn, session: Session = Depends(get_session))
     if not {"original", "image"} <= set(files):
         raise ApiError("upload_missing", "올린 사진이 없어졌어요. 사진을 다시 올려 주세요.")
 
+    # 대표 색상만 쓰면 남아 있는 임시 무늬 파일은 버립니다. (P-39)
+    if body.pattern_mode == "solid" and "pattern" in files:
+        files.pop("pattern").unlink(missing_ok=True)
+
     type_names = [k.name for k in keywords if k.kind == "type"]
     clothing = Clothing(category=body.category, photo_path=files["original"].name,
                         image_path=files["image"].name,
                         outfit_template=body.outfit_template or outfits.pick_template(body.category, type_names),
                         fit=_fit_text(body.fit),
                         main_color=imaging.main_color(files["image"]),
-                        pattern_path=files["pattern"].name if "pattern" in files else None)
+                        pattern_path=files["pattern"].name if "pattern" in files else None,
+                        pattern_mode=body.pattern_mode, pattern_colors=body.pattern_colors)
     session.add(clothing)
     session.flush()
     for keyword in keywords:

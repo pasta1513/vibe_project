@@ -83,6 +83,8 @@ export const api = {
     form.append('file', blob, 'image.png')
     return request('PUT', `/api/uploads/${uploadId}/image`, form, { timeoutMs: EDIT_TIMEOUT_MS })
   },
+  // 무늬 저장 (API-SPEC §4, P-39): 화면이 만든 무늬 그림(SVG 글자). 대표 색상만이면 null
+  savePattern: (uploadId, svg) => request('PUT', `/api/uploads/${uploadId}/pattern`, { svg }),
 
   // 날짜 'YYYY-MM-DD'. region은 사용자가 바꾼 지역이 있을 때만 보냅니다. (없으면 서버가 내 지역 → 서울)
   getWeather: (date, region) => {

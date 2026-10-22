@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { api } from '../api.js'
+import { loadImage, patternFromImage, toSvg } from '../vectorize.js'
 import registerBg from '../assets/closet/register-bg.png'
 import { CATEGORIES, KEYWORD_ROWS, sortTypesByGender } from '../labels.js'
 import AlertDialog from './AlertDialog.jsx'
@@ -9,13 +10,16 @@ import ErrorLine from './ErrorLine.jsx'
 import KeywordChips from './KeywordChips.jsx'
 import Mannequin from './Mannequin.jsx'
 import OutfitFitter from './OutfitFitter.jsx'
+import PatternPanel from './PatternPanel.jsx'
 import WordAdder, { GENDER_FAILED } from './WordAdder.jsx'
 
 // 옷 등록 (SCREEN-SPEC §6.2). 시안 style/html 07_4를 그대로 옮긴 넓은 등록 화면입니다. 옷장 목록 자리에 뜹니다. (P-38)
-// 01 사진 업로드, 02 배경을 지운 2D 이미지와 배경 고치기, 03 미리보기와 모습 조절, 04 키워드(시안의 칸 대신 키워드 버튼 줄).
+// 01 사진 업로드, 02 원본 사진·2D 이미지와 무늬·배경 고치기, 03 미리보기와 모습 조절, 04 키워드(시안의 칸 대신 키워드 버튼 줄).
 // 시안의 옷 이름·브랜드·태그·설명 칸과 왼쪽 메뉴의 관리 항목은 앱에 기능이 없어 넣지 않았습니다 (사람이 정함, 2026-10-22).
 // [+ 더하기]로 더한 단어는 이 창의 목록에 바로 붙고 켜진 채로 보입니다. 구분 줄에는 [+ 더하기]가 없습니다.
 const EMPTY_PICK = { category: null, color: [], type: [], material: [], season: [], pattern: [] }
+// 무늬 표현과 벡터 색상 수의 처음 값 (moire-closet과 같음, P-39)
+const DEFAULT_PATTERN = { mode: 'auto', colors: 7, solid: false }
 
 // 서버(outfits.py)와 같은 규칙으로 의상 틀을 고릅니다: 표에서 위에 있는 틀, 맞는 단어가 없으면 구분의 기본 틀 (D-016)
 function pickTemplate(table, category, typeNames) {
@@ -32,9 +36,11 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
   const [lastFile, setLastFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null) // { message, retry }
-  // 02 칸에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진, 'edit' 배경 고치기 (P-34).
-  // 마네킹 미리보기와 모습 조절은 03 칸에 늘 보입니다 (D-016, P-33).
-  const [view, setView] = useState('image')
+  // 02 칸에 보이는 것: 'original' 원래 사진(처음), 'pattern' 2D 이미지와 무늬 (P-39), 'edit' 배경 고치기 (P-34).
+  // 무늬와 배경 고치기는 오른쪽 칸 전체를 씁니다. 그 밖에는 03 칸에 마네킹 미리보기와 모습 조절이 보입니다 (D-016, P-33).
+  const [view, setView] = useState('original')
+  // 적용된 무늬 표현, 벡터 색상 수, 대표 색상만 (P-39). 등록할 때 함께 보냅니다.
+  const [patternSettings, setPatternSettings] = useState(DEFAULT_PATTERN)
   // [모습 조절]로 바꾼 틀과 피팅값. 조절하지 않았으면 null이고, 등록할 때 보내지 않습니다. 구분을 바꾸면 버립니다.
   const [custom, setCustom] = useState(null)
   const [pickFailed, setPickFailed] = useState(false)
@@ -48,6 +54,22 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
   const keywords = Object.fromEntries(
     KEYWORD_ROWS.map((row) => [row.kind, [...loadedKeywords[row.kind], ...(added[row.kind] ?? [])]]),
   )
+
+  // 2D 이미지로 무늬를 만들어 임시 무늬로 저장하고, 저장된 주소를 돌려줍니다. 만들지 못하면 null (대표 색만 칠함)
+  async function makePattern(data, settings) {
+    if (settings.solid) {
+      await api.savePattern(data.upload_id, null)
+      return null
+    }
+    try {
+      const result = patternFromImage(await loadImage(data.image_url), settings.mode, settings.colors)
+      if (!result) return null
+      const res = await api.savePattern(data.upload_id, toSvg(result))
+      return res.result === 'ok' ? res.data.pattern_url : null
+    } catch {
+      return null
+    }
+  }
 
   async function sendPhoto(file) {
     setUploading(true)
@@ -64,8 +86,12 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
     }
     const data = res.data
     setUpload(data)
-    setView('image')
+    setView('original')
     setCustom(null)
+    setPatternSettings(DEFAULT_PATTERN)
+    makePattern(data, DEFAULT_PATTERN).then((url) =>
+      setUpload((prev) => (prev?.upload_id === data.upload_id ? { ...prev, pattern_url: url } : prev)),
+    )
     if (data.picked) {
       // AI가 미리 고른 구분과 키워드를 켭니다.
       const byId = Object.fromEntries(
@@ -128,6 +154,8 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
       category: pick.category,
       keyword_ids: keywordIds,
       ...(custom ?? {}),
+      pattern_mode: patternSettings.solid ? 'solid' : patternSettings.mode,
+      pattern_colors: patternSettings.colors,
     })
     setRegistering(false)
     if (res.result === 'ok') onRegistered(res.data)
@@ -325,39 +353,55 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
         {/* 02 · 2D 이미지와 배경 고치기 (P-34). 고치는 동안은 오른쪽 칸 전체를 씁니다. */}
         <div
           className="reg__sec"
-          style={{ left: 662, top: 17, width: 446, height: view === 'edit' ? 779 : 405 }}
+          style={{ left: 662, top: 17, width: 446, height: view === 'original' ? 405 : 779 }}
         />
         <span className="reg__sec-t" style={{ left: 681, top: 38 }}>
-          02 · {view === 'edit' ? '배경 고치기' : '배경을 지운 2D 이미지'}
+          02 · {view === 'edit' ? '배경 고치기' : view === 'pattern' ? '2D 이미지와 무늬' : '원본 사진'}
         </span>
-        {upload && view === 'edit' ? (
+        {upload && view === 'pattern' ? (
+          <div className="reg__editor">
+            <PatternPanel
+              upload={upload}
+              settings={patternSettings}
+              item={previewItem}
+              mannequin={mannequin}
+              onApplied={({ pattern_url, settings }) => {
+                setUpload({ ...upload, pattern_url })
+                setPatternSettings(settings)
+                setView('original')
+              }}
+              onCancel={() => setView('original')}
+            />
+          </div>
+        ) : upload && view === 'edit' ? (
           <div className="reg__editor">
             <BackgroundEditor
               upload={upload}
               onApplied={(data) => {
-                // 고친 2D 이미지와 다시 만든 대표 색·무늬로 바꿉니다. 원래 사진은 그대로입니다.
-                setUpload({ ...upload, ...data })
-                setView('image')
+                // 고친 2D 이미지와 다시 만든 대표 색으로 바꾸고, 지금 무늬 설정으로 무늬를 다시 만듭니다. 원래 사진은 그대로입니다.
+                const next = { ...upload, ...data }
+                setUpload(next)
+                setView('original')
+                makePattern(next, patternSettings).then((url) =>
+                  setUpload((prev) => (prev?.upload_id === next.upload_id ? { ...prev, pattern_url: url } : prev)),
+                )
               }}
-              onCancel={() => setView('image')}
+              onCancel={() => setView('original')}
             />
           </div>
         ) : (
           <>
             <div className="reg__image">
               {upload ? (
-                <img
-                  src={view === 'original' ? upload.photo_url : upload.image_url}
-                  alt={view === 'original' ? '원래 사진' : '2D 이미지'}
-                />
+                <img src={upload.photo_url} alt="원래 사진" />
               ) : (
-                <span className="sub-text">사진을 올리면 배경을 지운 이미지가 보여요.</span>
+                <span className="sub-text">사진을 올리면 여기에 보여요.</span>
               )}
             </div>
             <div className="reg__seg" role="radiogroup" aria-label="보기">
               {[
-                ['image', '2D 이미지', 95],
                 ['original', '원본 사진', 82],
+                ['pattern', '2D 이미지', 95],
               ].map(([key, label, width], i) => (
                 <button
                   key={key}
@@ -366,7 +410,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
                   aria-checked={view === key}
                   disabled={!upload}
                   className={`reg__seg-opt${view === key ? ' reg__seg-opt--on' : ''}`}
-                  style={{ left: 683 + i * 105, top: 331, width }}
+                  style={{ left: 683 + [0, 92][i], top: 331, width }}
                   onClick={() => setView(key)}
                 >
                   {label}
@@ -375,7 +419,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
               <button
                 type="button"
                 className="reg__seg-opt"
-                style={{ left: 893, top: 331, width: 100 }}
+                style={{ left: 880, top: 331, width: 100 }}
                 disabled={!upload}
                 onClick={() => setView('edit')}
               >
@@ -386,7 +430,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
         )}
 
         {/* 03 · 미리보기와 모습 조절 (D-016, P-33) */}
-        {view !== 'edit' && (
+        {view === 'original' && (
           <>
             <div className="reg__sec" style={{ left: 662, top: 431, width: 446, height: 365 }} />
             <span className="reg__sec-t" style={{ left: 681, top: 449 }}>
