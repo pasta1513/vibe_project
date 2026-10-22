@@ -10,7 +10,8 @@ COMMENT_TEXT = "AI 연결 전 예시 코멘트입니다."
 
 
 def _random_score() -> float:
-    return random.randint(1, 50) / 10
+    """기준 점수 하나. 진짜 AI와 같은 1.0~5.0 (D-014)"""
+    return random.randint(10, 50) / 10
 
 
 def _details(outfit: dict, text: str) -> dict:
@@ -74,9 +75,11 @@ def recommend(closet, weather, tag):
     return outfits
 
 
+# 진짜 AI처럼 기준마다 점수를 주고, 전체 점수는 ai.py가 합칩니다. (D-014)
 def score(outfit, weather, tag, items=None, task="score"):
     return {
-        "score": _random_score(),
+        "criteria": {"weather": _random_score(), "tag": _random_score() if tag else None,
+                     "harmony": _random_score()},
         "summary": COMMENT_TEXT,
         "details": _details(outfit, COMMENT_TEXT),
     }

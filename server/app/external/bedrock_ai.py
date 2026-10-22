@@ -211,32 +211,65 @@ def _weather_text(weather: dict) -> str:
             f"{CONDITION_NAMES.get(weather['condition'], weather['condition'])}")
 
 
+# 날씨와 아우터 기준. 추천 AI와 평가 AI가 같은 기준을 씁니다. (사람이 정함, 2026-10-22, D-014)
+# 기온 3단계 + 아우터 종류(따뜻함)에 따라 가산·감점합니다.
+OUTER_RULES = (
+    "날씨와 아우터 기준 (최저 기온으로 봅니다. 비나 눈이 오면 한 단계 더 추운 쪽으로 봅니다):\n"
+    "- 추움 (최저 5° 미만): 아우터가 꼭 필요합니다. 패딩이나 두꺼운 코트가 가장 좋고, "
+    "재킷·점퍼·트렌치코트는 조금 모자라며, 가디건은 많이 모자랍니다. 아우터가 없으면 크게 깎습니다.\n"
+    "- 쌀쌀함 (최저 5°~11°): 아우터가 있으면 좋습니다. 재킷·점퍼·트렌치코트·가디건이 잘 맞고, "
+    "패딩이나 두꺼운 코트는 조금 덥습니다. 아우터가 없으면 조금만 깎습니다.\n"
+    "- 따뜻함 (최저 12° 이상): 아우터가 없어도 됩니다. 아우터가 없다는 이유로 깎지 않습니다. "
+    "가디건 같은 가벼운 아우터는 괜찮고, 패딩이나 두꺼운 코트는 더워서 깎습니다.\n"
+    "아우터의 따뜻함은 종류와 계절·두께 키워드(겨울용, 두꺼움, 얇음 등)로 판단합니다. "
+    "윗옷과 아랫옷도 같은 기준으로 봅니다. 예: 따뜻한 날의 두꺼운 니트는 조금 덥고, 추운 날의 얇은 셔츠는 춥습니다.\n"
+)
+
+
+def is_cold(weather: dict) -> bool:
+    """OUTER_RULES의 "추움" 단계인지. 최저 5° 미만, 또는 비나 눈이 오면 한 단계 더 춥게 보아 최저 12° 미만."""
+    if weather["condition"] in ("rain", "snow"):
+        return weather["min_temp"] < 12
+    return weather["min_temp"] < 5
+
 SCORE_SYSTEM = (
     # 평가 AI의 페르소나와 답 형식 (D-014, 사람이 정함 2026-10-22)
     "당신은 엄격한 패션 심사위원입니다. 스타일리스트 AI가 추천한 코디든 사용자가 직접 고른 코디든 "
-    "같은 기준으로 평가합니다. 고른 코디 한 벌에 0.1점부터 5.0점까지 소수점 한 자리로 점수를 매깁니다.\n"
-    "기준은 세 가지이고, 비중은 상황에 맞게 판단합니다.\n"
-    "1. 그날 날씨(기온, 비나 눈)에 맞는지\n"
-    "2. 고른 스타일 태그에 맞는지. 태그가 없으면 이 기준은 보지 않습니다.\n"
-    "3. 옷끼리 색, 무늬, 분위기가 어울리는지\n"
-    "옷마다 사진과 사용자가 붙인 키워드가 함께 주어집니다. 사진은 옷만 찍은 것입니다.\n"
-    "점수를 정하기 전에 weather_fit, tag_fit, harmony에 기준마다 짧게 판단을 적습니다.\n"
-    "엄격하게 매깁니다. 평균은 3.0 근처이고, 4.5 이상은 드뭅니다. 아래 기준표를 따릅니다.\n"
-    "- 4.5~5.0: 날씨, 태그, 어울림이 모두 뛰어날 때만\n"
-    "- 3.5~4.4: 셋 다 맞고 흠이 작을 때\n"
-    "- 2.5~3.4: 무난하지만 하나가 아쉬울 때\n"
-    "- 1.0~2.4: 기준 하나가 크게 어긋날 때. 예: 최저 기온이 5° 아래인데 아우터를 입지 않음, "
-    "'포멀' 태그에 청바지와 운동화처럼 편한 옷\n"
-    "- 0.1~0.9: 둘 이상 크게 어긋날 때\n"
-    "- 0.5 단위로만 매기지 말고 4.3, 2.7처럼 판단에 맞게 소수점 한 자리를 씁니다.\n"
-    "- 태그가 없으면 태그 기준으로는 깎지도 더하지도 않고, 날씨와 어울림만으로 점수를 정합니다.\n"
-    "summary는 점수를 가장 크게 정한 까닭과 고칠 점을 해요체 40~50자로 씁니다. "
+    "같은 기준으로 평가합니다.\n"
+    # 기준마다 점수를 받고 서버(ai.py)가 합칩니다. 한 점수로 받으면 구간 대표값(4.5, 2.9)에 몰려
+    # 판단 하나가 뒤집힐 때 점수가 크게 뛰었습니다. (사람이 정함, 2026-10-22, D-014)
+    # 0점이 새어 들어와 전체가 1.0이 되는 일이 있어, 범위를 1.0~5.0으로 하고 태그가 없으면 태그 칸을 뺍니다.
+    # (사람이 정함, 2026-10-22)
+    "기준마다 따로따로 1.0점부터 5.0점까지 소수점 한 자리로 매깁니다. 전체 점수는 앱이 계산하므로 매기지 않습니다.\n"
+    "1. weather_score: 그날 날씨(기온, 비나 눈)에 맞는지\n"
+    "2. tag_score: 고른 스타일 태그에 맞는지. 태그가 없으면 이 칸은 답 형식에 없습니다.\n"
+    "3. harmony_score: 옷끼리 색, 무늬, 분위기가 어울리는지\n"
+    "기준마다 엄격하게 매깁니다. 5.0은 흠잡을 데가 없을 때만 줍니다.\n"
+    "- 4.0~5.0: 잘 맞음 / 3.0~3.9: 무난하지만 아쉬움이 있음 / 2.0~2.9: 꽤 어긋남 / 1.0~1.9: 크게 어긋남\n"
+    "- 예: 추운 날 아우터가 없으면 weather_score는 1.5 아래, '포멀' 태그에 청바지와 운동화면 tag_score는 2.0 아래\n"
+    "옷마다 사진과 사용자가 붙인 키워드가 함께 주어집니다. 사진에서는 옷의 색과 모양만 봅니다. "
+    "배경, 마네킹과 받침대, 넥타이 같은 소품, 사진의 밝기는 옷이 아니므로 평가에 넣지 않습니다. "
+    "색과 종류는 키워드를 먼저 믿습니다.\n"
+    "점수를 정하기 전에 weather_fit, tag_fit, harmony에 기준마다 짧게 판단을 적습니다. 비워 두지 않습니다. "
+    "weather_fit에는 최저 기온이 어느 단계(추움/쌀쌀함/따뜻함)인지 먼저 적습니다.\n"
+    + OUTER_RULES +
+    "예시 (기준을 보여 주는 것이니 숫자를 그대로 따라 하지 말고 판단에 맞게 매깁니다):\n"
+    "- 최저 15° 맑음, 캐주얼, 니트 + 청바지 + 운동화, 아우터 없음: 따뜻한 날이라 아우터가 없어도 되어 "
+    "weather_score가 높고, 캐주얼 태그에도 맞습니다.\n"
+    "- 최저 -5° 눈, 같은 옷에 아우터 없음: weather_score가 아주 낮습니다. 패딩을 더하면 높아집니다.\n"
+    "- 최저 18° 맑음, 같은 옷에 두꺼운 겨울 코트: 더워서 weather_score가 낮습니다.\n"
+    "summary는 가장 낮은 기준의 까닭과 고칠 점을 해요체 40~50자로 씁니다. 점수 숫자는 쓰지 않습니다. "
     "예: \"영하인데 아우터가 없어 추워요. 코트를 더해 보세요.\" "
-    "점수가 높아 고칠 점이 없으면 \"이대로 좋아요\"처럼 씁니다. 위의 판단과 반대되는 말을 쓰지 않습니다.\n"
+    "고칠 점이 없으면 \"이대로 좋아요\"처럼 씁니다. 위의 판단과 반대되는 말을 쓰지 않습니다.\n"
     "details에는 입은 칸마다 옷 이름으로 시작하는 평가 한 문장을 해요체로 적습니다. "
     "예: \"회색 니트는 두꺼워서 영하 날씨에 맞아요.\"\n"
-    "모든 글은 자연스러운 한국어 해요체로 씁니다."
+    "모든 글은 자연스러운 한국어 해요체로 씁니다. '~습니다', '~입니다'로 끝내지 않습니다."
 )
+
+
+def criterion(name: str) -> dict:
+    """평가 AI의 기준 점수 칸. 1.0~5.0 (D-014)"""
+    return {"type": "number", "minimum": 1.0, "maximum": 5.0, "description": f"{name} 1.0~5.0, 소수점 한 자리"}
 
 
 # 코디 점수 (PRD §6 점수, P-25). 옷 키워드와 2D 이미지를 함께 보냅니다 (사람이 정함, 2026-10-21).
@@ -244,40 +277,52 @@ SCORE_SYSTEM = (
 def score(outfit, weather, tag, items=None, task="score"):
     items = items or []
     budget = [MAX_IMAGE_BYTES]
-    content = [{"text": (
-        f"날씨: {_weather_text(weather)}\n"
-        f"스타일 태그: {tag if tag else '없음 (태그 기준은 보지 않음)'}\n"
-        f"아우터: {'입음' if outfit.get('outer') else '입지 않음'}\n"
-        "아래는 입은 옷입니다."
-    )}]
+    # 아우터가 없다는 사실만으로 깎지 않도록, 기온 기준을 따르라고 함께 적습니다. (2026-10-22)
+    outer_text = "입음" if outfit.get("outer") else "입지 않음 (괜찮은지는 날씨와 아우터 기준을 따름)"
+    conditions = (f"날씨: {_weather_text(weather)}\n"
+                  f"스타일 태그: {tag if tag else '없음 (태그 기준은 보지 않음)'}\n"
+                  f"아우터: {outer_text}")
+    content = [{"text": conditions + "\n아래는 입은 옷입니다."}]
     for item in items:
         content.append({"text": f"[{SLOT_NAMES[item['slot']]}] {_keyword_text(item['keywords'])}"})
         block = _image_block(item.get("image_path"), budget)
         if block:
             content.append(block)
+    # 사진이 들어가면 앞쪽 글(태그)을 놓치는 일이 있어 조건을 사진 뒤에 한 번 더 적습니다. (2026-10-22)
+    content.append({"text": "다시 한 번, 평가 조건입니다.\n" + conditions})
     worn = [item["slot"] for item in items]
     answer = converse_tool(
         task,
         SCORE_SYSTEM,
         content,
         "answer_score",
-        "코디 한 벌의 점수, 한 줄 코멘트, 옷마다 평가를 답합니다.",
+        "코디 한 벌을 기준마다 점수로 평가하고, 한 줄 코멘트와 옷마다 평가를 답합니다.",
         {"type": "object",
          "properties": {
-             # 판단을 먼저 적게 해서 점수가 판단을 따르게 합니다. 이 세 칸은 저장하지 않습니다.
-             "weather_fit": {"type": "string", "description": "날씨에 맞는지 짧은 판단"},
-             "tag_fit": {"type": "string", "description": "태그에 맞는지 짧은 판단, 태그가 없으면 '없음'"},
-             "harmony": {"type": "string", "description": "옷끼리 어울리는지 짧은 판단"},
-             "score": {"type": "number", "description": "0.1~5.0, 소수점 한 자리"},
-             "summary": {"type": "string", "description": "한 줄 코멘트"},
+             # 판단을 먼저 적게 해서 점수가 판단을 따르게 합니다. 판단 칸은 저장하지 않습니다.
+             "weather_fit": {"type": "string", "description": "최저 기온 단계와 날씨에 맞는지 짧은 판단 (해요체)"},
+             **({"tag_fit": {"type": "string", "description": "태그에 맞는지 짧은 판단 (해요체)"}} if tag else {}),
+             "harmony": {"type": "string", "description": "옷끼리 어울리는지 짧은 판단. 배경과 소품은 보지 않음 (해요체)"},
+             "weather_score": criterion("날씨 기준"),
+             **({"tag_score": criterion("태그 기준")} if tag else {}),
+             "harmony_score": criterion("어울림 기준"),
+             "summary": {"type": "string",
+                         "description": "가장 낮은 기준의 까닭과 고칠 점, 해요체 40~50자, '~요.'로 끝남, 점수 숫자는 쓰지 않음"},
              "details": {"type": "object",
+                         "description": "입은 칸마다 옷 이름으로 시작하는 해요체 한 문장 ('~요.'로 끝남)",
                          "properties": {s: {"type": "string"} for s in worn},
                          "required": worn},
          },
-         "required": ["weather_fit", "tag_fit", "harmony", "score", "summary", "details"]},
-        max_tokens=600,
+         "required": (["weather_fit"] + (["tag_fit"] if tag else []) + ["harmony", "weather_score"]
+                      + (["tag_score"] if tag else []) + ["harmony_score", "summary", "details"])},
+        max_tokens=700,
     )
-    return answer
+    # 합치기는 ai.py가 합니다. (D-014)
+    return {"criteria": {"weather": answer.get("weather_score"),
+                         "tag": answer.get("tag_score") if tag else None,
+                         "harmony": answer.get("harmony_score")},
+            "summary": answer.get("summary"),
+            "details": answer.get("details")}
 
 
 RECOMMEND_SYSTEM = (
@@ -292,6 +337,8 @@ RECOMMEND_SYSTEM = (
     "지킬 규칙:\n"
     "- 옷은 목록에 있는 번호로만 고릅니다. 없는 번호를 지어내지 않습니다.\n"
     "- 한 벌은 (상의 + 하의) 또는 원피스 하나, 그리고 신발 하나입니다. 원피스를 입으면 상의와 하의는 0입니다.\n"
+    # 기온 기준 문단은 평가 AI에만 둡니다. 추천 AI에 넣으면 구성 규칙을 덜 지켜서(검사 통과 59/60 → 49/60) 뺐고,
+    # 추운 날에는 답 형식에서 "입지 않음"(0)을 빼서 아우터를 입힙니다. (사람이 정함, 2026-10-22, D-014)
     "- 아우터는 하나 고르거나, 입지 않으면 0입니다. 최저 기온이 낮거나 비나 눈이 오면 아우터를 먼저 생각합니다.\n"
     "- 옷은 구분이 맞는 칸에만 넣습니다. 예: [상의] 옷은 top_id에만 넣습니다.\n"
     "- 3벌은 서로 한 칸 이상 달라야 합니다. 옷이 모자라 3벌을 다르게 만들 수 없으면 만들 수 있는 만큼만 답합니다.\n"
@@ -301,7 +348,20 @@ RECOMMEND_SYSTEM = (
     "그 코디에 실제로 고른 옷만 말합니다. 예: \"영하라 니트와 코트로 따뜻하게 입었어요.\"\n"
     "details에는 입은 칸마다 옷 이름으로 시작해 그 옷을 고른 까닭을 해요체 한 문장으로 적습니다. "
     "예: \"회색 니트는 두꺼워서 영하 날씨에 맞아요.\" 입지 않은 칸은 빈 문자열입니다.\n"
-    "모든 글은 자연스러운 한국어 해요체로 씁니다."
+    "모든 글은 plan까지 자연스러운 한국어 해요체로 씁니다. '~습니다', '~입니다', '~고릅니다'로 끝내지 않습니다.\n"
+    # 답 예시 하나. 먼저 쓰는 plan의 말투가 뒤의 이유를 끌고 가서 넣었습니다 (2026-10-22 원인 분석).
+    # 예시의 옷 번호는 실제 옷장과 겹치지 않게 900번대로 둡니다.
+    "답 예시 (말투와 모양만 따릅니다. 옷과 번호는 실제 옷장에서 고릅니다):\n"
+    "plan: \"최저 8°라 쌀쌀해서 가벼운 아우터가 있으면 좋아요. 캐주얼 태그라 편한 옷으로 골라요.\"\n"
+    "1번: top_id 901, bottom_id 902, dress_id 0, shoes_id 903, outer_id 904, "
+    "summary \"쌀쌀한 날이라 맨투맨에 가디건을 걸쳤어요.\", "
+    "details {top: \"회색 맨투맨은 편해서 캐주얼에 잘 맞아요.\", bottom: \"청바지는 어느 상의와도 잘 어울려요.\", "
+    "shoes: \"흰 운동화는 가볍게 걷기 좋아요.\", outer: \"베이지 가디건은 쌀쌀한 아침에 걸치기 좋아요.\"}\n"
+    "2번 (원피스 코디): top_id 0, bottom_id 0, dress_id 905, shoes_id 903, outer_id 904, "
+    "summary \"남색 원피스 하나로 깔끔하게 입었어요.\", "
+    "details {dress: \"남색 원피스는 하나만 입어도 단정해요.\", shoes: \"흰 운동화로 캐주얼하게 맞췄어요.\", "
+    "outer: \"베이지 가디건을 걸쳐 쌀쌀함을 막았어요.\"} "
+    "(원피스를 입으면 top_id와 bottom_id는 꼭 0이고, 원피스 번호는 dress_id에만 적습니다)"
 )
 RECOMMEND_SLOTS = ("top", "bottom", "dress", "shoes", "outer")
 
@@ -316,28 +376,49 @@ def _closet_text(closet: list[dict]) -> str:
 # 같은 조건에서도 조금씩 다른 코디가 나오도록 temperature 0.7을 씁니다 (사람이 정함, 2026-10-22).
 # 돌려주는 것: [{"outfit", "summary", "details"}]. 검사와 점수는 ai.py가 합니다.
 def recommend(closet, weather, tag):
+    # 추운 날이고 옷장에 아우터가 있으면 "입지 않음"(0)을 고를 수 없게 합니다. 아우터가 없으면 그대로 추천합니다 (PRD §5).
+    must_outer = is_cold(weather) and any(c["category"] == "outer" for c in closet)
+    # 칸마다 그 구분의 옷 번호만 고를 수 있게 합니다. 원피스 번호를 상의 칸에도 넣는 일이 많아서
+    # 넣었습니다 (사람이 정함, 2026-10-22). 신발은 꼭 있어야 하므로 0이 없습니다.
+    ids = {slot: [c["id"] for c in closet if c["category"] == slot] for slot in RECOMMEND_SLOTS}
+    slot_schema = {}
+    for slot in RECOMMEND_SLOTS:
+        allow_none = slot != "shoes" and not (slot == "outer" and must_outer)
+        choices = ([0] if allow_none else []) + ids[slot]
+        slot_schema[f"{slot}_id"] = {
+            "type": "integer", "enum": choices,
+            "description": f"{SLOT_NAMES[slot]} 옷 번호 ([{SLOT_NAMES[slot]}] 옷만)" + (", 없으면 0" if allow_none else ""),
+        }
+    must_text = ""
+    if must_outer:
+        slot_schema["outer_id"]["description"] += ". 오늘은 추운 날이라 0(입지 않음)은 고를 수 없음"
+        must_text = "\n오늘은 추운 날이라 3벌 모두 아우터를 꼭 입힙니다. outer_id에 0을 쓰지 않습니다."
     answer = converse_tool(
         "recommend",
         RECOMMEND_SYSTEM,
         (f"날씨: {_weather_text(weather)}\n"
          f"스타일 태그: {tag}\n"
-         f"옷장 (번호 [구분] 키워드):\n{_closet_text(closet)}"),
+         f"옷장 (번호 [구분] 키워드):\n{_closet_text(closet)}"
+         f"{must_text}"),
         "answer_outfits",
-        "1번 무난, 2번 태그 충실, 3번 과감 순서로 서로 다른 코디를 최대 3벌 답합니다. 입지 않은 칸의 번호는 0입니다.",
+        "1번 무난, 2번 태그 충실, 3번 과감 순서로 서로 다른 코디를 최대 3벌 답합니다. 입지 않은 칸의 번호는 0입니다."
+        + (" 오늘은 아우터 칸에 0을 쓸 수 없습니다." if must_outer else ""),
         {"type": "object",
          "properties": {
              # 판단을 먼저 적게 해서 코디가 판단을 따르게 합니다. 저장하지 않습니다.
-             "plan": {"type": "string", "description": "날씨와 태그로 본 필요한 옷, 짧게"},
+             "plan": {"type": "string", "description": "날씨와 태그로 본 필요한 옷, 해요체로 짧게 ('~요.'로 끝남)"},
              "outfits": {
                  "type": "array",
                  "maxItems": 3,
                  "items": {
                      "type": "object",
                      "properties": {
-                         **{f"{slot}_id": {"type": "integer", "description": f"{SLOT_NAMES[slot]} 옷 번호, 없으면 0"}
-                            for slot in RECOMMEND_SLOTS},
-                         "summary": {"type": "string", "description": "고른 까닭 한 줄"},
+                         **slot_schema,
+                         # 말투를 답 칸 설명에도 적습니다. 옷마다 글의 말투가 고쳐졌습니다 (13/254 → 0/232, 2026-10-22)
+                         "summary": {"type": "string",
+                                     "description": "고른 까닭 한 줄. 해요체 완전한 문장으로 '~요.'로 끝남, 실제로 고른 옷만 말함"},
                          "details": {"type": "object",
+                                     "description": "입은 칸마다 옷 이름으로 시작하는 해요체 한 문장 ('~요.'로 끝남)",
                                      "properties": {slot: {"type": "string"} for slot in RECOMMEND_SLOTS}},
                      },
                      "required": [f"{slot}_id" for slot in RECOMMEND_SLOTS] + ["summary", "details"],

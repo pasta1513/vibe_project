@@ -27,10 +27,6 @@ def _fail_if_asked(name: str) -> None:
         raise ExternalError("ai_failed")
 
 
-def _valid_score(value) -> bool:
-    return isinstance(value, (int, float)) and MIN_SCORE <= round(value, 1) <= MAX_SCORE
-
-
 def pick_keywords(photo_path, candidates: list[dict]):
     """AI가 사진을 보고 구분과 키워드를 미리 고릅니다.
 
@@ -141,17 +137,37 @@ def score(outfit: dict, weather: dict, tag, items: list[dict] | None = None, tas
 
     items: 칸마다 옷 정보 {"slot", "category", "keywords", "image_path"} (P-25)
     task: 기다리는 시간을 고르는 일 이름. 추천받기 안에서는 "recommend_score" (P-26)
+    AI는 기준마다 점수(criteria)를 주고, 전체 점수는 여기서 합칩니다 (combine_score, D-014).
     돌려주는 것: {"score", "note_type": "comment", "summary", "details"}
-    점수가 범위 밖이면 ExternalError("ai_invalid")를 냅니다.
+    기준 점수가 없거나 범위 밖이면 ExternalError("ai_invalid")를 냅니다.
     입지 않은 칸의 평가는 버립니다.
     """
     _fail_if_asked("score")
     answer = provider.score(outfit, weather, tag, items or [], task=task)
-    if not answer or not _valid_score(answer.get("score")) or not answer.get("summary"):
+    if not answer or not answer.get("summary"):
+        raise ExternalError("ai_invalid")
+    total = combine_score(answer.get("criteria") or {}, has_tag=bool(tag))
+    if total is None:
         raise ExternalError("ai_invalid")
     return {
-        "score": round(answer["score"], 1),
+        "score": total,
         "note_type": "comment",
         "summary": answer["summary"],
         "details": _worn_details(outfit, answer.get("details")),
     }
+
+
+def combine_score(criteria: dict, has_tag: bool):
+    """기준 점수(날씨, 태그, 어울림, 각 1.0~5.0)를 전체 점수 하나로 합칩니다. (사람이 정함, 2026-10-22, D-014)
+
+    전체 = min(평균, 가장 낮은 기준 + 1.0). 크게 어긋난 기준 하나가 평균에 묻히지 않게 합니다.
+    태그가 없으면 날씨와 어울림 둘만 씁니다 (PRD §6).
+    예: 날씨 1.0, 태그 5.0, 어울림 5.0 → 평균 3.7, 상한 2.0 → 2.0
+    돌려주는 것: 1.0~5.0, 소수점 한 자리. 기준 점수가 없거나 범위 밖(0점 포함)이면 None → 점수를 받지 못함.
+    """
+    names = ("weather", "tag", "harmony") if has_tag else ("weather", "harmony")
+    values = [criteria.get(name) for name in names]
+    if not all(isinstance(v, (int, float)) and not isinstance(v, bool) and 1.0 <= v <= 5.0 for v in values):
+        return None
+    total = min(sum(values) / len(values), min(values) + 1.0)
+    return min(MAX_SCORE, max(MIN_SCORE, round(total, 1)))
