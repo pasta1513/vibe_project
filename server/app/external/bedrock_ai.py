@@ -32,6 +32,9 @@ TIMEOUTS = {
     # 추천받기의 AI 45초 = 추천 AI 25초 + 평가 AI 20초 (3벌을 동시에 평가). (P-26)
     "recommend": 25,
     "recommend_score": 20,
+    # 평가 AI가 꼭 채울 칸을 빼먹었을 때 한 번 더 묻는 짧은 시간. 첫 답이 10초 안에 왔을 때만 묻습니다 (ai.py).
+    # 점수 확인하기 10(날씨)+10+10, 추천받기의 평가 10+10으로 화면 시간 안에 듭니다. (사람이 정함, 2026-10-22)
+    "score_retry": 10,
     "ping": 15,
 }
 CONNECT_TIMEOUT = 3
@@ -181,13 +184,14 @@ KIND_NAMES = {"color": "색", "type": "종류", "material": "소재", "season": 
 CONDITION_NAMES = {"clear": "맑음", "cloudy": "흐림", "rain": "비", "snow": "눈"}
 
 # 한 요청에 보낼 수 있는 크기는 25MB입니다 (Amazon Nova 사용자 안내서 "Image understanding").
-# 여유를 두어 사진은 모두 합쳐 20MB까지만 보내고, 넘으면 그 옷은 키워드만 보냅니다.
+# 여유를 두어 사진은 모두 합쳐 20MB까지만 보냅니다.
+# 사진은 키워드 미리 고르기(P-27)에서만 보냅니다. 추천과 점수는 키워드만 씁니다 (D-015).
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
 IMAGE_FORMATS = {b"\xff\xd8\xff": "jpeg", b"\x89PNG": "png", b"RIFF": "webp"}
 
 
 def _image_block(path, budget: list) -> dict | None:
-    """2D 이미지 파일을 사진 블록으로. 파일이 없거나 크기 여유가 없으면 None."""
+    """사진 파일을 사진 블록으로. 파일이 없거나 크기 여유가 없으면 None."""
     if path is None:
         return None
     try:
@@ -247,11 +251,19 @@ SCORE_SYSTEM = (
     "기준마다 엄격하게 매깁니다. 5.0은 흠잡을 데가 없을 때만 줍니다.\n"
     "- 4.0~5.0: 잘 맞음 / 3.0~3.9: 무난하지만 아쉬움이 있음 / 2.0~2.9: 꽤 어긋남 / 1.0~1.9: 크게 어긋남\n"
     "- 예: 추운 날 아우터가 없으면 weather_score는 1.5 아래, '포멀' 태그에 청바지와 운동화면 tag_score는 2.0 아래\n"
-    "옷마다 사진과 사용자가 붙인 키워드가 함께 주어집니다. 사진에서는 옷의 색과 모양만 봅니다. "
-    "배경, 마네킹과 받침대, 넥타이 같은 소품, 사진의 밝기는 옷이 아니므로 평가에 넣지 않습니다. "
-    "색과 종류는 키워드를 먼저 믿습니다.\n"
+    # 사진은 보내지 않고 키워드만 보냅니다 (사람이 정함, 2026-10-22, D-015).
+    "옷마다 사용자가 등록할 때 확인한 키워드(구분, 색, 종류, 소재, 계절·두께, 무늬)가 주어집니다. "
+    "사진은 없으니 키워드로만 판단하고, 키워드에 없는 모양이나 색은 지어내지 않습니다.\n"
     "점수를 정하기 전에 weather_fit, tag_fit, harmony에 기준마다 짧게 판단을 적습니다. 비워 두지 않습니다. "
     "weather_fit에는 최저 기온이 어느 단계(추움/쌀쌀함/따뜻함)인지 먼저 적습니다.\n"
+    # 키워드만 보면 태그 판단이 무뎌져('포멀'에 청바지 + 운동화도 4.5) 옷마다 먼저 판단하게 합니다.
+    # (사람이 정함, 2026-10-22, D-015)
+    # 예시에 옷 이름을 적으면 그 이름을 따라 쓰고("셔츠"), 자리 표시("[상의 이름]")를 적으면 그 글자를 따라 써서
+    # 판단이 다시 무뎌졌습니다. 그래서 요청마다 실제 옷 이름으로 적을 순서를 줍니다 (score 참고). (2026-10-22)
+    "tag_fit에는 요청에 적힌 순서대로 입은 옷을 하나씩 '옷 이름: 맞음/조금 어긋남/맞지 않음, 짧은 까닭' 모양으로 적습니다. "
+    "까닭과 판단이 맞아야 합니다. 어울리지 않는다고 쓰면 '맞지 않음'입니다. "
+    "그 판단대로 tag_score를 매깁니다. 맞지 않는 옷이 하나라도 있으면 tag_score는 3.0 아래, "
+    "둘 이상이면 2.0 아래입니다. 모두 맞을 때만 4.0 이상을 줍니다.\n"
     + OUTER_RULES +
     "예시 (기준을 보여 주는 것이니 숫자를 그대로 따라 하지 말고 판단에 맞게 매깁니다):\n"
     "- 최저 15° 맑음, 캐주얼, 니트 + 청바지 + 운동화, 아우터 없음: 따뜻한 날이라 아우터가 없어도 되어 "
@@ -272,24 +284,22 @@ def criterion(name: str) -> dict:
     return {"type": "number", "minimum": 1.0, "maximum": 5.0, "description": f"{name} 1.0~5.0, 소수점 한 자리"}
 
 
-# 코디 점수 (PRD §6 점수, P-25). 옷 키워드와 2D 이미지를 함께 보냅니다 (사람이 정함, 2026-10-21).
+# 코디 점수 (PRD §6 점수, P-25). 옷 키워드만 보냅니다 (사람이 정함, 2026-10-22, D-015).
 # 평가 AI입니다. 추천받기에서도 이 함수로 점수를 매깁니다 (task="recommend_score", P-26).
 def score(outfit, weather, tag, items=None, task="score"):
     items = items or []
-    budget = [MAX_IMAGE_BYTES]
     # 아우터가 없다는 사실만으로 깎지 않도록, 기온 기준을 따르라고 함께 적습니다. (2026-10-22)
     outer_text = "입음" if outfit.get("outer") else "입지 않음 (괜찮은지는 날씨와 아우터 기준을 따름)"
-    conditions = (f"날씨: {_weather_text(weather)}\n"
-                  f"스타일 태그: {tag if tag else '없음 (태그 기준은 보지 않음)'}\n"
-                  f"아우터: {outer_text}")
-    content = [{"text": conditions + "\n아래는 입은 옷입니다."}]
-    for item in items:
-        content.append({"text": f"[{SLOT_NAMES[item['slot']]}] {_keyword_text(item['keywords'])}"})
-        block = _image_block(item.get("image_path"), budget)
-        if block:
-            content.append(block)
-    # 사진이 들어가면 앞쪽 글(태그)을 놓치는 일이 있어 조건을 사진 뒤에 한 번 더 적습니다. (2026-10-22)
-    content.append({"text": "다시 한 번, 평가 조건입니다.\n" + conditions})
+    clothes = "\n".join(f"[{SLOT_NAMES[item['slot']]}] {_keyword_text(item['keywords'])}" for item in items)
+    content = (f"날씨: {_weather_text(weather)}\n"
+               f"스타일 태그: {tag if tag else '없음 (태그 기준은 보지 않음)'}\n"
+               f"아우터: {outer_text}\n"
+               f"입은 옷:\n{clothes}")
+    if tag:
+        # 옷마다 태그 판단을 실제 옷 이름으로 적게 합니다 (사람이 정함, 2026-10-22, D-015).
+        names = [", ".join(item["keywords"].get("type") or [SLOT_NAMES[item["slot"]]]) for item in items]
+        content += ("\ntag_fit은 이 순서로 적습니다: "
+                    + " ".join(f"{name}: (맞음/조금 어긋남/맞지 않음), (까닭)." for name in names))
     worn = [item["slot"] for item in items]
     answer = converse_tool(
         task,
@@ -301,7 +311,9 @@ def score(outfit, weather, tag, items=None, task="score"):
          "properties": {
              # 판단을 먼저 적게 해서 점수가 판단을 따르게 합니다. 판단 칸은 저장하지 않습니다.
              "weather_fit": {"type": "string", "description": "최저 기온 단계와 날씨에 맞는지 짧은 판단 (해요체)"},
-             **({"tag_fit": {"type": "string", "description": "태그에 맞는지 짧은 판단 (해요체)"}} if tag else {}),
+             **({"tag_fit": {"type": "string",
+                             "description": "입은 옷마다 '옷 이름: 맞음/조금 어긋남/맞지 않음, 짧은 까닭' (해요체)"}}
+                if tag else {}),
              "harmony": {"type": "string", "description": "옷끼리 어울리는지 짧은 판단. 배경과 소품은 보지 않음 (해요체)"},
              "weather_score": criterion("날씨 기준"),
              **({"tag_score": criterion("태그 기준")} if tag else {}),

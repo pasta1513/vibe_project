@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
-from .. import photos
 from ..db import get_session
 from ..external import ExternalError, ai
 from ..models import Clothing, StyleTag
@@ -58,7 +57,7 @@ def check_outfit_or_fail(session: Session, outfit: dict) -> None:
 
 
 def outfit_items(session: Session, outfit: dict) -> list[dict]:
-    """AI에 넘길 칸마다의 옷 정보: 칸, 구분, 키워드, 2D 이미지 파일 (P-25, 사람이 정함 2026-10-21)"""
+    """AI에 넘길 칸마다의 옷 정보: 칸, 구분, 키워드 (P-25). 사진은 넘기지 않습니다 (사람이 정함, 2026-10-22, D-015)"""
     closet = {c["id"]: c for c in closet_for_ai(session)}
     clothes = {c.id: c for c in session.exec(
         select(Clothing).where(Clothing.id.in_([i for i in outfit.values() if i is not None]))).all()}
@@ -71,7 +70,6 @@ def outfit_items(session: Session, outfit: dict) -> list[dict]:
             "slot": slot,
             "category": clothes[clothing_id].category,
             "keywords": closet.get(clothing_id, {}).get("keywords", {}),
-            "image_path": photos.find_file(clothes[clothing_id].image_path),
         })
     return items
 

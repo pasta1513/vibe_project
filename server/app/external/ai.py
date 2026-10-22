@@ -4,6 +4,7 @@ AI가 준 답은 여기서 검사한 뒤에 돌려줍니다. 가짜 AI의 답도
 """
 
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from ..models import TYPE_GENDERS
@@ -19,6 +20,8 @@ else:
     provider = fake_ai
 
 MIN_SCORE, MAX_SCORE = 0.1, 5.0
+# 평가 AI의 답에 빠진 칸이 있을 때, 첫 답이 이 시간 안에 왔으면 한 번 더 묻습니다. (2026-10-22)
+RETRY_WITHIN_SECONDS = 10
 
 
 def _fail_if_asked(name: str) -> None:
@@ -135,18 +138,23 @@ def _worn_details(outfit: dict, details) -> dict:
 def score(outfit: dict, weather: dict, tag, items: list[dict] | None = None, task: str = "score") -> dict:
     """코디 한 벌의 점수와 코멘트를 받습니다. 태그가 없으면(None) 태그 기준은 빼고 묻습니다.
 
-    items: 칸마다 옷 정보 {"slot", "category", "keywords", "image_path"} (P-25)
+    items: 칸마다 옷 정보 {"slot", "category", "keywords"} (P-25). 사진은 넘기지 않습니다 (D-015)
     task: 기다리는 시간을 고르는 일 이름. 추천받기 안에서는 "recommend_score" (P-26)
     AI는 기준마다 점수(criteria)를 주고, 전체 점수는 여기서 합칩니다 (combine_score, D-014).
     돌려주는 것: {"score", "note_type": "comment", "summary", "details"}
-    기준 점수가 없거나 범위 밖이면 ExternalError("ai_invalid")를 냅니다.
+    기준 점수나 코멘트가 빠진 답이면 한 번만 다시 묻습니다 (_complete_total).
+    그래도 없거나 범위 밖이면 ExternalError("ai_invalid")를 냅니다.
     입지 않은 칸의 평가는 버립니다.
     """
     _fail_if_asked("score")
+    started = time.monotonic()
     answer = provider.score(outfit, weather, tag, items or [], task=task)
-    if not answer or not answer.get("summary"):
-        raise ExternalError("ai_invalid")
-    total = combine_score(answer.get("criteria") or {}, has_tag=bool(tag))
+    total = _complete_total(answer, tag)
+    # Nova가 꼭 채울 칸을 가끔 빼먹습니다. 첫 답이 빨리 왔을 때만 짧은 시간으로 한 번 더 묻습니다.
+    # 접속 실패나 시간 초과(ExternalError)는 다시 묻지 않습니다 (P-25a). (사람이 정함, 2026-10-22)
+    if total is None and time.monotonic() - started <= RETRY_WITHIN_SECONDS:
+        answer = provider.score(outfit, weather, tag, items or [], task="score_retry")
+        total = _complete_total(answer, tag)
     if total is None:
         raise ExternalError("ai_invalid")
     return {
@@ -155,6 +163,13 @@ def score(outfit: dict, weather: dict, tag, items: list[dict] | None = None, tas
         "summary": answer["summary"],
         "details": _worn_details(outfit, answer.get("details")),
     }
+
+
+def _complete_total(answer, tag):
+    """코멘트와 기준 점수가 모두 있으면 합친 점수, 아니면 None."""
+    if not answer or not answer.get("summary"):
+        return None
+    return combine_score(answer.get("criteria") or {}, has_tag=bool(tag))
 
 
 def combine_score(criteria: dict, has_tag: bool):
