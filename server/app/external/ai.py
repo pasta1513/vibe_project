@@ -7,7 +7,7 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from ..models import TYPE_GENDERS
+from ..models import CATEGORIES, TYPE_GENDERS
 from ..rules import check_outfit, outfit_key
 from . import ExternalError, should_fake_fail
 from . import fake_ai
@@ -33,22 +33,29 @@ def _fail_if_asked(name: str) -> None:
 def pick_keywords(photo_path, candidates: list[dict]):
     """AI가 사진을 보고 구분과 키워드를 미리 고릅니다.
 
-    candidates: 고를 수 있는 단어 목록 (id 포함).
-    돌려주는 것: {"category": 구분 코드 또는 None, "keyword_ids": [...]}, 못 고르면 None.
-    목록에 없는 단어는 뺍니다.
+    candidates: 고를 수 있는 단어 목록 (id 포함). 옷마다 {"kind", "id", "name"}, 종류 단어는 "category"도.
+    돌려주는 것: {"category": 구분 코드, "keyword_ids": [...]}, 못 고르면 None.
+    목록에 없는 단어와, 고른 구분에 맞지 않는 종류 단어는 뺍니다 (등록할 때 막히므로, P-27).
+    구분이 다섯 가지 중 하나가 아니면 못 고른 것으로 봅니다.
     """
     try:
         _fail_if_asked("keywords")
         answer = provider.pick_keywords(photo_path, candidates)
     except ExternalError:
         return None
-    if not answer:
+    if not answer or answer.get("category") not in CATEGORIES:
         return None
-    allowed = {c["id"] for c in candidates}
-    return {
-        "category": answer.get("category"),
-        "keyword_ids": [k for k in answer.get("keyword_ids", []) if k in allowed],
-    }
+    category = answer["category"]
+    by_id = {c["id"]: c for c in candidates}
+    keyword_ids = []
+    for k in answer.get("keyword_ids") or []:
+        word = by_id.get(k)
+        if word is None or k in keyword_ids:
+            continue
+        if word["kind"] == "type" and word.get("category") != category:
+            continue
+        keyword_ids.append(k)
+    return {"category": category, "keyword_ids": keyword_ids}
 
 
 def decide_gender(word: str, category: str) -> tuple[str, bool]:

@@ -1,7 +1,7 @@
 """진짜 AI: Amazon Bedrock의 Amazon Nova Lite (D-013).
 
 ai.py가 부르는 함수 모양은 가짜 AI(fake_ai.py)와 같습니다. 답의 검사는 ai.py가 합니다.
-아직 Bedrock으로 옮기지 않은 일은 가짜 AI를 그대로 부릅니다. P-24 ~ P-27에서 하나씩 옮깁니다.
+AI가 하는 일 다섯 가지(성별, 비슷한 단어, 점수, 추천, 키워드 미리 고르기)를 모두 Nova Lite가 합니다 (P-24 ~ P-27).
 
 접속 정보와 설정은 `server/.env`에서 읽습니다. (D-004, README "진짜 AI 연결")
 - AWS_BEARER_TOKEN_BEDROCK: Bedrock API 키 (사람이 직접 만들어 넣음)
@@ -17,7 +17,6 @@ from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
 from . import ExternalError
-from . import fake_ai
 
 DEFAULT_REGION = "ap-northeast-2"
 DEFAULT_MODEL_ID = "apac.amazon.nova-lite-v1:0"
@@ -173,9 +172,79 @@ def find_similar(name, candidates):
     return answer.get("existing") or None
 
 
-# 아직 Bedrock으로 옮기지 않은 일: 가짜 AI를 그대로 씁니다.
+PICK_SYSTEM = (
+    # 키워드 미리 고르기의 페르소나와 답 형식 (P-27, 사람이 정함 2026-10-22)
+    "당신은 옷 사진을 보고 앱의 키워드 목록에서 맞는 키워드를 골라 주는 옷장 정리 도우미입니다.\n"
+    "사진에서는 옷 한 벌만 봅니다. 배경, 사람, 마네킹과 받침대, 옷걸이, 넥타이 같은 다른 소품은 보지 않습니다.\n"
+    "먼저 look에 사진 속 옷이 무엇인지 해요체로 짧게 적은 뒤 고릅니다.\n"
+    "- category: 상의(top), 하의(bottom), 신발(shoes), 아우터(outer), 원피스(dress) 중 하나\n"
+    "- color_ids: 눈에 띄는 색만 1~2개. 단추나 바느질 같은 작은 부분의 색은 고르지 않습니다.\n"
+    "- type_ids: 고른 구분의 종류 목록에서 가장 맞는 것 1개 (애매하면 2개까지)\n"
+    "- material_ids, season_ids, pattern_ids: 사진으로 확실할 때만 고르고, 확실하지 않으면 빈 목록으로 둡니다.\n"
+    "번호는 목록에 적힌 것만 씁니다."
+)
+
+
+def _pick_list(candidates, kind) -> list[dict]:
+    return [c for c in candidates if c["kind"] == kind]
+
+
+# 키워드 미리 고르기 (PRD §4 등록하기 4, P-27). 원래 사진을 보냅니다 (D-015).
+# 칸마다 그 종류의 키워드 번호만 고를 수 있게 합니다 (P-26 교훈). 검사는 ai.py가 합니다.
+# 돌려주는 것: {"category", "keyword_ids"}. 사진을 읽지 못하면 ExternalError → 직접 고르기 (T-13).
 def pick_keywords(photo_path, candidates):
-    return fake_ai.pick_keywords(photo_path, candidates)
+    block = _image_block(photo_path, [MAX_IMAGE_BYTES])
+    if block is None:
+        raise ExternalError("ai_failed", "사진을 읽지 못했습니다.")
+    lists = {kind: _pick_list(candidates, kind) for kind in ("color", "type", "material", "season", "pattern")}
+
+    def listed(words):
+        return ", ".join(f"{w['id']} {w['name']}" for w in words) or "없음"
+
+    types_by_category = "\n".join(
+        f"  [{CATEGORY_NAMES[cat]}] {listed([w for w in lists['type'] if w.get('category') == cat])}"
+        for cat in CATEGORY_NAMES)
+    text = ("키워드 목록 (번호 이름):\n"
+            f"색: {listed(lists['color'])}\n"
+            f"종류 (구분마다):\n{types_by_category}\n"
+            f"소재: {listed(lists['material'])}\n"
+            f"계절·두께: {listed(lists['season'])}\n"
+            f"무늬: {listed(lists['pattern'])}\n"
+            "사진 속 옷의 구분과 키워드를 골라 주세요.")
+
+    def ids_field(kind, description, min_items=0, max_items=None):
+        field = {"type": "array", "description": description,
+                 "items": {"type": "integer", "enum": [w["id"] for w in lists[kind]] or [0]},
+                 "minItems": min_items}
+        if max_items:
+            field["maxItems"] = max_items
+        return field
+
+    answer = converse_tool(
+        "keywords",
+        PICK_SYSTEM,
+        [block, {"text": text}],
+        "answer_keywords",
+        "사진 속 옷의 구분과 키워드 번호를 답합니다.",
+        {"type": "object",
+         "properties": {
+             "look": {"type": "string", "description": "사진 속 옷이 무엇인지 짧게 (해요체)"},
+             "category": {"type": "string", "enum": list(CATEGORY_NAMES)},
+             "color_ids": ids_field("color", "눈에 띄는 색 1~2개", 1, 2),
+             "type_ids": ids_field("type", "고른 구분의 종류 1개 (애매하면 2개)", 1, 2),
+             "material_ids": ids_field("material", "확실할 때만, 아니면 빈 목록", 0, 2),
+             "season_ids": ids_field("season", "확실할 때만, 아니면 빈 목록", 0, 2),
+             "pattern_ids": ids_field("pattern", "확실할 때만, 아니면 빈 목록", 0, 1),
+         },
+         "required": ["look", "category", "color_ids", "type_ids", "material_ids", "season_ids", "pattern_ids"]},
+        max_tokens=400,
+    )
+    ids = []
+    for key in ("color_ids", "type_ids", "material_ids", "season_ids", "pattern_ids"):
+        value = answer.get(key)
+        if isinstance(value, list):
+            ids += [v for v in value if isinstance(v, int) and not isinstance(v, bool)]
+    return {"category": answer.get("category"), "keyword_ids": ids}
 
 
 SLOT_NAMES = {"top": "상의", "bottom": "하의", "dress": "원피스", "shoes": "신발", "outer": "아우터"}
