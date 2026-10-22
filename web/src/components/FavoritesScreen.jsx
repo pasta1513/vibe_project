@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import favoritesBg from '../assets/favorites/favorites-bg.png'
+import favoritesEmptyBg from '../assets/favorites/favorites-empty-bg.png'
 import { SLOT_LABEL } from '../labels.js'
 import '../styles/favorites.css'
 import ConfirmDialog from './ConfirmDialog.jsx'
@@ -237,9 +238,11 @@ function FavoritesScreen({ onTryOn }) {
   }
 
   // 시안 10을 그대로 옮긴 화면입니다. (P-38)
+  // 즐겨찾기가 없으면 사람이 준 빈 옷걸이 그림(빈 옷걸이 7개)을 배경으로 씁니다. 제목 패널은 그 그림의 패널 자리에 맞춥니다. (사람이 정함, 2026-10-22)
+  const empty = favorites !== null && favorites.length === 0
   return (
-    <section className="fv" aria-label="즐겨찾기" style={{ '--src': `url(${favoritesBg})` }}>
-      <div className="fv-title">
+    <section className="fv" aria-label="즐겨찾기" style={{ '--src': `url(${empty ? favoritesEmptyBg : favoritesBg})` }}>
+      <div className={`fv-title${empty ? ' fv-title--empty' : ''}`}>
         <svg width="52" height="48" viewBox="0 0 24 22" aria-hidden="true">
           <path d="M12 20s-9-5.5-9-12a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-9 12-9 12z" fill="none" stroke="#e8473f" strokeWidth="2.2" />
         </svg>
@@ -247,7 +250,7 @@ function FavoritesScreen({ onTryOn }) {
         <p>마음에 드는 코디를 저장하고, 언제든 다시 입혀볼 수 있어요.</p>
       </div>
 
-      {favorites && favorites.length === 0 && <p className="fv-empty">아직 즐겨찾기가 없어요.</p>}
+      {empty && <p className="fv-empty">아직 즐겨찾기가 없어요.</p>}
       {favorites && favorites.length > 0 && (
         <>
           <div className="fv-track" ref={scroller}>
