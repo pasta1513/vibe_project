@@ -1,0 +1,99 @@
+/* 처음 화면 (SCREEN-SPEC §4). 시안 style/html 07을 그대로 옮깁니다. 위치는 1536×1024 캔버스 좌표.
+   배경은 시안 PNG에서 가운데 캐릭터 자리와 아래 "최근 코디 일기" 패널을 메운 그림. (P-38) */
+
+.hm {
+  position: absolute;
+  inset: 0;
+  background-image: var(--src);
+  background-size: 1536px 1024px;
+  color: #3b2a22;
+}
+
+/* 시안의 캐릭터 자리 (470~612, 280~645) */
+.hm-mannequin {
+  position: absolute;
+  left: 446px;
+  top: 282px;
+  width: 190px;
+  height: 368px;
+}
+
+/* 날씨 카드 (시안 .weather) */
+.hm-weather {
+  position: absolute;
+  left: 1089px;
+  top: 164px;
+  width: 316px;
+  height: 182px;
+  border-radius: 20px;
+  background: #fdf8f3;
+  box-shadow: var(--shadow-panel);
+}
+
+.hm-weather__city {
+  position: absolute;
+  left: 30px;
+  top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.hm-weather__icon {
+  position: absolute;
+  left: 32px;
+  top: 64px;
+  width: 84px;
+  height: 84px;
+}
+
+.hm-weather__info {
+  position: absolute;
+  left: 133px;
+  top: 62px;
+  font-size: 18px;
+  line-height: 1.58;
+  white-space: nowrap;
+}
+
+.hm-weather__info b {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.hm-weather__info small {
+  margin-left: 8px;
+  font-size: 17px;
+}
+
+.hm-weather__wait {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #8a7466;
+}
+
+.hm-weather__error {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 말풍선 문장은 배경에 그려져 있어, 화면 읽기 도구용으로만 둡니다. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

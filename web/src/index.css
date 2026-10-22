@@ -114,11 +114,22 @@ button {
 }
 
 .menubar__brand {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  font-family: inherit;
   text-align: center;
+  cursor: pointer;
+}
+
+.menubar__brand:hover {
+  background: #f6ebe0;
 }
 
 .menubar__logo {
   position: relative;
+  display: block;
   font-size: 36px;
   font-weight: 800;
   color: var(--color-heading);
@@ -141,6 +152,7 @@ button {
 }
 
 .menubar__logo-sub {
+  display: block;
   margin-top: 4px;
   font-size: 16px;
   color: var(--color-heading);
@@ -236,16 +248,7 @@ button {
   height: 40%;
 }
 
-.stage__mannequin {
-  position: absolute;
-  left: 50%;
-  bottom: 10%;
-  height: 72%;
-  transform: translateX(-50%);
-}
-
-.stage__notice,
-.stage__placeholder {
+.stage__notice {
   position: absolute;
   left: 50%;
   bottom: var(--space-4);
@@ -254,10 +257,6 @@ button {
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-button);
   background: var(--color-surface);
-}
-
-.stage__placeholder {
-  color: var(--color-text-sub);
 }
 
 /* 창 (DESIGN §4.3) */

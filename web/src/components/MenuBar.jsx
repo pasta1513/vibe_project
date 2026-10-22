@@ -40,15 +40,16 @@ const MENUS = [
   },
 ]
 
+// 로고를 누르면 처음 화면으로 돌아갑니다 (시안처럼, 사람이 정함 2026-10-22). onSelect(null)
 function MenuBar({ active, onSelect }) {
   return (
     <header className="menubar">
-      <div className="menubar__brand">
-        <div className="menubar__logo">
+      <button type="button" className="menubar__brand" aria-label="처음 화면으로" onClick={() => onSelect(null)}>
+        <span className="menubar__logo">
           mo<span className="menubar__logo-i">i</span>re
-        </div>
-        <div className="menubar__logo-sub">나의 작은 옷장</div>
-      </div>
+        </span>
+        <span className="menubar__logo-sub">나의 작은 옷장</span>
+      </button>
       <nav className="menubar__nav">
         {MENUS.map((menu) => (
           <button

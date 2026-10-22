@@ -6,9 +6,9 @@ import DiaryScreen from './components/DiaryScreen.jsx'
 import DressUpScreen from './components/DressUpScreen.jsx'
 import FavoritesScreen from './components/FavoritesScreen.jsx'
 import ErrorLine from './components/ErrorLine.jsx'
-import Mannequin from './components/Mannequin.jsx'
 import MannequinPicker from './components/MannequinPicker.jsx'
 import MenuBar from './components/MenuBar.jsx'
+import HomeScreen from './components/HomeScreen.jsx'
 import Room from './components/Room.jsx'
 import SettingsScreen from './components/SettingsScreen.jsx'
 import Toast from './components/Toast.jsx'
@@ -105,15 +105,17 @@ function App() {
   const diaryOpen = showMenu && activeMenu === 'diary'
   // 즐겨찾기에서는 옷걸이가 화면 전체로 커지고 옷장과 마네킹은 숨깁니다. (SCREEN-SPEC §1.2, §8)
   const favoritesOpen = showMenu && activeMenu === 'favorites'
-  const fullScreen = closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen
+  // 처음 화면: 메뉴를 아직 고르지 않았을 때. 시안 07의 방에 마네킹과 날씨 카드가 보입니다. (SCREEN-SPEC §4)
+  const homeOpen = showMenu && !activeMenu && !confirmed
+  const fullScreen = homeOpen || closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen
 
   // 앱 전체를 시안(style/html)의 1536×1024 캔버스로 그리고 창 크기에 맞춰 줄입니다. (P-38, 사람이 정함 2026-10-22)
-  // 옷장, 새 옷 입기, 확정한 뒤 화면, 코디 일기, 즐겨찾기, 설정은 시안처럼 캔버스 전체를 쓰고(메뉴바가 위에 뜸), 아직 시안을 옮기지 않은 화면은 메뉴바 아래를 씁니다.
+  // 모든 화면이 시안처럼 캔버스 전체를 쓰고 메뉴바가 위에 뜹니다. 방(Room, Wardrobe)은 불러오는 중이거나 실패했을 때만 보입니다.
   return (
     <div className="app-frame">
       <div className="app-canvas" style={{ transform: `scale(${scale})` }}>
         {showMenu && <MenuBar active={activeMenu} onSelect={selectMenu} />}
-        <main className={`stage${closetOpen || dressUpOpen || diaryOpen || favoritesOpen || settingsOpen || confirmed ? ' stage--full' : ''}${firstRun ? ' stage--dimmed' : ''}`}>
+        <main className={`stage${fullScreen || confirmed ? ' stage--full' : ''}${firstRun ? ' stage--dimmed' : ''}`}>
           {confirmed ? (
             <ConfirmedScreen
               confirmed={confirmed}
@@ -125,10 +127,11 @@ function App() {
           ) : (
             <>
               <Room className="stage__room" />
+              {/* 불러오는 중이거나 실패했을 때만 보이는 방 */}
               {!fullScreen && <Wardrobe className="stage__wardrobe" />}
-              {showMenu && !fullScreen && <Mannequin className="stage__mannequin" {...mannequin} />}
             </>
           )}
+          {homeOpen && <HomeScreen mannequin={mannequin} />}
           {closetOpen && <ClosetScreen mannequin={mannequin} outfitTable={outfitTable} showToast={setToast} />}
           {dressUpOpen && (
             <DressUpScreen
@@ -150,9 +153,6 @@ function App() {
             <div className="stage__notice">
               <ErrorLine message={loadError} onRetry={retryLoad} />
             </div>
-          )}
-          {showMenu && activeMenu && !fullScreen && (
-            <p className="stage__placeholder">준비 중인 화면이에요.</p>
           )}
         </main>
         <Toast message={toast} onDone={clearToast} />
