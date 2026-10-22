@@ -108,12 +108,12 @@ function App() {
   const fullScreen = closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen
 
   // 앱 전체를 시안(style/html)의 1536×1024 캔버스로 그리고 창 크기에 맞춰 줄입니다. (P-38, 사람이 정함 2026-10-22)
-  // 옷장, 새 옷 입기, 확정한 뒤 화면, 코디 일기는 시안처럼 캔버스 전체를 쓰고(메뉴바가 위에 뜸), 아직 시안을 옮기지 않은 화면은 메뉴바 아래를 씁니다.
+  // 옷장, 새 옷 입기, 확정한 뒤 화면, 코디 일기, 즐겨찾기는 시안처럼 캔버스 전체를 쓰고(메뉴바가 위에 뜸), 아직 시안을 옮기지 않은 화면은 메뉴바 아래를 씁니다.
   return (
     <div className="app-frame">
       <div className="app-canvas" style={{ transform: `scale(${scale})` }}>
         {showMenu && <MenuBar active={activeMenu} onSelect={selectMenu} />}
-        <main className={`stage${closetOpen || dressUpOpen || diaryOpen || confirmed ? ' stage--full' : ''}${firstRun ? ' stage--dimmed' : ''}`}>
+        <main className={`stage${closetOpen || dressUpOpen || diaryOpen || favoritesOpen || confirmed ? ' stage--full' : ''}${firstRun ? ' stage--dimmed' : ''}`}>
           {confirmed ? (
             <ConfirmedScreen
               confirmed={confirmed}
