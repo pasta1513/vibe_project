@@ -87,8 +87,20 @@ def find_similar(name: str, candidates: list[str]):
 MAX_SHOPPING = 2
 
 
-def _clean_shopping(items) -> list[dict]:
-    """사면 좋을 옷: 이름과 이유가 모두 있는 것만 2개까지. 모양이 틀려도 추천 코디는 그대로 나갑니다. (P-38)"""
+def _owned(name: str, closet: list[dict]) -> bool:
+    """제안한 옷 이름에 옷장 옷 하나의 색과 종류가 함께 들어 있으면 이미 가진 옷으로 봅니다. (P-39)
+    예: 옷장에 네이비 코트가 있으면 "네이비 울 코트"는 뺍니다. "베이지 트렌치코트"는 남깁니다."""
+    for item in closet:
+        kw = item.get("keywords") or {}
+        if (any(c in name for c in kw.get("color", []))
+                and any(t in name for t in kw.get("type", []))):
+            return True
+    return False
+
+
+def _clean_shopping(items, closet: list[dict] | None = None) -> list[dict]:
+    """사면 좋을 옷: 이름과 이유가 모두 있는 것만 2개까지. 모양이 틀려도 추천 코디는 그대로 나갑니다. (P-38)
+    옷장에 이미 있는 옷은 뺍니다. (P-39)"""
     cleaned = []
     for item in items if isinstance(items, list) else []:
         if len(cleaned) == MAX_SHOPPING:
@@ -96,7 +108,8 @@ def _clean_shopping(items) -> list[dict]:
         if not isinstance(item, dict):
             continue
         name, reason = item.get("name"), item.get("reason")
-        if isinstance(name, str) and isinstance(reason, str) and name.strip() and reason.strip():
+        if (isinstance(name, str) and isinstance(reason, str) and name.strip() and reason.strip()
+                and not _owned(name, closet or [])):
             cleaned.append({"name": name.strip(), "reason": reason.strip()})
     return cleaned
 
@@ -142,7 +155,7 @@ def recommend(closet: list[dict], weather: dict, tag: str, request: str | None =
     log.info("추천: AI 답 %d벌, 통과 %d벌, 뺀 이유 %s", len(answers or []), len(results), dict(dropped))
     if not results:
         raise ExternalError("ai_invalid")
-    return {"outfits": results, "shopping": _clean_shopping(reply.get("shopping"))}
+    return {"outfits": results, "shopping": _clean_shopping(reply.get("shopping"), closet)}
 
 
 def score(outfit: dict, weather: dict, tag, items: list[dict] | None = None) -> dict:
