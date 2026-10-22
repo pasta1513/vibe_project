@@ -1,0 +1,357 @@
+/* 확정한 뒤 화면 (SCREEN-SPEC §5.6). 시안 style/html의 13_3, 13_4, 13_5를 그대로 옮깁니다.
+   위치는 1536×1024 캔버스 좌표. 배경은 시안 PNG에서 왼쪽 캐릭터 자리를 메운 그림. (P-38) */
+
+.cf {
+  position: absolute;
+  inset: 0;
+  background-image: var(--src);
+  background-size: 1536px 1024px;
+  color: #2f2622;
+}
+
+.cf button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* 확정 문구와 그 뒤의 흐린 띠 (시안 .veil, .confirm) */
+.cf-veil {
+  position: absolute;
+  border-radius: 26px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent),
+    linear-gradient(transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent),
+    linear-gradient(transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  mask-composite: intersect;
+}
+
+.cf-title {
+  position: absolute;
+  left: 168px;
+  top: 201px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 31px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  white-space: nowrap;
+}
+
+.cf-title i {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 2px 6px rgba(238, 106, 90, 0.35);
+}
+
+.cf-title svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cf-sub {
+  position: absolute;
+  left: 220px;
+  top: 255px;
+  margin: 0;
+  font-size: 17.5px;
+  line-height: 29px;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+
+.cf--dark .cf-title,
+.cf--dark .cf-sub {
+  color: #fff;
+}
+
+.cf--dark .cf-title {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.cf-mannequin {
+  position: absolute;
+  left: 352px;
+  top: 330px;
+  width: 210px;
+  height: 500px;
+}
+
+/* 날씨 카드 (시안 .weather) */
+.cf-weather {
+  position: absolute;
+  left: 577px;
+  top: 198px;
+  width: 274px;
+  height: 335px;
+  border-radius: 22px;
+  box-shadow: var(--shadow-panel);
+}
+
+.cf-weather > * {
+  position: absolute;
+}
+
+.cf-weather__date {
+  left: 28px;
+  top: 23px;
+  font-size: 20px;
+  letter-spacing: -0.3px;
+}
+
+.cf-weather__loc {
+  left: 28px;
+  top: 58px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  color: #5c4c44;
+}
+
+.cf-weather__loc svg {
+  width: 15px;
+  height: 15px;
+  fill: #8a7c74;
+}
+
+.cf-weather__icon {
+  left: 26px;
+  top: 102px;
+  width: 86px;
+  height: 88px;
+}
+
+.cf-weather__temp {
+  left: 118px;
+  top: 97px;
+  font-size: 30px;
+  font-weight: 700;
+  color: #241c18;
+  letter-spacing: -1px;
+  white-space: nowrap;
+}
+
+.cf-weather__desc {
+  left: 118px;
+  top: 143px;
+  font-size: 15.5px;
+}
+
+.cf-weather__hilo {
+  left: 118px;
+  top: 171px;
+  font-size: 15px;
+}
+
+.cf-weather__msg {
+  left: 23px;
+  top: 214px;
+  width: 229px;
+  height: 98px;
+  margin: 0;
+  padding: 10px 14px 9px;
+  border-radius: 16px;
+  background: #f3f1f0;
+  box-shadow: inset 0 0 0 1px #ebe6e3;
+  font-size: 14.5px;
+  line-height: 24px;
+  letter-spacing: -0.6px;
+  color: #3b302b;
+  white-space: nowrap;
+}
+
+/* 오늘의 코디 아이템 (시안 .items, .item) */
+.cf-items {
+  position: absolute;
+  left: 875px;
+  top: 160px;
+  width: 594px;
+  height: 649px;
+  border-radius: 24px;
+  background: rgb(251, 244, 238);
+  box-shadow: var(--shadow-panel);
+}
+
+.cf-items h3 {
+  position: absolute;
+  left: 33px;
+  top: 35px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #241c18;
+  letter-spacing: -0.6px;
+}
+
+.cf-items__list {
+  position: absolute;
+  left: 33px;
+  top: 87px;
+  width: 528px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(var(--n, 4), minmax(0, 124px));
+  gap: 10px;
+}
+
+.cf-item {
+  position: relative;
+  height: 193px;
+  border-radius: 12px;
+  border: 1px solid #f0e8e2;
+  background: rgb(254, 249, 246);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.cf-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(150, 100, 70, 0.12);
+}
+
+.cf-item__img {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 6px;
+  height: 128px;
+  padding: 6px;
+}
+
+.cf-item__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cf-item__nm {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 140px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #241c18;
+  text-align: center;
+  letter-spacing: -0.6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cf-item__tg {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 164px;
+  font-size: 11px;
+  line-height: 19px;
+  color: #7d6f68;
+  text-align: center;
+  letter-spacing: -0.7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cf-items__note {
+  position: absolute;
+  left: 33px;
+  right: 33px;
+  top: 300px;
+  margin: 0;
+  padding-top: 18px;
+  border-top: 1px solid #ece4de;
+  font-size: 15px;
+  color: #7d6f68;
+}
+
+.cf-error {
+  position: absolute;
+  left: 427px;
+  top: 822px;
+  width: 520px;
+}
+
+/* 아래 버튼 (시안 .actions, .act) */
+.cf-actions {
+  position: absolute;
+  left: 148px;
+  top: 862px;
+  width: 1249px;
+  height: 93px;
+  border-radius: 26px;
+  background: rgba(248, 240, 235, 0.96);
+  box-shadow: var(--shadow-panel);
+}
+
+.cf-act {
+  position: absolute;
+  top: 12px;
+  height: 69px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border-radius: 30px;
+  border: 1.5px solid #ece2dc;
+  background: #fffdfb;
+  color: #2f2622;
+  font-size: 21px;
+  letter-spacing: -0.5px;
+  transition: transform 0.15s, filter 0.15s, background 0.15s;
+}
+
+.cf-act svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cf-act:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.cf-act:disabled {
+  cursor: default;
+}
+
+.cf-act--on {
+  color: var(--color-accent);
+}
+
+.cf-act--on svg {
+  fill: var(--color-accent);
+}
+
+.cf-act--primary {
+  border-color: #f76f62;
+  background: #f76f62;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(238, 106, 90, 0.3);
+}
+
+.cf-act--primary:hover {
+  filter: brightness(1.05);
+}

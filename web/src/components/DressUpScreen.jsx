@@ -17,7 +17,6 @@ import {
 } from './DressUpPanels.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import Mannequin from './Mannequin.jsx'
-import { missingText } from './RecommendList.jsx'
 
 // 새 옷 입기 (SCREEN-SPEC §5): 옷 고르는 단계(5.2), 추천 보기(5.3), 점수 확인 단계(5.4)
 // 시안 style/html의 08_1(따뜻한·파스텔)과 12를 옮겼습니다. 배경은 시안 PNG에서 가운데 캐릭터 자리를 메운 그림입니다. (P-38)
@@ -228,7 +227,8 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
       Object.entries(body.outfit).map(([slot, id]) => [slot, id ? clothingOfRef.current[id] : null]),
     )
     if (!body.outfit.outer) worn.outer = 'none'
-    onConfirmed({ date: res.data.date, weather: res.data.weather, worn })
+    // 확정한 뒤 화면의 [즐겨찾기에 추가]에 쓸 코디 구성과 태그도 넘깁니다. (P-38)
+    onConfirmed({ date: res.data.date, weather: res.data.weather, worn, outfit: body.outfit, tagId: body.tag_id })
   }
 
   // 추천 목록에서 바로 확정: 추천을 받을 때의 조건과 이유가 남습니다.
@@ -440,7 +440,6 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
           confirming={confirming}
           onFavorite={changeFavorite}
           onGoCloset={onNoClothes}
-          missingText={missingText}
         />
       )}
 

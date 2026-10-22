@@ -1,6 +1,6 @@
+// 별과 이유·코멘트 펼치기. 코디 일기 카드가 씁니다. (새 옷 입기의 점수 카드는 P-38에서 DressUpPanels.jsx로 옮김)
 import { useState } from 'react'
-import { SLOT_LABEL, formatDate, scoreStars } from '../labels.js'
-import Button from './Button.jsx'
+import { SLOT_LABEL, scoreStars } from '../labels.js'
 
 // 별과 숫자: ★★★★☆ 4.3 (SCREEN-SPEC §2.3, DESIGN §4.5)
 export function Stars({ score }) {
@@ -45,25 +45,3 @@ export function NoteToggle({ result }) {
     </>
   )
 }
-
-// 점수 카드 (SCREEN-SPEC §5.4): 날짜, 점수, 코멘트 한 줄
-function ScoreCard({ date, result, onEdit, onConfirm, confirming, onFavorite, favoriting }) {
-  return (
-    <aside className="score-card" aria-label="점수 카드">
-      <h3 className="score-card__date">{formatDate(date)}</h3>
-      <Stars score={result.score} />
-      <NoteToggle result={result} />
-      <div className="score-card__actions">
-        <Button onClick={onEdit}>수정하기</Button>
-        <Button variant="primary" disabled={confirming} onClick={onConfirm}>
-          {confirming ? '확정하는 중…' : '확정하기'}
-        </Button>
-        <Button disabled={favoriting} onClick={onFavorite}>
-          즐겨찾기
-        </Button>
-      </div>
-    </aside>
-  )
-}
-
-export default ScoreCard
