@@ -1,19 +1,17 @@
 import '@fontsource/gamja-flower/400.css'
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import '../styles/onboarding.css'
 import step1Image from '../assets/onboarding/step1-gender.png'
 import step2Image from '../assets/onboarding/step2-height.png'
 import step3Image from '../assets/onboarding/step3-body.png'
 import step4Image from '../assets/onboarding/step4-confirm.png'
+import { useFitScale } from '../useFitScale.js'
 import Mannequin from './Mannequin.jsx'
 
 // 첫 실행: 마네킹 고르기 (SCREEN-SPEC §3). 닫기 버튼은 없습니다.
 // 시안 style/html의 01(성별), 02(키), 03(체형), 04_2(확인)를 그대로 옮겼습니다. 위치와 크기는 1536×1024 캔버스 기준입니다. (P-38)
 // 문장은 앱의 실제 동작에 맞게 고쳤습니다: 마네킹 모양은 보이는 모습에만 쓰고, 키 숫자는 쓰지 않습니다 (PRD §6, 사람이 정함 2026-10-22).
 // 시안의 키·체형 그림은 여자 그림뿐이라, 남성을 고르면 그 카드에는 앱 마네킹을 그립니다 (사람이 정함 2026-10-22).
-
-const STAGE_W = 1536
-const STAGE_H = 1024
 
 // crop: 시안 PNG에서 잘라 쓸 위치 (--x, --y: 카드 안 위치, --sx, --sy: PNG 안 위치)
 const STEPS = [
@@ -122,18 +120,6 @@ function px(box) {
   const style = {}
   for (const [k, v] of Object.entries(box)) style[k === 'radius' ? 'borderRadius' : k] = `${v}px`
   return style
-}
-
-// 창 크기에 맞춰 캔버스 전체를 줄이거나 늘립니다 (시안 common.js의 fit).
-function useFitScale() {
-  const [scale, setScale] = useState(1)
-  useLayoutEffect(() => {
-    const fit = () => setScale(Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H))
-    fit()
-    window.addEventListener('resize', fit)
-    return () => window.removeEventListener('resize', fit)
-  }, [])
-  return scale
 }
 
 function Logo() {

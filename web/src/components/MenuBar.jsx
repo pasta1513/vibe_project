@@ -1,4 +1,5 @@
-// 상단 메뉴바 (SCREEN-SPEC §1.1). 아이콘은 시안(style/html의 .nav)의 SVG를 그대로 씁니다. (P-38)
+// 상단 메뉴바 (SCREEN-SPEC §1.1). 시안(style/html의 "포근한 옷장 앱 상세 화면" .header, .nav)을 그대로 옮겼습니다:
+// 로고 "moire / 나의 작은 옷장"과 아이콘 + 글자 메뉴 다섯 개. (P-38)
 const MENUS = [
   {
     key: 'closet',
@@ -9,7 +10,7 @@ const MENUS = [
     key: 'dressup',
     label: '새 옷 입기',
     icon: (
-      <path d="M12 12c-3-6-9-6-8-1 1 3 5 2 8 1zm0 0c3-6 9-6 8-1-1 3-5 2-8 1zm0 0c-3 6-9 6-8 1 1-3 5-2 8-1zm0 0c3 6 9 6 8 1-1-3-5-2-8-1z" />
+      <path d="M12 12c-3-5-8-5-8-1 0 3 4 3 8 1zM12 12c3-5 8-5 8-1 0 3-4 3-8 1zM12 12c-3 5-8 5-8 1 0-3 4-3 8-1zM12 12c3 5 8 5 8 1 0-3-4-3-8-1z" />
     ),
   },
   {
@@ -33,7 +34,7 @@ const MENUS = [
     icon: (
       <>
         <circle cx="12" cy="12" r="3" />
-        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" />
+        <path d="M12 2l2 3 3.5-1 .5 3.5 3 2-2 3 1 3.5-3.5.5-2 3-2.5-2-2.5 2-2-3L4 17l1-3.5-2-3 3-2L6.5 4l3.5 1z" />
       </>
     ),
   },
@@ -41,8 +42,14 @@ const MENUS = [
 
 function MenuBar({ active, onSelect }) {
   return (
-    <nav className="menubar">
-      <div className="menubar__panel">
+    <header className="menubar">
+      <div className="menubar__brand">
+        <div className="menubar__logo">
+          mo<span className="menubar__logo-i">i</span>re
+        </div>
+        <div className="menubar__logo-sub">나의 작은 옷장</div>
+      </div>
+      <nav className="menubar__nav">
         {MENUS.map((menu) => (
           <button
             key={menu.key}
@@ -57,8 +64,8 @@ function MenuBar({ active, onSelect }) {
             {menu.label}
           </button>
         ))}
-      </div>
-    </nav>
+      </nav>
+    </header>
   )
 }
 
