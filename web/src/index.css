@@ -1883,55 +1883,6 @@ select:focus-visible {
   object-fit: contain;
 }
 
-/* 점수 카드 (SCREEN-SPEC §5.4) */
-
-.score-card__summary {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--color-text);
-  text-align: left;
-  cursor: pointer;
-}
-
-.score-card__details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0;
-  padding-left: var(--space-3);
-  list-style: none;
-  font-size: var(--text-sm);
-  color: var(--color-text-sub);
-}
-
-.score-card__slot {
-  font-weight: var(--weight-bold);
-  color: var(--color-text);
-}
-
-/* 별 (DESIGN §4.5) */
-.stars {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--text-lg);
-}
-
-.stars__filled {
-  color: var(--color-star);
-}
-
-.stars__empty {
-  color: var(--color-star-empty);
-}
-
-.stars__number {
-  margin-left: var(--space-1);
-  font-weight: var(--weight-bold);
-  color: var(--color-text);
-}
-
 /* 추천 보기 (SCREEN-SPEC §5.3) */
 
 .rec-card__star {
@@ -1946,15 +1897,6 @@ select:focus-visible {
 
 .rec-card__star--on {
   color: var(--color-star);
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 
 /* 다시 고르라는 알림: 조건 띠 바로 아래, 짧은 알림과 같은 모양 (SCREEN-SPEC §2.6, DESIGN §4.3) */
@@ -1975,118 +1917,13 @@ select:focus-visible {
   gap: var(--space-2);
 }
 
-/* 코디 일기 (SCREEN-SPEC §7): 방 위에 펼쳐진 일기장 */
-.diary {
-  position: absolute;
-  inset: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-8);
-  border: 12px solid var(--color-diary-border);
-  border-radius: var(--radius-card);
-  background: #fffaf0;
-  overflow-y: auto;
-}
-
-.diary__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-4);
-  flex: 1;
-  font-size: var(--text-md);
-  color: var(--color-text-sub);
-}
-
-.diary__empty p {
-  margin: 0;
-}
-
-.diary__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-8) var(--space-6);
-}
-
-/* 코디 일기 카드 (DESIGN §4.4): 종이색, 연한 황토 테두리, 오늘은 2px 코랄, 모서리 8px */
-.diary-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-  padding: var(--space-4);
-  border: 1px solid var(--color-diary-border);
-  border-radius: var(--radius-button);
-  background: var(--color-diary-paper);
-  color: var(--color-diary-text);
-}
-
-.diary-card--today {
-  border: 2px solid var(--color-accent);
-}
-
+/* 지운 옷 표시: 즐겨찾기 카드에서 씁니다 (코디 일기는 styles/diary.css) */
 .diary-card__deleted {
   position: absolute;
   top: var(--space-2);
   left: var(--space-2);
   font-size: var(--text-xs);
   color: var(--color-danger);
-}
-
-.diary-card__mannequin {
-  width: 100px;
-  height: 200px;
-}
-
-/* 날짜와 한 줄 이유·코멘트는 감자꽃, 점수와 태그는 Pretendard (DESIGN §3.1, §4.4) */
-.diary-card__date {
-  margin: 0;
-  font-family: 'Gamja Flower', var(--font-base);
-  font-size: var(--text-xl);
-  font-weight: 400;
-}
-
-.diary-card__weather,
-.diary-card__tag-score {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-}
-
-.diary-card .stars {
-  font-size: var(--text-md);
-}
-
-.diary-card__note {
-  width: 100%;
-}
-
-.diary-card__note .score-card__summary {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: 'Gamja Flower', var(--font-base);
-  font-size: var(--text-lg);
-  color: var(--color-diary-text);
-  text-align: center;
-}
-
-.diary-card__actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.diary-card__actions .btn {
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--text-sm);
 }
 
 .rec-card__star {

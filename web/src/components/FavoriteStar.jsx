@@ -8,7 +8,8 @@ import ConfirmDialog from './ConfirmDialog.jsx'
 // favoriteId: 같은 코디 구성의 즐겨찾기 번호. 없으면 null
 // add: 넣는 요청을 보내는 함수 (추천 카드는 코디 구성과 태그, 일기 카드는 기록 번호)
 // onChange(번호 또는 null): 별이 바뀌면 부릅니다. 같은 구성의 다른 카드도 함께 바꾸는 데 씁니다.
-function FavoriteStar({ favoriteId, add, onChange }) {
+// shape: 'heart'면 시안(style/html 09)의 ♡/♥ 모양. 동작은 별과 같습니다. (P-38)
+function FavoriteStar({ favoriteId, add, onChange, shape }) {
   const [busy, setBusy] = useState(false)
   const [asking, setAsking] = useState(false)
   const on = favoriteId != null
@@ -35,13 +36,21 @@ function FavoriteStar({ favoriteId, add, onChange }) {
     <>
       <button
         type="button"
-        className={`rec-card__star${on ? ' rec-card__star--on' : ''}`}
+        className={shape === 'heart' ? `fav-heart${on ? ' fav-heart--on' : ''}` : `rec-card__star${on ? ' rec-card__star--on' : ''}`}
         aria-label={on ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}
         aria-pressed={on}
         disabled={busy}
         onClick={() => (on ? setAsking(true) : handleAdd())}
       >
-        {on ? '★' : '☆'}
+        {shape === 'heart' ? (
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z" />
+          </svg>
+        ) : on ? (
+          '★'
+        ) : (
+          '☆'
+        )}
       </button>
       {asking && (
         <ConfirmDialog
