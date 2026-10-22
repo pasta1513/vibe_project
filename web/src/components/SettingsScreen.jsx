@@ -238,12 +238,13 @@ function WordList({ words, adder, ...handlers }) {
   )
 }
 
-function SettingsScreen({ mannequin, onMannequinSaved, showToast }) {
+// initialPage: 처음 보일 쪽 ('region' 등). 없으면 마네킹 설정
+function SettingsScreen({ mannequin, initialPage, onMannequinSaved, showToast }) {
   const [settings, setSettings] = useState(null)
   const [keywords, setKeywords] = useState(null)
   const [tags, setTags] = useState(null)
   const [loadError, setLoadError] = useState(null)
-  const [page, setPage] = useState('mannequin')
+  const [page, setPage] = useState(initialPage ?? 'mannequin')
   const [tab, setTab] = useState('color')
   const [region, setRegion] = useState('')
   // 고르는 중인 마네킹 모양. [설정 완료]를 눌러야 저장합니다. (사람이 정함, 2026-10-22)

@@ -30,6 +30,8 @@ function App() {
   const [dressUpInit, setDressUpInit] = useState(null)
   // 입혀 보기를 할 때마다 새 옷 입기 화면을 처음부터 다시 그립니다.
   const [dressUpKey, setDressUpKey] = useState(0)
+  // 설정을 열 때 처음 보일 쪽. 처음 화면 날씨 카드의 > 는 'region' (사람이 정함, 2026-10-22)
+  const [settingsPage, setSettingsPage] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [toast, setToast] = useState(null)
@@ -78,7 +80,13 @@ function App() {
     setConfirmed(null)
     setDressUpInit(null)
     setDressUpKey((k) => k + 1)
+    setSettingsPage(null)
     setActiveMenu(key)
+  }
+
+  function openRegionSettings() {
+    selectMenu('settings')
+    setSettingsPage('region')
   }
 
   function openTryOn(data) {
@@ -131,7 +139,7 @@ function App() {
               {!fullScreen && <Wardrobe className="stage__wardrobe" />}
             </>
           )}
-          {homeOpen && <HomeScreen mannequin={mannequin} />}
+          {homeOpen && <HomeScreen mannequin={mannequin} onOpenRegion={openRegionSettings} />}
           {closetOpen && <ClosetScreen mannequin={mannequin} outfitTable={outfitTable} showToast={setToast} />}
           {dressUpOpen && (
             <DressUpScreen
@@ -147,7 +155,12 @@ function App() {
           {diaryOpen && <DiaryScreen onGoDressUp={() => selectMenu('dressup')} onTryOn={openTryOn} />}
           {favoritesOpen && <FavoritesScreen onTryOn={openTryOn} />}
           {settingsOpen && (
-            <SettingsScreen mannequin={mannequin} onMannequinSaved={setMannequin} showToast={setToast} />
+            <SettingsScreen
+              mannequin={mannequin}
+              initialPage={settingsPage}
+              onMannequinSaved={setMannequin}
+              showToast={setToast}
+            />
           )}
           {status === 'error' && (
             <div className="stage__notice">

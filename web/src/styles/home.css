@@ -1,5 +1,5 @@
-/* 처음 화면 (SCREEN-SPEC §4). 시안 style/html 07을 그대로 옮깁니다. 위치는 1536×1024 캔버스 좌표.
-   배경은 시안 PNG에서 가운데 캐릭터 자리와 아래 "최근 코디 일기" 패널을 메운 그림. (P-38) */
+/* 처음 화면 (SCREEN-SPEC §4). 사람이 준 그림(2026-10-22)을 옮깁니다. 위치는 1536×1024 캔버스 좌표.
+   배경은 그 그림에서 가운데 캐릭터 자리를 메운 것. (P-38) */
 
 .hm {
   position: absolute;
@@ -9,64 +9,96 @@
   color: #3b2a22;
 }
 
-/* 시안의 캐릭터 자리 (470~612, 280~645) */
+/* 그림의 캐릭터 자리 (475~638, 250~755) */
 .hm-mannequin {
   position: absolute;
-  left: 446px;
-  top: 282px;
-  width: 190px;
-  height: 368px;
+  left: 452px;
+  top: 262px;
+  width: 210px;
+  height: 490px;
 }
 
-/* 날씨 카드 (시안 .weather) */
+/* 날씨 카드: 그림에 그려진 카드(1123~1432, 163~366)를 덮습니다 */
 .hm-weather {
   position: absolute;
-  left: 1089px;
-  top: 164px;
+  left: 1120px;
+  top: 160px;
   width: 316px;
-  height: 182px;
-  border-radius: 20px;
-  background: #fdf8f3;
+  height: 210px;
+  border-radius: 22px;
+  background: #fffaf6;
   box-shadow: var(--shadow-panel);
 }
 
 .hm-weather__city {
   position: absolute;
-  left: 30px;
-  top: 18px;
+  left: 32px;
+  top: 24px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 24px;
+  gap: 6px;
+  font-size: 22px;
   font-weight: 700;
+}
+
+.hm-weather__more {
+  position: absolute;
+  right: 18px;
+  top: 22px;
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.hm-weather__more:hover {
+  background: #f6ebe0;
+}
+
+.hm-weather__more svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: #6c5a50;
+  stroke-width: 2;
 }
 
 .hm-weather__icon {
   position: absolute;
-  left: 32px;
-  top: 64px;
+  left: 46px;
+  top: 66px;
   width: 84px;
   height: 84px;
 }
 
-.hm-weather__info {
+.hm-weather__temp {
   position: absolute;
-  left: 133px;
-  top: 62px;
-  font-size: 18px;
-  line-height: 1.58;
+  left: 152px;
+  top: 70px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
   white-space: nowrap;
 }
 
-.hm-weather__info b {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+.hm-weather__day {
+  position: absolute;
+  left: 152px;
+  top: 112px;
+  font-size: 19px;
 }
 
-.hm-weather__info small {
-  margin-left: 8px;
-  font-size: 17px;
+.hm-weather__msg {
+  position: absolute;
+  left: 32px;
+  right: 20px;
+  top: 162px;
+  margin: 0;
+  font-size: 16px;
+  white-space: nowrap;
 }
 
 .hm-weather__wait {
