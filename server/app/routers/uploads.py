@@ -42,6 +42,9 @@ async def upload_photo(file: UploadFile = File(...),
     except ExternalError:
         photos.discard_upload(upload_id)
         raise ApiError("imaging_failed", "2D 이미지를 만들지 못했어요.", 502)
+    # 무늬 그림 (D-016, P-32). 만들지 못해도 실패가 아니고, 마네킹에는 대표 색만 칠합니다.
+    pattern = photos.TEMP_DIR / f"{upload_id}-pattern.svg"
+    has_pattern = imaging.make_pattern(image, pattern)
 
     # AI가 원래 사진을 보고 구분과 키워드를 미리 고릅니다. 못 고르면 None입니다.
     candidates = [{"kind": k.kind, **keyword_data(k)}
@@ -53,6 +56,7 @@ async def upload_photo(file: UploadFile = File(...),
         "photo_url": photos.url_for(original.name),
         "image_url": photos.url_for(image.name),
         "main_color": imaging.main_color(image),
+        "pattern_url": photos.url_for(pattern.name) if has_pattern else None,
         "picked": picked,
     })
 

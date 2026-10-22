@@ -4,8 +4,8 @@
 // 실패로 볼 때까지 기다리는 시간 (API-SPEC §2.3, P-28에서 잰 시간으로 정함)
 // AI를 부르는 요청은 서버가 먼저 실패를 알릴 수 있게, 서버가 기다리는 시간보다 길게 둡니다.
 const DEFAULT_TIMEOUT_MS = 5000
-// 사진 올리기 = 2D 이미지화 60초 + AI 키워드 미리 고르기 10초
-const UPLOAD_TIMEOUT_MS = 70000
+// 사진 올리기 = 2D 이미지화 5초 + AI 키워드 미리 고르기 10초 (2D 이미지화는 P-32에서 잰 시간으로 정함)
+const UPLOAD_TIMEOUT_MS = 15000
 // 날씨 받기 (API-SPEC §2.3)
 const WEATHER_TIMEOUT_MS = 10000
 // 점수 확인하기 = 날씨 10초 + AI 점수 15초

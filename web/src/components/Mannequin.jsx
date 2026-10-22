@@ -1,9 +1,9 @@
-import { useId } from 'react'
+import { useEffect, useId, useState } from 'react'
 
 // 마네킹과 기본 잠옷 (DESIGN §5.1, §5.2).
 // 성별마다 기본 그림 하나를 두고, 키와 체형은 비율로 늘이거나 줄입니다. 머리는 그대로 둡니다.
 //
-// outfit: 칸마다 옷 한 벌 정보 { image_url, outfit_template, main_color }. { top, bottom, dress, shoes, outer }
+// outfit: 칸마다 옷 한 벌 정보 { image_url, outfit_template, main_color, pattern_url }. { top, bottom, dress, shoes, outer }
 //   의상 틀이 있으면 캐릭터 의상으로 그리고(D-016), 없으면 2D 이미지를 얹습니다. 2D 이미지 주소(문자열)도 받습니다.
 //   비어 있으면 null, 아우터 "입지 않음"은 'none'. 원피스는 상의와 하의 칸을 함께 차지합니다. (PRD §6 마네킹)
 // showEmpty: 빈 칸에 점선과 "하의를 골라 주세요"를 겹쳐 보입니다. (SCREEN-SPEC §2.5, DESIGN §4.1)
@@ -173,24 +173,110 @@ function outfitPaths(template, d) {
   }
 }
 
-// 칸 하나의 옷. 의상 틀이 있으면 틀을 대표 색으로 그리고, 없으면 2D 이미지를 칸 상자에 얹습니다.
-// item: 옷 한 벌 정보 { image_url, outfit_template, main_color } 또는 2D 이미지 주소(문자열)
-function ClothingShape({ item, box, dims, faded }) {
-  const paths = typeof item === 'object' && item.main_color ? outfitPaths(item.outfit_template, dims) : null
-  if (!paths) {
-    return <ClothingImage box={box} url={typeof item === 'object' ? item.image_url : item} faded={faded} />
+// 틀이 차지하는 상자. 무늬를 이 크기에 맞춰 늘이거나 줄입니다. outfitPaths와 같은 치수를 씁니다. (DESIGN §5.5)
+function outfitBox(template, d) {
+  const { hip, sy, hipY, armX, armW, wristY, legX, legW, pantW, ankleY } = d
+  const legLen = ankleY - hipY
+  const sleeveOut = (extra = 0) => armX + (armW + extra) / 2
+  const legOut = Math.max(hip, legX + pantW / 2)
+  const box = (half, top, bottom) => ({ x: -half, y: top, w: half * 2, h: bottom - top })
+  switch (template) {
+    case 'top_short':
+      return box(sleeveOut(4), sy, hipY + 12)
+    case 'top_long':
+      return box(sleeveOut(), sy, Math.max(hipY + 12, wristY))
+    case 'bottom_pants':
+      return box(legOut, hipY - 10, ankleY)
+    case 'bottom_shorts':
+      return box(legOut, hipY - 10, hipY + legLen * 0.32)
+    case 'bottom_skirt':
+      return box(hip * 1.4, hipY - 12, hipY + legLen * 0.5)
+    case 'dress':
+      return box(Math.max(hip * 1.45, sleeveOut(4)), sy, hipY + legLen * 0.62)
+    case 'outer_short':
+    case 'outer_long': {
+      const hem = template === 'outer_long' ? hipY + legLen * 0.55 : hipY + 22
+      return box(Math.max(sleeveOut(5), hip + 7), sy - 1, Math.max(hem, wristY + 2))
+    }
+    case 'shoes':
+      return box(legX + 3 + legW / 2 + 8, ankleY - 3, ankleY + 18)
+    default:
+      return null
   }
+}
+
+// 무늬 그림 (D-016, P-32). 서버가 만든 SVG 파일에서 path의 모양·색·위치만 골라 씁니다.
+// 파일에 다른 것이 들어 있어도 그대로 그리지 않습니다. 같은 주소는 한 번만 받습니다.
+const patternCache = new Map() // 주소 → { w, h, paths } 또는 null (받는 중이면 Promise)
+
+function parsePattern(text) {
+  const root = new DOMParser().parseFromString(text, 'image/svg+xml').documentElement
+  const w = parseFloat(root?.getAttribute('width'))
+  const h = parseFloat(root?.getAttribute('height'))
+  if (root?.nodeName !== 'svg' || !(w > 0) || !(h > 0)) return null
+  const paths = [...root.children]
+    .filter((el) => el.nodeName === 'path' && el.getAttribute('d'))
+    .map((el) => ({ d: el.getAttribute('d'), fill: el.getAttribute('fill'), transform: el.getAttribute('transform') }))
+  return paths.length > 0 ? { w, h, paths } : null
+}
+
+function usePattern(url) {
+  const cached = url ? patternCache.get(url) : null
+  const [pattern, setPattern] = useState(cached instanceof Promise ? null : cached ?? null)
+  useEffect(() => {
+    if (!url) return undefined
+    let alive = true
+    let job = patternCache.get(url)
+    if (job === undefined) {
+      job = fetch(url)
+        .then((res) => (res.ok ? res.text() : null))
+        .then((text) => (text ? parsePattern(text) : null))
+        .catch(() => null)
+        .then((result) => {
+          patternCache.set(url, result)
+          return result
+        })
+      patternCache.set(url, job)
+    }
+    Promise.resolve(job).then((result) => alive && setPattern(result))
+    return () => {
+      alive = false
+    }
+  }, [url])
+  return url ? pattern : null
+}
+
+// 칸 하나의 옷. 의상 틀이 있으면 틀을 대표 색으로 칠하고, 무늬가 있으면 틀 모양 안에만 겹칩니다(clipPath).
+// 틀이 없으면 2D 이미지를 칸 상자에 얹습니다.
+// item: 옷 한 벌 정보 { image_url, outfit_template, main_color, pattern_url } 또는 2D 이미지 주소(문자열)
+function ClothingShape({ item, box, dims, faded }) {
+  const clipId = `outfit-clip-${useId().replace(/:/g, '')}`
+  const info = typeof item === 'object' ? item : null
+  const pattern = usePattern(info?.pattern_url)
+  const paths = info?.main_color ? outfitPaths(info.outfit_template, dims) : null
+  if (!paths) {
+    return <ClothingImage box={box} url={info ? info.image_url : item} faded={faded} />
+  }
+  const area = outfitBox(info.outfit_template, dims)
+  const shapes = paths.map((d, i) => <path key={i} d={d} />)
   return (
-    <g
-      opacity={faded ? 0.4 : 1}
-      fill={item.main_color}
-      stroke={darker(item.main_color)}
-      strokeWidth={1.5}
-      strokeLinejoin="round"
-    >
-      {paths.map((d, i) => (
-        <path key={i} d={d} />
-      ))}
+    <g opacity={faded ? 0.4 : 1}>
+      <defs>
+        <clipPath id={clipId}>{shapes}</clipPath>
+      </defs>
+      <g fill={info.main_color}>{shapes}</g>
+      {pattern && area && (
+        <g clipPath={`url(#${clipId})`}>
+          <g transform={`translate(${area.x} ${area.y}) scale(${area.w / pattern.w} ${area.h / pattern.h})`}>
+            {pattern.paths.map((p, i) => (
+              <path key={i} d={p.d} fill={p.fill ?? undefined} transform={p.transform ?? undefined} />
+            ))}
+          </g>
+        </g>
+      )}
+      <g fill="none" stroke={darker(info.main_color)} strokeWidth={1.5} strokeLinejoin="round">
+        {shapes}
+      </g>
     </g>
   )
 }

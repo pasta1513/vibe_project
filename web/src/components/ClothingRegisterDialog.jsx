@@ -24,7 +24,7 @@ function pickTemplate(table, category, typeNames) {
 function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTable, onClose, onRegistered }) {
   const { gender } = mannequin
   const fileInput = useRef(null)
-  const [upload, setUpload] = useState(null) // { upload_id, photo_url, image_url, main_color }
+  const [upload, setUpload] = useState(null) // { upload_id, photo_url, image_url, main_color, pattern_url }
   const [lastFile, setLastFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null) // { message, retry }
@@ -143,6 +143,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
           [pick.category]: {
             image_url: upload.image_url,
             main_color: upload.main_color,
+            pattern_url: upload.pattern_url,
             outfit_template: pickTemplate(outfitTable, pick.category, typeNames),
           },
         }

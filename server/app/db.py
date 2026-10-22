@@ -37,7 +37,8 @@ def init_db():
 
 # 이미 있는 DB에 나중에 생긴 칸을 빈 값으로 더합니다. create_all은 있는 표에 칸을 더하지 않습니다.
 # DB 구조를 바꾸는 도구(Alembic)는 매일 쓰기 시작할 때 정합니다. (D-009, 사람이 정함 2026-10-22 P-31)
-_LATER_COLUMNS = {"clothing": {"outfit_template": "VARCHAR", "main_color": "VARCHAR"}}
+_LATER_COLUMNS = {"clothing": {"outfit_template": "VARCHAR", "main_color": "VARCHAR",
+                               "pattern_path": "VARCHAR"}}
 
 
 def _add_missing_columns():
@@ -50,7 +51,10 @@ def _add_missing_columns():
 
 
 def _fill_outfits():
-    """의상 틀이나 대표 색이 빈 옷(P-31 전에 등록한 옷)을 채웁니다. (D-016, TEST-PLAN T-96)"""
+    """의상 틀, 대표 색, 무늬 그림이 빈 옷(P-31, P-32 전에 등록한 옷)을 채웁니다. (D-016, TEST-PLAN T-96)
+
+    무늬 그림을 만들지 못한 옷은 비워 두고, 서버를 켤 때마다 다시 해 봅니다.
+    """
     from sqlmodel import select
 
     from . import outfits, photos
@@ -59,7 +63,8 @@ def _fill_outfits():
 
     with Session(engine) as session:
         empty = session.exec(select(Clothing).where(
-            (Clothing.outfit_template == None) | (Clothing.main_color == None))).all()  # noqa: E711
+            (Clothing.outfit_template == None) | (Clothing.main_color == None)  # noqa: E711
+            | (Clothing.pattern_path == None))).all()  # noqa: E711
         for clothing in empty:
             if clothing.outfit_template is None:
                 names = session.exec(
@@ -70,6 +75,10 @@ def _fill_outfits():
                 clothing.outfit_template = outfits.pick_template(clothing.category, list(names))
             if clothing.main_color is None:
                 clothing.main_color = imaging.main_color(photos.find_file(clothing.image_path))
+            if clothing.pattern_path is None:
+                name = clothing.image_path.split("-")[0] + "-pattern.svg"
+                if imaging.make_pattern(photos.find_file(clothing.image_path), photos.PHOTO_DIR / name):
+                    clothing.pattern_path = name
             session.add(clothing)
         session.commit()
 

@@ -3,6 +3,7 @@
 정식 파일은 data/photos/, 등록을 마치지 않은 임시 파일은 data/photos/temp/에 둡니다.
 파일 이름: <무작위 32자>-original.<확장자> (원래 사진), <무작위 32자>-image.<확장자> (2D 이미지)
 P-30부터 새로 만드는 2D 이미지는 배경이 투명한 PNG입니다 (D-015). 그 전에 만든 것은 원래 사진과 확장자가 같습니다.
+<무작위 32자>-pattern.svg: 옷의 색과 무늬를 path로 바꾼 무늬 그림 (D-016, P-32). 만들지 못한 옷에는 없습니다.
 """
 
 import re
@@ -17,7 +18,8 @@ TEMP_DIR = PHOTO_DIR / "temp"
 
 # 받는 사진: JPG, PNG, WEBP, 한 장에 10MB까지 (API-SPEC §10, 사람이 정함 2026-10-20)
 MAX_BYTES = 10 * 1024 * 1024
-FILE_NAME = re.compile(r"^[0-9a-f]{32}-(original|image)\.(jpg|png|webp)$")
+# 무늬 그림은 SVG (D-016, P-32)
+FILE_NAME = re.compile(r"^[0-9a-f]{32}-(?:(?P<photo>original|image)\.(?:jpg|png|webp)|(?P<svg>pattern)\.svg)$")
 UPLOAD_ID = re.compile(r"^[0-9a-f]{32}$")
 
 
@@ -55,7 +57,7 @@ def temp_files(upload_id: str) -> dict[str, Path]:
     for path in TEMP_DIR.glob(f"{upload_id}-*"):
         match = FILE_NAME.match(path.name)
         if match:
-            found[match.group(1)] = path
+            found[match.group("photo") or match.group("svg")] = path
     return found
 
 

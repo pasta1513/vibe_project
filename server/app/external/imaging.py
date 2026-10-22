@@ -8,12 +8,16 @@
   사용자는 마음에 들지 않으면 사진을 다시 올립니다. (PRD §4 등록하기 3)
 """
 
+import io
 from collections import deque
 from pathlib import Path
+from xml.etree import ElementTree
 
 from PIL import Image, ImageChops, ImageOps
 
 from . import ExternalError, should_fake_fail
+
+SVG_NS = "http://www.w3.org/2000/svg"
 
 # 긴 변이 이보다 크면 줄입니다. 마네킹에 얹는 그림이라 충분하고 처리도 빨라집니다. (제안)
 MAX_SIDE = 1024
@@ -132,3 +136,63 @@ def _flood(close: bytes, seeds: list[int], width: int, height: int) -> bytearray
                 removed[j] = 1
                 queue.append(j)
     return removed
+
+
+# 무늬 그림 (D-016, P-32). 옷 부분을 작게 줄여 vtracer(MIT)로 색 영역의 윤곽을 따 path로 만듭니다.
+PATTERN_SIDE = 256
+# 처음 값(A)으로 만들고, 파일이 너무 크면 단순한 값(B)으로 한 번 더 만듭니다. (제안, P-32에서 지금 사진으로 맞춤)
+PATTERN_OPTIONS = [
+    dict(mode="spline", color_precision=6, filter_speckle=4, layer_difference=16),
+    dict(mode="polygon", color_precision=6, filter_speckle=8, layer_difference=32),
+]
+MAX_PATTERN_BYTES = 200 * 1024
+_PATTERN_ATTRS = {"d", "fill", "transform"}
+
+
+def make_pattern(image_path: Path | None, pattern_path: Path) -> bool:
+    """2D 이미지의 옷 부분으로 무늬 그림(SVG)을 만들어 저장합니다. 만들지 못하면 False.
+
+    투명한 칸은 vtracer가 건너뛰어서 배경과 옷 안쪽의 빈 곳은 채워지지 않습니다.
+    사진(<image>)이나 Base64를 넣지 않고, path 말고 다른 것이 있으면 버립니다.
+    """
+    import vtracer
+
+    try:
+        with Image.open(image_path) as source:
+            image = ImageOps.exif_transpose(source).convert("RGBA")
+        image.thumbnail((MAX_SIDE, MAX_SIDE))
+        remove_background(image)  # P-30 전에 만든 2D 이미지는 배경이 남아 있음
+        box = image.getchannel("A").getbbox()
+        if box is None:
+            return False
+        image = image.crop(box)
+        image.thumbnail((PATTERN_SIDE, PATTERN_SIDE))
+        buffer = io.BytesIO()
+        image.save(buffer, "PNG")
+    except (OSError, ValueError, TypeError, Image.DecompressionBombError):
+        return False
+    for options in PATTERN_OPTIONS:
+        try:
+            svg = vtracer.convert_raw_image_to_svg(buffer.getvalue(), img_format="png", colormode="color",
+                                                   hierarchical="stacked", path_precision=2, **options)
+        except Exception:  # vtracer 안쪽의 오류는 종류를 알 수 없어 모두 "못 만듦"으로 봅니다.
+            return False
+        if len(svg.encode("utf-8")) <= MAX_PATTERN_BYTES and _only_paths(svg):
+            pattern_path.write_text(svg, encoding="utf-8")
+            return True
+    return False
+
+
+def _only_paths(svg: str) -> bool:
+    """맨 위가 svg이고 그 안에 정해진 속성만 가진 path가 1개 이상 있으면 True."""
+    try:
+        root = ElementTree.fromstring(svg)
+    except ElementTree.ParseError:
+        return False
+    if root.tag != f"{{{SVG_NS}}}svg" or not root.get("width") or not root.get("height"):
+        return False
+    children = list(root)
+    return bool(children) and all(
+        child.tag == f"{{{SVG_NS}}}path" and set(child.attrib) <= _PATTERN_ATTRS and len(child) == 0
+        for child in children
+    )

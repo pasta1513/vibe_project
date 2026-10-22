@@ -44,6 +44,7 @@ def clothing_summary(clothing: Clothing) -> dict:
         # 마네킹에 입힐 캐릭터 의상 (D-016)
         "outfit_template": clothing.outfit_template,
         "main_color": clothing.main_color,
+        "pattern_url": photos.url_for(clothing.pattern_path) if clothing.pattern_path else None,
     }
 
 
@@ -114,14 +115,15 @@ def register_clothing(body: ClothingIn, session: Session = Depends(get_session))
         raise ApiError("type_category_mismatch", "고른 구분에 맞지 않는 종류가 있어요.")
 
     files = photos.temp_files(body.upload_id)
-    if set(files) != {"original", "image"}:
+    if not {"original", "image"} <= set(files):
         raise ApiError("upload_missing", "올린 사진이 없어졌어요. 사진을 다시 올려 주세요.")
 
     type_names = [k.name for k in keywords if k.kind == "type"]
     clothing = Clothing(category=body.category, photo_path=files["original"].name,
                         image_path=files["image"].name,
                         outfit_template=outfits.pick_template(body.category, type_names),
-                        main_color=imaging.main_color(files["image"]))
+                        main_color=imaging.main_color(files["image"]),
+                        pattern_path=files["pattern"].name if "pattern" in files else None)
     session.add(clothing)
     session.flush()
     for keyword in keywords:

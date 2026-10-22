@@ -3,7 +3,7 @@
 앱이 저장할 정보의 이름과 뜻을 적은 문서입니다.
 데이터베이스 문법은 쓰지 않고 쉬운 말로 적습니다. 화면과 서버가 주고받는 모양은 API-SPEC에, 화면에서 보이는 모습은 SCREEN-SPEC에 적습니다.
 
-- 상태: 초안 (2026-10-20), 승인됨 (2026-10-20), 수정 (2026-10-20: §7 즐겨찾기를 넣는 버튼 이름을 SCREEN-SPEC에 맞춤), 재승인 (2026-10-20), 수정 (2026-10-20: §4, §5 이름의 띄어쓰기 정리와 빈 이름 금지 더함), 재승인 (2026-10-20), 수정 (2026-10-20: §10 ORM을 SQLModel로 정함, D-009), 재승인 (2026-10-20), 수정 (2026-10-20: §12 저장 칸의 영어 이름 더함, P-12), 재승인 (2026-10-20), 수정 (2026-10-22: 2D 이미지는 투명 PNG, P-30), 재승인 (2026-10-22), 수정 (2026-10-22: 캐릭터용 SVG 의상 (D-016 제안)), 재승인 (2026-10-22), 수정 (2026-10-22: §12.2 옷 칸 이름 outfit_template, main_color, P-31), 재승인 (2026-10-22)
+- 상태: 초안 (2026-10-20), 승인됨 (2026-10-20), 수정 (2026-10-20: §7 즐겨찾기를 넣는 버튼 이름을 SCREEN-SPEC에 맞춤), 재승인 (2026-10-20), 수정 (2026-10-20: §4, §5 이름의 띄어쓰기 정리와 빈 이름 금지 더함), 재승인 (2026-10-20), 수정 (2026-10-20: §10 ORM을 SQLModel로 정함, D-009), 재승인 (2026-10-20), 수정 (2026-10-20: §12 저장 칸의 영어 이름 더함, P-12), 재승인 (2026-10-20), 수정 (2026-10-22: 2D 이미지는 투명 PNG, P-30), 재승인 (2026-10-22), 수정 (2026-10-22: 캐릭터용 SVG 의상 (D-016 제안)), 재승인 (2026-10-22), 수정 (2026-10-22: §12.2 옷 칸 이름 outfit_template, main_color, P-31), 재승인 (2026-10-22), 수정 (2026-10-22: §12.2 옷 칸 이름 pattern_path, P-32), 재승인 (2026-10-22)
 - 근거 결정: [DECISIONS.md](DECISIONS.md)의 D-002, D-003, D-005
 - 관련 작업: [PLAN.md](PLAN.md)의 P-07
 - 기준 문서: [PRD.md](PRD.md), [SCREEN-SPEC.md](SCREEN-SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md)
@@ -240,7 +240,7 @@ PRD 부록에서 옮겨 온 목록입니다. AI가 제안하고 사람이 승인
 | --- | --- | --- |
 | `settings` | 설정 (§2). 한 줄뿐이고, 첫 실행 전에는 줄이 없음 | `mannequin_gender`, `mannequin_height`, `mannequin_body`, `home_region` (없을 수 있음) |
 | `keyword` | 옷 키워드 단어 (§4) | `id`, `kind`, `name`, `category` (종류 단어만), `gender` (종류 단어만), `sort_order` (목록 순서) |
-| `clothing` | 옷 (§3) | `id`, `category`, `photo_path` (원래 사진), `image_path` (2D 이미지), `outfit_template` (의상 틀, D-016), `main_color` (대표 색, D-016), `is_deleted` (지운 옷 표시), `created_at` |
+| `clothing` | 옷 (§3) | `id`, `category`, `photo_path` (원래 사진), `image_path` (2D 이미지), `outfit_template` (의상 틀, D-016), `main_color` (대표 색, D-016), `pattern_path` (무늬 그림, 없을 수 있음, D-016), `is_deleted` (지운 옷 표시), `created_at` |
 | `clothing_keyword` | 옷에 붙은 키워드 단어 | `clothing_id`, `keyword_id` |
 | `style_tag` | 스타일 태그 (§5) | `id`, `name`, `sort_order` |
 | `diary_entry` | 코디 일기 기록 (§6) | `id`, `date` (같은 날짜는 하나만), 코디 구성, 마네킹 모양, `weather_region`, `weather_min_temp`, `weather_max_temp`, `weather_condition`, `style_tag_id` (없을 수 있음), `score`, `note_type`, `note_summary` (한 줄), `note_details` (옷마다 자세한 내용), `created_at` |

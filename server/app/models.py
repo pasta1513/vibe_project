@@ -45,6 +45,7 @@ class Clothing(SQLModel, table=True):
     # 캐릭터 의상 (D-016). P-31 전에 만든 DB에는 서버를 켤 때 칸을 더하고 채웁니다 (db.py).
     outfit_template: Optional[str] = None
     main_color: Optional[str] = None
+    pattern_path: Optional[str] = None  # 무늬 그림. 만들지 못하면 없음 (P-32)
     is_deleted: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
