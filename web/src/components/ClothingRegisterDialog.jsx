@@ -173,6 +173,10 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onR
                 사진 올리기
               </button>
             )}
+            {/* 촬영 안내 (SCREEN-SPEC §6, D-017): 여러 벌이나 어수선한 배경은 배경 지우기가 잘 안 됨 */}
+            <p className="sub-text">
+              옷 한 벌만, 벽이나 바닥처럼 단순한 배경에서 찍으면 배경이 깔끔하게 지워져요.
+            </p>
             {uploading && <p className="sub-text">사진을 정리하는 중…</p>}
             {uploadError && (
               <ErrorLine

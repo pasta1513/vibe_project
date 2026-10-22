@@ -4,6 +4,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlmodel import Session, select
+from starlette.concurrency import run_in_threadpool
 
 from .. import photos
 from ..db import get_session
@@ -34,10 +35,12 @@ async def upload_photo(file: UploadFile = File(...),
     photos.ensure_dirs()
     upload_id = photos.new_upload_id()
     original = photos.TEMP_DIR / f"{upload_id}-original.{ext}"
-    image = photos.TEMP_DIR / f"{upload_id}-image.{ext}"
+    # 진짜 2D 이미지는 배경을 지운 투명 PNG입니다. (P-30, D-017)
+    image = photos.TEMP_DIR / f"{upload_id}-image.{imaging.image_extension(ext)}"
     original.write_bytes(content)
     try:
-        imaging.make_2d_image(original, image)
+        # 배경 지우기는 CPU로 1~2초 걸려서, 다른 요청이 막히지 않게 따로 돌립니다.
+        await run_in_threadpool(imaging.make_2d_image, original, image)
     except ExternalError:
         photos.discard_upload(upload_id)
         raise ApiError("imaging_failed", "2D 이미지를 만들지 못했어요.", 502)
