@@ -34,7 +34,8 @@ async def upload_photo(file: UploadFile = File(...),
     photos.ensure_dirs()
     upload_id = photos.new_upload_id()
     original = photos.TEMP_DIR / f"{upload_id}-original.{ext}"
-    image = photos.TEMP_DIR / f"{upload_id}-image.{ext}"
+    # 2D 이미지는 배경이 투명해야 해서 늘 PNG입니다. (D-015)
+    image = photos.TEMP_DIR / f"{upload_id}-image.png"
     original.write_bytes(content)
     try:
         imaging.make_2d_image(original, image)
