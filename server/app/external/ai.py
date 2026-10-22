@@ -4,6 +4,7 @@ AI가 준 답은 여기서 검사한 뒤에 돌려줍니다. 가짜 AI의 답도
 """
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 from ..models import TYPE_GENDERS
 from ..rules import check_outfit, outfit_key
@@ -80,57 +81,77 @@ def find_similar(name: str, candidates: list[str]):
     return answer if answer in candidates and answer != name else None
 
 
-def recommend(closet: list[dict], weather: dict, tag: str) -> list[dict]:
-    """코디를 최대 3벌 추천받습니다.
+def recommend(closet: list[dict], weather: dict, tag: str, items_for=None) -> list[dict]:
+    """코디를 최대 3벌 추천받습니다. 추천 AI가 코디와 이유를 고르고, 평가 AI가 점수를 매깁니다. (P-26)
 
     closet: 지운 옷을 뺀 옷 목록. 옷마다 {"id", "category", "keywords"}.
+    items_for: 코디 구성 → 평가 AI에 넘길 칸마다 옷 정보 (score의 items). 없으면 키워드만.
     돌려주는 것: [{"outfit", "score", "note_type": "reason", "summary", "details"}, ...]
-    검사를 통과하지 못한 코디는 빼고, 하나도 남지 않으면 ExternalError("ai_invalid")를 냅니다.
+    검사를 통과하지 못했거나 점수를 받지 못한 코디는 빼고, 하나도 남지 않으면 ExternalError("ai_invalid")를 냅니다.
     """
     _fail_if_asked("recommend")
     answers = provider.recommend(closet, weather, tag)
     categories = {item["id"]: item["category"] for item in closet}
-    results, seen = [], set()
+    picked, seen = [], set()
     for answer in answers or []:
         outfit = answer.get("outfit") or {}
         key = outfit_key(outfit)
-        if check_outfit(outfit, categories) or key in seen:
-            continue
-        if not _valid_score(answer.get("score")) or not answer.get("summary"):
+        if check_outfit(outfit, categories) or key in seen or not answer.get("summary"):
             continue
         seen.add(key)
-        results.append({
+        picked.append({
             "outfit": outfit,
-            "score": round(answer["score"], 1),
             "note_type": "reason",
             "summary": answer["summary"],
-            "details": answer.get("details") or {},
+            "details": _worn_details(outfit, answer.get("details")),
         })
-        if len(results) == 3:
+        if len(picked) == 3:
             break
+
+    # 평가 AI가 3벌을 동시에 평가합니다. 옷 정보는 저장소를 읽으므로 먼저 모아 둡니다.
+    items = [items_for(p["outfit"]) if items_for else [] for p in picked]
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = [pool.submit(_score_or_none, p["outfit"], weather, tag, its)
+                   for p, its in zip(picked, items)]
+        scores = [f.result() for f in futures]
+    results = [{**p, "score": sc} for p, sc in zip(picked, scores) if sc is not None]
     if not results:
         raise ExternalError("ai_invalid")
+    # 점수 순서와 관계없이 추천 AI가 고른 순서를 지킵니다. (제안)
     return results
 
 
-def score(outfit: dict, weather: dict, tag, items: list[dict] | None = None) -> dict:
+def _score_or_none(outfit, weather, tag, items):
+    """추천 코디의 점수만 받습니다. 평가 AI가 실패하면 None (그 코디는 뺌)."""
+    try:
+        return score(outfit, weather, tag, items, task="recommend_score")["score"]
+    except ExternalError:
+        return None
+
+
+def _worn_details(outfit: dict, details) -> dict:
+    """입은 칸의 글만 남깁니다."""
+    worn = {slot for slot, clothing_id in outfit.items() if clothing_id is not None}
+    return {slot: text for slot, text in (details or {}).items()
+            if slot in worn and isinstance(text, str) and text}
+
+
+def score(outfit: dict, weather: dict, tag, items: list[dict] | None = None, task: str = "score") -> dict:
     """코디 한 벌의 점수와 코멘트를 받습니다. 태그가 없으면(None) 태그 기준은 빼고 묻습니다.
 
     items: 칸마다 옷 정보 {"slot", "category", "keywords", "image_path"} (P-25)
+    task: 기다리는 시간을 고르는 일 이름. 추천받기 안에서는 "recommend_score" (P-26)
     돌려주는 것: {"score", "note_type": "comment", "summary", "details"}
     점수가 범위 밖이면 ExternalError("ai_invalid")를 냅니다.
     입지 않은 칸의 평가는 버립니다.
     """
     _fail_if_asked("score")
-    answer = provider.score(outfit, weather, tag, items or [])
+    answer = provider.score(outfit, weather, tag, items or [], task=task)
     if not answer or not _valid_score(answer.get("score")) or not answer.get("summary"):
         raise ExternalError("ai_invalid")
-    worn = {slot for slot, clothing_id in outfit.items() if clothing_id is not None}
-    details = answer.get("details") or {}
     return {
         "score": round(answer["score"], 1),
         "note_type": "comment",
         "summary": answer["summary"],
-        "details": {slot: text for slot, text in details.items()
-                    if slot in worn and isinstance(text, str) and text},
+        "details": _worn_details(outfit, answer.get("details")),
     }

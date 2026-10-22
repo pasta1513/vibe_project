@@ -38,6 +38,7 @@ def find_similar(name, candidates):
 
 
 # 일부러 실패하기(FAKE_FAIL)는 ai.py가 가짜와 Bedrock 모두에 똑같이 합니다.
+# 추천 점수는 ai.py가 score로 따로 매깁니다. (P-26)
 def recommend(closet, weather, tag):
     by_category = {}
     for item in closet:
@@ -67,14 +68,13 @@ def recommend(closet, weather, tag):
             continue
         outfits.append({
             "outfit": outfit,
-            "score": _random_score(),
             "summary": REASON_TEXT,
             "details": _details(outfit, REASON_TEXT),
         })
     return outfits
 
 
-def score(outfit, weather, tag, items=None):
+def score(outfit, weather, tag, items=None, task="score"):
     return {
         "score": _random_score(),
         "summary": COMMENT_TEXT,

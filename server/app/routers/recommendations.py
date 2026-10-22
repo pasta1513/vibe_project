@@ -65,9 +65,13 @@ def recommend(body: RecommendIn, session: Session = Depends(get_session)):
                    "fewer_than_three": False})
 
     # ③ 날씨 ④ AI ⑤ 검사 (검사는 ai.recommend 안에서 합니다)
+    # 추천 AI가 고른 코디는 평가 AI가 2D 이미지와 키워드로 점수를 매깁니다. (P-26)
+    from .scores import outfit_items  # scores.py가 이 파일을 불러오므로 여기서 불러옵니다.
+
     weather = daily_weather(session, body.day, body.region)
     try:
-        outfits = ai.recommend(closet, weather, tag.name)
+        outfits = ai.recommend(closet, weather, tag.name,
+                               items_for=lambda outfit: outfit_items(session, outfit))
     except ExternalError:
         raise ApiError("recommend_failed", "추천을 받지 못했어요.", 502)
 
