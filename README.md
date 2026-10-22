@@ -77,7 +77,7 @@ npm run dev
 - 서버의 요청을 직접 보내 확인할 때는 http://localhost:8000/docs 를 엽니다. (D-010)
 - SQLite 파일(`data/app.db`)과 사진(`data/photos/`)은 `data/` 폴더에 저장됩니다. git에 올리지 않습니다. 저장 폴더는 `server/.env`의 `DATA_DIR`로 바꿀 수 있습니다 (D-017).
 - DB 구조는 서버를 켤 때 자동으로 최신이 됩니다 (Alembic, `server/migrations/`). 따로 명령을 치지 않습니다.
-- 개발 중의 시험 데이터는 `data/backup-2026-10-22/`에 옮겨 두었습니다.
+- 개발할 때와 확인 작업에는 `data-dev/`를 씁니다 (git에 올리지 않음). 확인에 쓰는 상품 사진 2장은 `data-dev/fixtures/`에 있습니다.
 - AI와 날씨는 `server/.env`의 `AI_PROVIDER`, `WEATHER_PROVIDER`로 가짜와 진짜를 고릅니다. 2D 이미지화는 서버 안에서 배경을 지우며 고를 것이 없습니다 (D-015). `FAKE_FAIL=imaging`이면 일부러 실패합니다.
 - 실패 화면을 확인하려면 서버를 켜기 전에 환경 변수 `FAKE_FAIL`에 실패시킬 부품을 적습니다. 쓸 수 있는 이름은 `weather`, `recommend`, `score`, `imaging`입니다. (예: PowerShell에서 `$env:FAKE_FAIL="weather,score"`) 바꾼 뒤에는 서버를 다시 켭니다. `FAKE_FAIL`은 가짜 부품에만 듣습니다. 진짜 날씨·AI로 실패를 보려면 서버를 켤 때 환경 변수로 틀린 `OPENWEATHERMAP_API_KEY`나 `BEDROCK_MODEL_ID`를 줍니다 (TEST-PLAN §13).
 
