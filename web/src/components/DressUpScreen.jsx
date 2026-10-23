@@ -411,6 +411,12 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
         </div>
       )}
       <Mannequin className="du-mannequin" {...mannequin} outfit={worn} showEmpty={!scoreStage} />
+      {/* 배경 그림의 빈 거울에 지금 입힌 코디의 뒷모습이 비칩니다. 점수 확인 배경에는 거울이 없습니다. */}
+      {!scoreStage && (
+        <div className="du-mirror" aria-hidden="true">
+          <Mannequin {...mannequin} outfit={worn} back />
+        </div>
+      )}
 
       {!scoreStage && (
         <SidePanel
