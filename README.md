@@ -1,4 +1,6 @@
-# 코디 추천 웹앱
+# moire
+
+moire는 "My Outfit Identity Reflection Everyday"의 약자입니다. (D-019)
 
 갖고 있는 옷을 등록하면 날씨와 스타일 태그에 맞춰 코디를 추천해 주고, 내가 직접 조합한 코디는 AI가 점수를 매겨 주는 웹앱입니다.
 

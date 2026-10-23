@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="코디 추천 웹앱", lifespan=lifespan)
+app = FastAPI(title="moire", lifespan=lifespan)
 install_error_handlers(app)
 for module in (settings, keywords, tags, uploads, clothes, photos, weather, scores, recommendations,
                diary, favorites):
