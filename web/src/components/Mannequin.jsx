@@ -47,7 +47,7 @@ const BODY_SOLE_Y = 324 // 발바닥
 
 // 무늬 그림 (D-016, P-32). 서버가 만든 SVG 파일에서 path의 모양·색·위치만 골라 씁니다.
 // 파일에 다른 것이 들어 있어도 그대로 그리지 않습니다. 같은 주소는 한 번만 받습니다.
-const patternCache = new Map() // 주소 → { w, h, paths } 또는 null (받는 중이면 Promise)
+const patternCache = new Map() // 주소 → { w, h, paths, base } 또는 null (받는 중이면 Promise)
 
 function parsePattern(text) {
   const root = new DOMParser().parseFromString(text, 'image/svg+xml').documentElement
@@ -60,6 +60,50 @@ function parsePattern(text) {
   return paths.length > 0 ? { w, h, paths } : null
 }
 
+// 무늬에서 가장 넓은 색 (2026-10-23, 사람이 정함). 옷 바탕을 이 색으로 칠해서, 사진 속 옷과 틀 모양이 달라
+// 무늬가 덮지 못한 곳이 무늬와 다른 색 띠(선처럼 보임)로 남지 않게 합니다.
+// 무늬 그림을 원래 크기로 그려서 색마다 칸 수를 셉니다. 줄여 그리면 줄무늬 색이 섞여 없는 색이 나와서입니다.
+async function dominantColor(text, w, h) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'image/svg+xml' }))
+  try {
+    const img = new Image()
+    img.src = url
+    await img.decode()
+    const width = Math.min(512, Math.round(w))
+    const height = Math.min(512, Math.round(h))
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    ctx.drawImage(img, 0, 0, width, height)
+    const data = ctx.getImageData(0, 0, width, height).data
+    const counts = new Map()
+    let best = null
+    let bestCount = 0
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] < 250) continue // 투명한 곳과 가장자리의 섞인 칸은 세지 않음
+      const key = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2]
+      const n = (counts.get(key) ?? 0) + 1
+      counts.set(key, n)
+      if (n > bestCount) {
+        bestCount = n
+        best = key
+      }
+    }
+    return best === null ? null : `#${best.toString(16).padStart(6, '0')}`
+  } catch {
+    return null
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
+async function loadPattern(text) {
+  const parsed = parsePattern(text)
+  if (!parsed) return null
+  return { ...parsed, base: await dominantColor(text, parsed.w, parsed.h) }
+}
+
 function usePattern(url) {
   const cached = url ? patternCache.get(url) : null
   const [pattern, setPattern] = useState(cached instanceof Promise ? null : cached ?? null)
@@ -70,7 +114,7 @@ function usePattern(url) {
     if (job === undefined) {
       job = fetch(url)
         .then((res) => (res.ok ? res.text() : null))
-        .then((text) => (text ? parsePattern(text) : null))
+        .then((text) => (text ? loadPattern(text) : null))
         .catch(() => null)
         .then((result) => {
           patternCache.set(url, result)

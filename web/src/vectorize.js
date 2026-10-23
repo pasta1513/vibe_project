@@ -53,7 +53,14 @@ function nearest(p, centers) {
 }
 
 // 줄무늬 찾기: 줄마다 가운데(30~70%)에서 가장 많은 색이 48%를 넘고, 위에서 아래로 그 색이 14번 넘게 바뀌면 줄무늬
-function detectStripes(labels, w, h) {
+// 줄이 바뀐 것으로 셀 색 차이 (2026-10-23 더함). 흰 옷처럼 거의 같은 색들로 나뉜 무늬에서
+// 줄마다 미세하게 바뀌는 대표 색을 줄무늬로 잘못 보지 않게, 눈에 띄게 다른 색으로 바뀔 때만 셉니다.
+const STRIPE_MIN_DIFF = 24
+const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+
+function detectStripes(labels, w, h, palette) {
+  const rgb = palette.map(hexRgb)
+  const differs = (a, b) => Math.hypot(rgb[a][0] - rgb[b][0], rgb[a][1] - rgb[b][1], rgb[a][2] - rgb[b][2]) >= STRIPE_MIN_DIFF
   let agree = 0
   let total = 0
   let changes = 0
@@ -70,7 +77,7 @@ function detectStripes(labels, w, h) {
     if (best) {
       agree += best[1]
       total += [...counts.values()].reduce((a, b) => a + b, 0)
-      if (prior >= 0 && best[0] !== prior) changes++
+      if (prior >= 0 && best[0] !== prior && differs(prior, best[0])) changes++
       prior = best[0]
     }
   }
@@ -81,7 +88,7 @@ function detectStripes(labels, w, h) {
 export function vectorize(rgba, w, h, mode = 'auto', colorCount = 7) {
   const q = quantize(rgba, w, h, colorCount)
   if (!q) return null
-  const stripe = detectStripes(q.labels, w, h)
+  const stripe = detectStripes(q.labels, w, h, q.palette)
   const useStripe = mode === 'stripes' || (mode === 'auto' && stripe.detected)
   const labels = q.labels
   if (useStripe) {
@@ -146,6 +153,62 @@ export function loadImage(url) {
   })
 }
 
+// 남은 배경 빼기 (2026-10-23, 사람이 정함). 흰 옷을 흰 배경에서 찍은 사진처럼 배경이 지워지지 않은 2D 이미지는
+// 사진 배경까지 무늬에 들어가, 옷 틀 가장자리(어깨, 소매 끝)에 배경색이 띠처럼 깔립니다.
+// 그래서 투명한 칸이 거의 없는 이미지에서만, 테두리에 가장 많은 색을 배경으로 보고 테두리와 이어진 비슷한 색 칸을 투명하게 합니다.
+// 옷 안쪽의 같은 색(로고 바탕 등)은 테두리와 이어지지 않아 남습니다.
+// 배경을 지운 이미지는 옷이 잘린 테두리에 닿아 있어 이 처리를 하면 옷이 지워지므로 하지 않습니다.
+const BG_TRANSPARENT_MAX = 0.02 // 투명한 칸이 이보다 많으면 배경이 지워진 이미지로 봄
+const BG_BORDER_MIN = 0.6 // 테두리 칸 중 배경색에 가까운 칸이 이보다 적으면 배경이 복잡한 사진으로 보고 하지 않음
+const BG_TOLERANCE = 16 // 배경색과의 RGB 거리. 흰 배경 #f5f5f5와 흰 옷 #e6e5ea의 거리(약 24)보다 작게
+
+function clearEdgeBackground(rgba, w, h) {
+  let transparent = 0
+  for (let i = 3; i < rgba.length; i += 4) if (rgba[i] <= 100) transparent++
+  if (transparent / (w * h) > BG_TRANSPARENT_MAX) return
+  const border = []
+  for (let x = 0; x < w; x++) border.push(x, (h - 1) * w + x)
+  for (let y = 1; y < h - 1; y++) border.push(y * w, y * w + w - 1)
+  // 테두리 색을 4단계씩 묶어 가장 많은 묶음의 평균을 배경색으로
+  const buckets = new Map()
+  for (const i of border) {
+    const o = i * 4
+    if (rgba[o + 3] <= 100) continue
+    const key = ((rgba[o] >> 2) << 12) | ((rgba[o + 1] >> 2) << 6) | (rgba[o + 2] >> 2)
+    const b = buckets.get(key) ?? [0, 0, 0, 0]
+    b[0] += rgba[o]
+    b[1] += rgba[o + 1]
+    b[2] += rgba[o + 2]
+    b[3]++
+    buckets.set(key, b)
+  }
+  let top = null
+  for (const b of buckets.values()) if (!top || b[3] > top[3]) top = b
+  if (!top) return
+  const bg = [top[0] / top[3], top[1] / top[3], top[2] / top[3]]
+  const near = (i) => {
+    const o = i * 4
+    return rgba[o + 3] > 100 && Math.hypot(rgba[o] - bg[0], rgba[o + 1] - bg[1], rgba[o + 2] - bg[2]) <= BG_TOLERANCE
+  }
+  if (border.filter(near).length / border.length < BG_BORDER_MIN) return
+  // 테두리에서 시작해 이어진 배경색 칸을 모두 투명하게 (4방향)
+  const seen = new Uint8Array(w * h)
+  const queue = border.filter((i) => near(i))
+  for (const i of queue) seen[i] = 1
+  while (queue.length) {
+    const i = queue.pop()
+    rgba[i * 4 + 3] = 0
+    const x = i % w
+    const y = (i - x) / w
+    for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
+      if (j >= 0 && !seen[j] && near(j)) {
+        seen[j] = 1
+        queue.push(j)
+      }
+    }
+  }
+}
+
 export function patternFromImage(img, mode = 'auto', colorCount = 7) {
   const full = document.createElement('canvas')
   full.width = img.naturalWidth
@@ -173,5 +236,7 @@ export function patternFromImage(img, mode = 'auto', colorCount = 7) {
   small.height = PATTERN_H
   const sctx = small.getContext('2d', { willReadFrequently: true })
   sctx.drawImage(full, x0, y0, x1 - x0 + 1, y1 - y0 + 1, 0, 0, PATTERN_W, PATTERN_H)
-  return vectorize(sctx.getImageData(0, 0, PATTERN_W, PATTERN_H).data, PATTERN_W, PATTERN_H, mode, colorCount)
+  const pixels = sctx.getImageData(0, 0, PATTERN_W, PATTERN_H).data
+  clearEdgeBackground(pixels, PATTERN_W, PATTERN_H)
+  return vectorize(pixels, PATTERN_W, PATTERN_H, mode, colorCount)
 }

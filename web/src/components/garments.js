@@ -143,11 +143,12 @@ export function normalizeLook(raw) {
 const safeColor = (c) => (/^#[0-9a-f]{6}$/i.test(c ?? '') ? c : '#a59bb9')
 const attr = (v) => String(v).replace(/[&"<>]/g, (ch) => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' })[ch])
 
-// pattern: 우리 무늬 그림 { w, h, paths: [{ d, fill, transform }] } 또는 null
+// pattern: 우리 무늬 그림 { w, h, paths: [{ d, fill, transform }], base } 또는 null
+// 무늬가 있으면 바탕은 무늬에서 가장 넓은 색(base)으로 칠합니다. moire 프로젝트도 무늬의 주된 색(vectorData.base)을 씁니다. (2026-10-23)
 function garmentContent(code, color, pattern, look, unique) {
   const template = TEMPLATE_SVG[code]
   if (!pattern) return template.replaceAll('currentColor', safeColor(color))
-  const base = template.replaceAll('currentColor', safeColor(color))
+  const base = template.replaceAll('currentColor', safeColor(pattern.base ?? color))
   const clip = (base.match(/<path\b[^>]*>/g) || [])
     .filter((p) => !p.includes('fill="none"'))
     .join('')
