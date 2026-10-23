@@ -11,7 +11,7 @@ import { WeatherIcon } from './WeatherIcon.jsx'
 // 점수와 이유·코멘트는 보이지 않습니다 (PRD §7). 날씨 카드의 한마디는 날씨마다 정해 둔 문장입니다 (AI를 부르지 않음).
 // 시안의 "이런 날씨에 어울리는 다른 코디" 목록은 앱에 없어 넣지 않았습니다 (사람이 정함, 2026-10-22).
 // confirmed: { date, weather: { region, min_temp, max_temp, condition }, worn: 칸 → 2D 이미지 주소 }
-// 디자인만 옮겼습니다. 동작은 그대로입니다: 아래 버튼(코디 일기에 보기, 즐겨찾기에 추가, 새로운 코디 추천받기)과
+// 디자인만 옮겼습니다. 동작은 그대로입니다: 시안 아래쪽의 버튼 세 개와
 // 아이템 카드의 옷 이름·#키워드는 넣지 않았습니다. 옷은 그림 주소만 받고, 이동은 메뉴로 합니다. (사람이 정함)
 
 const SCENE = {
@@ -107,9 +107,11 @@ function ConfirmedScreen({ confirmed, mannequin }) {
             </li>
           ))}
         </ul>
-        <p className="cf-items__note">확정한 코디는 코디 일기에 날짜별로 남아요.</p>
       </div>
 
+      {/* 배경 그림에 그려져 있는 버튼 그림 세 개를 가리는 막대입니다. 앱에는 이 버튼들이 없어 눌리는 것처럼 보이면
+          안 되므로, 안내 글만 있는 누를 수 없는 막대로 덮습니다. */}
+      <p className="cf-actions cf-actions--note">확정한 코디는 코디 일기에 날짜별로 남아요.</p>
     </section>
   )
 }

@@ -355,3 +355,16 @@
 .cf-act--primary:hover {
   filter: brightness(1.05);
 }
+
+/* 배경 그림의 버튼을 가리는 막대: 같은 자리의 .cf-actions 모양에 안내 글만 둡니다. 누를 수 없습니다. */
+.cf-actions--note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  background: rgb(248, 240, 235);
+  font-size: 20px;
+  color: #7d6f68;
+  pointer-events: none;
+  user-select: none;
+}
