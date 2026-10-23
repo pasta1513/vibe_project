@@ -3,7 +3,7 @@ chcp 65001 > nul
 rem 매일 쓸 때 켜는 파일 (D-018). 더블클릭하면 화면 빌드 → 서버(8080) → 브라우저 순서로 켭니다.
 rem 끌 때는 이 창을 닫습니다. 데이터는 data\ 폴더에 저장됩니다 (server\.env의 DATA_DIR로 바꿀 수 있음).
 cd /d "%~dp0"
-title 코디 추천 웹앱 (http://localhost:8080)
+title moire (http://localhost:8080)
 
 echo [1/2] 화면을 빌드합니다...
 call npm --prefix web run build
