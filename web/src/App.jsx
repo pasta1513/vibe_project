@@ -116,7 +116,8 @@ function App() {
   // 처음 화면: 메뉴를 아직 고르지 않았을 때 (SCREEN-SPEC §4). 캔버스 전체에 그림을 깔고 마네킹과 날씨 카드가 보입니다.
   const homeOpen = showMenu && !activeMenu && !confirmed
   // 시안을 옮긴 화면은 캔버스 전체에 그려지고, 아직 옮기지 않은 화면은 메뉴바 아래에 그려집니다.
-  const redesigned = homeOpen || closetOpen || settingsOpen || diaryOpen || favoritesOpen || Boolean(confirmed)
+  const redesigned =
+    homeOpen || closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen || Boolean(confirmed)
   const fullScreen = homeOpen || closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen
 
   // 앱 전체를 시안(style/html)의 1536×1024 캔버스로 그리고 창 크기에 맞춰 줄입니다. (P-38, 사람이 정함 2026-10-22)

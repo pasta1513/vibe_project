@@ -1,16 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
+import '../styles/dressup.css'
 import { CATEGORIES, SLOT_LABEL, isoDate, outfitKey, subjectParticle } from '../labels.js'
+import pickBg from '../assets/dressup/pick-bg.png'
+import recommendBg from '../assets/dressup/recommend-bg.png'
+import scoreBg from '../assets/dressup/score-bg.png'
 import AlertDialog from './AlertDialog.jsx'
-import Button from './Button.jsx'
-import ConditionBar from './ConditionBar.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
+import {
+  ClosetPanel,
+  RecommendPanel,
+  ResultPanel,
+  ScoreActions,
+  SidePanel,
+  TodayPanel,
+} from './DressUpPanels.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import Mannequin from './Mannequin.jsx'
-import RecommendList from './RecommendList.jsx'
-import ScoreCard from './ScoreCard.jsx'
 
 // 새 옷 입기 (SCREEN-SPEC §5): 옷 고르는 단계(5.2), 추천 보기(5.3), 점수 확인 단계(5.4)
+// 시안 style/html의 08_1(따뜻한·파스텔)과 12를 옮겼습니다. 배경은 시안 PNG에서 가운데 캐릭터 자리를 메운 그림입니다. (P-38)
 // 편집 중인 코디는 화면만 들고 있고, 새로고침하면 사라집니다. (ARCHITECTURE §2.1)
 
 const EMPTY_OUTFIT = { top: null, bottom: null, dress: null, shoes: null, outer: null }
@@ -66,6 +75,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
   const [scoreError, setScoreError] = useState(null)
   const [result, setResult] = useState(null)
   const [alert, setAlert] = useState(null)
+  const [closetTab, setClosetTab] = useState('top') // 왼쪽 "의상 선택"에서 고른 구분 (시안의 칩)
 
   // 받은 추천 목록과 그 목록을 받을 때의 조건. [추천받기]를 다시 누르거나 메뉴를 떠나면 버립니다.
   // (사람이 정함, 2026-10-21)
@@ -203,7 +213,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
       return
     }
     imageOfRef.current = imageOf
-  const worn = Object.fromEntries(
+    const worn = Object.fromEntries(
       Object.entries(body.outfit).map(([slot, id]) => [slot, id ? imageOfRef.current[id] : null]),
     )
     if (!body.outfit.outer) worn.outer = 'none'
@@ -351,63 +361,46 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
   )
   const scoreStage = stage === 'score'
   const recommendStage = stage === 'recommend'
-  // 추천 보기와 점수 확인 단계에서는 옷장이 작게 줄어듭니다. (SCREEN-SPEC §1.2)
-  const compact = scoreStage || recommendStage
+  const background = scoreStage ? scoreBg : recommendStage ? recommendBg : pickBg
 
+  // 시안 08_1(옷 고르기·추천)과 12(점수 확인)를 그대로 옮긴 장면입니다. (P-38)
   return (
-    <section className={`dressup${compact ? ' dressup--compact' : ''}`} aria-label="새 옷 입기">
-      <div className="dressup__closet" aria-label="옷장">
-        {compact ? (
-          <p className="sub-text">옷장</p>
-        ) : (
-          CATEGORIES.map((category) => (
-            <div key={category.code} className="dressup__section">
-              <h3 className="closet__heading">{category.label}</h3>
-              <div className="closet__grid">
-                {clothes[category.code].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`closet__item${outfit[category.code] === item.id ? ' closet__item--worn' : ''}`}
-                    aria-pressed={outfit[category.code] === item.id}
-                    onClick={() => wear(category.code, item.id)}
-                  >
-                    <img src={item.image_url} alt={`${category.label} ${item.id}`} />
-                  </button>
-                ))}
-                {category.code === 'outer' && (
-                  <button
-                    type="button"
-                    className={`closet__item closet__item--none${outfit.outer === 'none' ? ' closet__item--worn' : ''}`}
-                    aria-pressed={outfit.outer === 'none'}
-                    onClick={() => wear('outer', 'none')}
-                  >
-                    입지 않음
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+    <section
+      className={`du du--${stage}`}
+      aria-label="새 옷 입기"
+      style={{ '--src': `url(${background})` }}
+    >
+      {!scoreStage && (
+        <ClosetPanel clothes={clothes} outfit={outfit} onWear={wear} tab={closetTab} onTab={setClosetTab} />
+      )}
 
-      <div className="dressup__main">
-        <ConditionBar
-          date={date}
-          dates={DATES}
-          onDate={changeDate}
+      {!scoreStage && (
+        <div className="du-bubble" aria-hidden="true">
+          이 코디 어때?
+        </div>
+      )}
+      <Mannequin className="du-mannequin" {...mannequin} outfit={worn} showEmpty={!scoreStage} />
+
+      {!scoreStage && (
+        <SidePanel
+          weather={weather}
+          onRetryWeather={() => loadWeather(date, chosenRegion)}
           regions={regions}
           region={chosenRegion ?? weather.data?.area ?? weather.data?.region ?? null}
           onRegion={changeRegion}
-          weather={weather}
-          onRetryWeather={() => loadWeather(date, chosenRegion)}
+          date={date}
+          dates={DATES}
+          onDate={changeDate}
           tags={tags}
           tagId={tagId}
           onTag={changeTag}
           onRecommend={requestRecommend}
           recommending={recommending}
-          locked={scoreStage}
         />
+      )}
+
+      {/* 알림 줄: 지운 옷 다시 고르기, 추천·확정·즐겨찾기 실패 (SCREEN-SPEC §2.6, §2.7) */}
+      <div className="du-notices">
         {reselect.length > 0 && (
           <p className="reselect-notice" role="status">
             ⚠ 지운 옷이 있어요. {reselect.map((slot) => SLOT_LABEL[slot]).join(', ')}
@@ -422,51 +415,55 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
           />
         )}
         {favoriteError && <ErrorLine message={favoriteError} />}
-        <div className="dressup__body">
-          {recommendStage ? (
-            <RecommendList
-              recommendation={recommendation.data}
-              imageOf={imageOf}
-              mannequin={mannequin}
-              onTryOn={tryOn}
-              tagId={recommendation.conditions.tagId}
-              onConfirm={confirmRecommendation}
-              confirming={confirming}
-              onFavorite={changeFavorite}
-              onGoCloset={onNoClothes}
-            />
-          ) : (
-            <>
-              <Mannequin
-                className="dressup__mannequin"
-                {...mannequin}
-                outfit={worn}
-                showEmpty={!scoreStage}
-              />
-              {scoreStage && (
-                <ScoreCard
-                  date={date}
-                  result={result}
-                  onEdit={backToPick}
-                  onConfirm={confirmScored}
-                  confirming={confirming}
-                  onFavorite={addScoredFavorite}
-                  favoriting={favoriting}
-                />
-              )}
-            </>
-          )}
-        </div>
-        {stage === 'pick' && (
-          <div className="dressup__actions">
-            {scoreError && <ErrorLine message={scoreError} onRetry={checkScore} />}
-            {recommendation && <Button onClick={reviewRecommendations}>추천 다시 보기</Button>}
-            <Button variant="primary" disabled={scoring} onClick={checkScore}>
-              {scoring ? '점수를 매기는 중…' : '점수 확인하기'}
-            </Button>
-          </div>
-        )}
+        {stage === 'pick' && scoreError && <ErrorLine message={scoreError} onRetry={checkScore} />}
       </div>
+
+      {recommendStage && (
+        <RecommendPanel
+          recommendation={recommendation.data}
+          imageOf={imageOf}
+          mannequin={mannequin}
+          tagId={recommendation.conditions.tagId}
+          onTryOn={tryOn}
+          onConfirm={confirmRecommendation}
+          confirming={confirming}
+          onFavorite={changeFavorite}
+          onGoCloset={onNoClothes}
+        />
+      )}
+
+      {stage === 'pick' && (
+        <div className="du-actions">
+          {recommendation && (
+            <button type="button" className="du-review" onClick={reviewRecommendations}>
+              추천 다시 보기
+            </button>
+          )}
+          <button type="button" className="du-score" disabled={scoring} onClick={checkScore}>
+            <span aria-hidden="true">✦</span>
+            {scoring ? '점수를 매기는 중…' : '점수 확인하기'}
+          </button>
+        </div>
+      )}
+
+      {scoreStage && (
+        <>
+          <TodayPanel
+            date={date}
+            weather={weather}
+            outfit={outfit}
+            imageOf={imageOf}
+          />
+          <ResultPanel result={result} mascotSrc={scoreBg} />
+          <ScoreActions
+            onEdit={backToPick}
+            onConfirm={confirmScored}
+            confirming={confirming}
+            onFavorite={addScoredFavorite}
+            favoriting={favoriting}
+          />
+        </>
+      )}
 
       {alert && <AlertDialog message={alert} onClose={() => setAlert(null)} />}
       {sameDate && (
