@@ -145,8 +145,13 @@ const attr = (v) => String(v).replace(/[&"<>]/g, (ch) => ({ '&': '&amp;', '"': '
 
 // pattern: 우리 무늬 그림 { w, h, paths: [{ d, fill, transform }], base } 또는 null
 // 무늬가 있으면 바탕은 무늬에서 가장 넓은 색(base)으로 칠합니다. moire 프로젝트도 무늬의 주된 색(vectorData.base)을 씁니다. (2026-10-23)
+// 디테일 선 빼기 (2026-10-23, 사람이 정함 — 확인 중): 틀 그림의 목둘레·소맷단·밑단·주머니·신발끈 같은 선(fill="none"인 path)은
+// 그리지 않습니다. 사진 무늬에 실제 박음질과 목둘레가 이미 들어 있어 선이 두 번 보여서입니다.
+// 옷 바깥 테두리와 단추·옷깃·신발 밑창 같은 면은 남깁니다.
+const withoutDetailLines = (svg) => svg.replace(/<path\b[^>]*\bfill="none"[^>]*\/>/g, '')
+
 function garmentContent(code, color, pattern, look, unique) {
-  const template = TEMPLATE_SVG[code]
+  const template = withoutDetailLines(TEMPLATE_SVG[code])
   if (!pattern) return template.replaceAll('currentColor', safeColor(color))
   const base = template.replaceAll('currentColor', safeColor(pattern.base ?? color))
   const clip = (base.match(/<path\b[^>]*>/g) || [])
