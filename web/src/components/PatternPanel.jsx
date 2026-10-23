@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { loadImage, patternFromImage, toSvg } from '../vectorize.js'
 import Button from './Button.jsx'
 import ErrorLine from './ErrorLine.jsx'
-import Mannequin from './Mannequin.jsx'
+import Mannequin, { GarmentIllustration } from './Mannequin.jsx'
 
 // 무늬 칸 (SCREEN-SPEC §6.2, §6.3, P-39). 옷 등록 창의 [2D 이미지]와 옷 상세의 [무늬 바꾸기]에서 씁니다.
 // 무늬 표현(자동 감지, 디테일 살리기, 줄무늬 정리), 벡터 색상 수(3~10), 대표 색상만을 바꾸면
@@ -10,7 +10,7 @@ import Mannequin from './Mannequin.jsx'
 // imageUrl: 배경을 지운 2D 이미지, mainColor: 대표 색
 // settings: { mode, colors, solid } 지금 적용된 값
 // save(svg, settings): 서버에 저장하는 요청 (대표 색상만이면 svg는 null). 응답을 돌려줌
-// item: 칸 안 마네킹에 입힐 옷 정보 (구분과 종류를 고르지 않았으면 null)
+// item: 2D 일러스트와 칸 안 마네킹에 입힐 옷 정보 (구분과 종류를 고르지 않았으면 null)
 // onPreview(url): 주면 칸 안에 마네킹을 그리지 않고, 바뀐 무늬 주소(대표 색상만이면 null)를 알려 줍니다 (옷 상세는 왼쪽 큰 마네킹에 그림)
 // onApplied(data, settings): data는 저장 응답, onCancel()
 
@@ -65,9 +65,19 @@ function PatternPanel({ imageUrl, mainColor, settings, save, item, mannequin, on
   return (
     <div className="pt">
       <div className="pt__boxes">
+        {/* 구분과 종류를 골랐으면 옷만 그린 2D 일러스트(바꾸는 중인 무늬), 아니면 배경을 지운 2D 이미지 (사람이 정함, 2026-10-23) */}
         <figure className="pt__box">
-          <img src={imageUrl} alt="배경을 지운 2D 이미지" />
-          <figcaption>2D 이미지</figcaption>
+          {item ? (
+            <GarmentIllustration
+              className="garment-illust pt__illust"
+              item={{ ...item, pattern_url: previewUrl }}
+              mannequin={mannequin}
+              title="옷만 그린 2D 일러스트"
+            />
+          ) : (
+            <img src={imageUrl} alt="배경을 지운 2D 이미지" />
+          )}
+          <figcaption>{item ? '2D 일러스트' : '2D 이미지'}</figcaption>
         </figure>
         <figure className="pt__box" style={solid ? { background: mainColor } : undefined}>
           {previewUrl && <img src={previewUrl} alt="캐릭터용 무늬" />}

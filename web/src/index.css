@@ -560,7 +560,8 @@ button {
   background: #fdf1ec;
 }
 
-.cl__card img {
+.cl__card img,
+.cl__card-pic {
   position: absolute;
   left: 8px;
   top: 8px;
@@ -644,6 +645,25 @@ button {
   width: 100%;
   height: 100%;
   padding: 16px;
+  object-fit: contain;
+}
+
+/* 옷만 그린 2D 일러스트 (GarmentIllustration): 담긴 칸을 채움 */
+.garment-illust {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pt__illust {
+  padding: 8px 8px 26px;
+}
+
+.detail__illust {
+  width: 100%;
+  height: 100%;
+  padding: 24px 24px 40px;
   object-fit: contain;
 }
 

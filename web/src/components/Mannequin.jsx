@@ -332,21 +332,11 @@ function EmptySlot({ box, label, labelY }) {
   )
 }
 
-function Mannequin({
-  gender = 'female',
-  height = 'medium',
-  body = 'medium',
-  outfit,
-  showEmpty = false,
-  fadedSlots = [],
-  className,
-  title,
-}) {
-  const patternId = `pj-dots-${useId().replace(/:/g, '')}`
+// 마네킹 몸의 치수와 칸 상자. 마네킹과 옷만 그린 일러스트(GarmentIllustration)가 함께 씁니다.
+function bodyGeometry(gender, height, body) {
   const h = HEIGHT_RATIO[height] ?? 1
   const w = BODY_RATIO[body] ?? 1
   const base = BASE[gender] ?? BASE.female
-  const head = HEAD[gender] ?? HEAD.female
 
   const sh = base.shoulder * w
   const wa = base.waist * w
@@ -381,9 +371,48 @@ function Mannequin({
   }
   boxes.dress = { x: boxes.top.x, y: boxes.top.y, w: boxes.top.w, h: boxes.bottom.y + boxes.bottom.h - boxes.top.y }
 
+  const dims = { sh, wa, hip, sy: SHOULDER_Y, waistY, hipY, armX, armW, armTop, wristY, legX, legW, pantW, ankleY }
+  return { w, sh, wa, hip, waistY, hipY, ankleY, armW, armX, armTop, wristY, legW, legX, pantW, shiftY, boxes, dims }
+}
+
+// 옷만 그린 2D 일러스트 (P-39 뒤, 사람이 정함 2026-10-23): 마네킹에 입히는 캐릭터 의상(틀 + 대표 색 + 무늬)을 옷만 따로 그립니다.
+// 옷장 목록의 그림과 옷 상세의 [2D 일러스트]에 씁니다. 틀이나 대표 색이 없는 옷은 배경을 지운 2D 이미지를 그대로 보입니다.
+// item: 옷 한 벌 정보 { category, image_url, outfit_template, main_color, pattern_url, fit }
+// mannequin: 몸 치수를 정할 마네킹 모양 (없으면 여성·보통·보통)
+export function GarmentIllustration({ item, mannequin, className, title }) {
+  const { gender = 'female', height = 'medium', body = 'medium' } = mannequin ?? {}
+  const { boxes, dims } = bodyGeometry(gender, height, body)
+  const area = item?.main_color ? outfitBox(item.outfit_template, dims) : null
+  if (!area) {
+    return <img className={className} src={item?.image_url} alt={title ?? '2D 이미지'} />
+  }
+  // 옷 상자 둘레에 여유를 두어 피팅값으로 옮기거나 기울여도 잘리지 않게 합니다.
+  const pad = Math.max(area.w, area.h) * 0.12
+  const viewBox = `${area.x - pad} ${area.y - pad} ${area.w + pad * 2} ${area.h + pad * 2}`
+  return (
+    <svg className={className} viewBox={viewBox} role="img" aria-label={title ?? '옷 일러스트'}>
+      <ClothingShape item={item} box={boxes[item.category] ?? boxes.top} dims={dims} />
+    </svg>
+  )
+}
+
+function Mannequin({
+  gender = 'female',
+  height = 'medium',
+  body = 'medium',
+  outfit,
+  showEmpty = false,
+  fadedSlots = [],
+  className,
+  title,
+}) {
+  const patternId = `pj-dots-${useId().replace(/:/g, '')}`
+  const head = HEAD[gender] ?? HEAD.female
+  const { w, sh, wa, hip, waistY, hipY, ankleY, armW, armX, armTop, wristY, legW, legX, pantW, shiftY, boxes, dims } =
+    bodyGeometry(gender, height, body)
+
   const worn = outfit ?? {}
   const hasDress = Boolean(worn.dress)
-  const dims = { sh, wa, hip, sy: SHOULDER_Y, waistY, hipY, armX, armW, armTop, wristY, legX, legW, pantW, ankleY }
   // 옷을 입은 칸의 잠옷은 그리지 않고 팔다리를 살색으로 둡니다. 반팔이나 치마 아래로 잠옷이 보이지 않게 합니다.
   const coversTop = hasDress || Boolean(worn.top)
   const coversBottom = hasDress || Boolean(worn.bottom)

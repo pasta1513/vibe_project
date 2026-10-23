@@ -4,7 +4,7 @@ import { CATEGORY_LABEL, KEYWORD_ROWS } from '../labels.js'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import KeywordChips from './KeywordChips.jsx'
-import Mannequin from './Mannequin.jsx'
+import Mannequin, { GarmentIllustration } from './Mannequin.jsx'
 import OutfitFitter from './OutfitFitter.jsx'
 import PatternPanel from './PatternPanel.jsx'
 
@@ -170,11 +170,16 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
               outfit={{ [detail.category]: { ...detail, ...look } }}
               title="옷을 입힌 미리보기"
             />
+          ) : detail && view === 'original' ? (
+            <img src={detail.photo_url} alt="원래 사진" />
           ) : (
+            // [2D 일러스트]: 옷만 그린 캐릭터 의상 (사람이 정함, 2026-10-23)
             detail && (
-              <img
-                src={view === 'original' ? detail.photo_url : detail.image_url}
-                alt={view === 'original' ? '원래 사진' : '2D 이미지'}
+              <GarmentIllustration
+                className="detail__illust"
+                item={{ ...detail, ...look }}
+                mannequin={mannequin}
+                title="옷만 그린 2D 일러스트"
               />
             )
           )}
@@ -240,6 +245,8 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
                   pattern_colors: s.colors,
                 })
               }
+              item={{ ...detail, ...look }}
+              mannequin={mannequin}
               onPreview={showPreview}
               onApplied={(data) => {
                 setDetail({ ...detail, ...data })

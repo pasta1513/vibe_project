@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CATEGORIES, SLOT_LABEL, WEATHER_LABEL, formatDate, scoreStars } from '../labels.js'
 import ErrorLine from './ErrorLine.jsx'
 import FavoriteStar from './FavoriteStar.jsx'
-import Mannequin from './Mannequin.jsx'
+import Mannequin, { GarmentIllustration } from './Mannequin.jsx'
 import { api } from '../api.js'
 
 // 새 옷 입기의 패널들 (SCREEN-SPEC §5). 시안 style/html의 08_1(따뜻한, 옷 고르기), 08_1(파스텔, 추천),
@@ -54,7 +54,8 @@ export function WeatherIcon({ condition, className }) {
 }
 
 // 왼쪽 "의상 선택" (시안 .closet): 구분 칩과 그 구분의 옷
-export function ClosetPanel({ clothes, outfit, onWear, tab, onTab }) {
+// 옷 그림은 옷만 그린 2D 일러스트 (사람이 정함, 2026-10-23)
+export function ClosetPanel({ clothes, outfit, onWear, tab, onTab, mannequin }) {
   const items = clothes[tab] ?? []
   return (
     <section className="du-closet" aria-label="의상 선택">
@@ -82,7 +83,7 @@ export function ClosetPanel({ clothes, outfit, onWear, tab, onTab }) {
             aria-pressed={outfit[tab] === item.id}
             onClick={() => onWear(tab, item.id)}
           >
-            <img src={item.image_url} alt={`${LABEL[tab]} ${item.id}`} />
+            <GarmentIllustration className="garment-illust" item={item} mannequin={mannequin} title={`${LABEL[tab]} ${item.id}`} />
           </button>
         ))}
         {tab === 'outer' && (
@@ -335,7 +336,7 @@ export function RecommendPanel({
 }
 
 // 점수 확인 왼쪽 "오늘의 코디" (시안 12 .today)
-export function TodayPanel({ date, weather, outfit, clothingOf, tagsOf }) {
+export function TodayPanel({ date, weather, outfit, clothingOf, tagsOf, mannequin }) {
   const w = weather.data
   const look = w ? WEATHER_LABEL[w.condition] : null
   const slots = ['top', 'bottom', 'dress', 'outer', 'shoes'].filter((s) => outfit[s] && outfit[s] !== 'none')
@@ -361,7 +362,9 @@ export function TodayPanel({ date, weather, outfit, clothingOf, tagsOf }) {
           const tags = tagsOf(item?.id)
           return (
             <li key={slot} className="du-today__it">
-              <span className="du-today__thumb">{item && <img src={item.image_url} alt="" />}</span>
+              <span className="du-today__thumb">
+                {item && <GarmentIllustration className="garment-illust" item={item} mannequin={mannequin} title="" />}
+              </span>
               <b>{tags.length > 0 ? tags.slice(0, 2).join(' ') : SLOT_LABEL[slot]}</b>
               <span>
                 {SLOT_LABEL[slot]}
