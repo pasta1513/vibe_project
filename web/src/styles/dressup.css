@@ -195,6 +195,15 @@
   background: linear-gradient(118deg, transparent 30%, rgba(255, 255, 255, 0.35) 38%, transparent 46%);
 }
 
+/* 옷이 없을 때 (2026-10-23, 시안 moire_empty_closet): 그림 속 캐릭터 자리에 마네킹 */
+.du-empty__mannequin {
+  position: absolute;
+  left: 657px;
+  top: 290px;
+  width: 197px;
+  height: 460px;
+}
+
 /* ── 오른쪽 날씨·스타일·날짜 (시안 .side) ── */
 .du-side {
   position: absolute;

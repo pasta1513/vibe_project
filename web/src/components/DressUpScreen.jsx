@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import '../styles/dressup.css'
 import { CATEGORIES, SLOT_LABEL, isoDate, outfitKey, subjectParticle } from '../labels.js'
+import emptyBg from '../assets/dressup/empty-bg.png'
 import pickBg from '../assets/dressup/pick-bg.png'
 import recommendBg from '../assets/dressup/recommend-bg.png'
 import scoreBg from '../assets/dressup/score-bg.png'
@@ -363,13 +364,16 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
     setFavoriteError(null)
   }
 
+  // 옷이 한 벌도 없을 때 (2026-10-23 바꿈, 사람이 준 시안 moire_empty_closet). 처음 화면처럼 시안 그림에서
+  // 캐릭터 자리를 메운 배경에 지금 마네킹을 잠옷 차림으로 세웁니다. 말풍선과 아래 카드 글자는 그림에 있는 것을 씁니다.
   if (noClothes) {
     return (
-      <div className="dialog-backdrop dialog-backdrop--top">
-        <div className="dialog dialog--small" role="alertdialog" aria-modal="true">
-          <p className="dialog__message">아직 등록한 옷이 없어요.</p>
-        </div>
-      </div>
+      <section className="du du-empty" aria-label="새 옷 입기" style={{ '--src': `url(${emptyBg})` }}>
+        <p className="visually-hidden" role="alert">
+          아직 등록한 옷이 없어요. 잠시 후 옷장으로 이동합니다.
+        </p>
+        <Mannequin className="du-empty__mannequin" {...mannequin} title="지금 마네킹 모양, 기본 잠옷 차림" />
+      </section>
     )
   }
 
