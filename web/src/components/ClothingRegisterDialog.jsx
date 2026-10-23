@@ -1,24 +1,30 @@
 import { useRef, useState } from 'react'
 import { api } from '../api.js'
+import registerBg from '../assets/closet/register-bg.png'
 import { CATEGORIES, KEYWORD_ROWS, sortTypesByGender } from '../labels.js'
 import AlertDialog from './AlertDialog.jsx'
-import Button from './Button.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import KeywordChips from './KeywordChips.jsx'
+import Mannequin from './Mannequin.jsx'
 import WordAdder, { GENDER_FAILED } from './WordAdder.jsx'
 
-// 옷 등록 창 (SCREEN-SPEC §6.2)
+// 옷 등록 (SCREEN-SPEC §6.2). 시안 style/html 07_4를 그대로 옮긴 넓은 등록 화면입니다. 옷장 목록 자리에 뜹니다. (P-38)
+// 01 사진 업로드, 02 배경을 지운 2D 이미지, 03 미리보기(마네킹), 04 키워드(시안의 칸 대신 키워드 버튼 줄).
+// 배경 고치기와 마네킹 모습 조절은 넣지 않았습니다.
+// 시안의 옷 이름·브랜드·태그·설명 칸과 왼쪽 메뉴의 관리 항목은 앱에 기능이 없어 넣지 않았습니다 (사람이 정함, 2026-10-22).
 // [+ 더하기]로 더한 단어는 이 창의 목록에 바로 붙고 켜진 채로 보입니다. 구분 줄에는 [+ 더하기]가 없습니다.
 const EMPTY_PICK = { category: null, color: [], type: [], material: [], season: [], pattern: [] }
 
-function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onRegistered }) {
+function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, onClose, onRegistered }) {
+  const { gender } = mannequin
   const fileInput = useRef(null)
-  const [upload, setUpload] = useState(null) // { upload_id, photo_url, image_url }
+  const [upload, setUpload] = useState(null) // { upload_id, photo_url, image_url, picked }
   const [lastFile, setLastFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null) // { message, retry }
-  const [showOriginal, setShowOriginal] = useState(false)
+  // 02 칸에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진
+  const [view, setView] = useState('image')
   const [pickFailed, setPickFailed] = useState(false)
   const [pick, setPick] = useState(EMPTY_PICK)
   const [alert, setAlert] = useState(null)
@@ -46,7 +52,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onR
     }
     const data = res.data
     setUpload(data)
-    setShowOriginal(false)
+    setView('image')
     if (data.picked) {
       // AI가 미리 고른 구분과 키워드를 켭니다.
       const byId = Object.fromEntries(
@@ -124,76 +130,118 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onR
     onClose()
   }
 
+  // 마네킹 미리보기: 고른 구분 칸에 올린 2D 이미지를 입혀 보여 줍니다. 원피스는 상의·하의 칸을 함께 차지합니다.
+  const previewOutfit = upload && pick.category ? { [pick.category]: upload.image_url } : undefined
+
   const types = sortTypesByGender(
     keywords.type.filter((t) => t.category === pick.category),
     gender,
   )
 
   return (
-    <div className="dialog-backdrop">
-      <div className="dialog register" role="dialog" aria-modal="true" aria-labelledby="register-title">
-        <div className="dialog__header">
-          <h2 id="register-title" className="dialog__title">새 옷 등록</h2>
-          <button type="button" className="dialog__close" aria-label="닫기" onClick={requestClose}>
-            ✕
+    <div className="reg" style={{ '--src': `url(${registerBg})` }}>
+      {/* 왼쪽 메뉴: 시안의 메뉴 중 앱에 있는 두 가지만 둡니다. */}
+      <nav className="reg__side" aria-label="옷장 메뉴">
+        <button type="button" className="reg__side-item" onClick={requestClose}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21v-1c0-4 3.5-6 8-6s8 2 8 6v1z" />
+          </svg>
+          내 옷장
+        </button>
+        <button type="button" className="reg__side-item reg__side-item--on" aria-current="page">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v8M8 12h8" />
+          </svg>
+          옷 추가하기
+        </button>
+      </nav>
+
+      <section className="reg__main" role="dialog" aria-modal="true" aria-labelledby="register-title">
+        <button type="button" className="reg__back" aria-label="옷장으로 돌아가기" onClick={requestClose}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 12H4M10 6l-6 6 6 6" />
+          </svg>
+        </button>
+        <h2 id="register-title" className="reg__title">
+          옷 등록하기
+        </h2>
+        <p className="reg__subtitle">새로운 옷을 등록하고 나만의 옷장을 만들어보세요.</p>
+
+        <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={handleFileChange} />
+
+        {/* 01 · 사진 업로드 */}
+        <div className="reg__sec" style={{ left: 17, top: 91, width: 636, height: 290 }} />
+        <span className="reg__sec-t" style={{ left: 35, top: 108 }}>
+          01 · 사진 업로드 <span className="reg__req">*</span>
+        </span>
+        {/* 촬영 안내 (SCREEN-SPEC §6, D-017): 여러 벌이나 어수선한 배경은 배경 지우기가 잘 안 됨 */}
+        <p className="reg__tip">옷 한 벌만, 벽이나 바닥처럼 단순한 배경에서 찍으면 배경이 깔끔하게 지워져요.</p>
+        <button
+          type="button"
+          className={`reg__drop${upload ? ' reg__drop--filled' : ''}`}
+          disabled={uploading}
+          onClick={() => fileInput.current.click()}
+          aria-label={upload ? '사진 다시 올리기' : '사진 올리기'}
+        >
+          {upload ? (
+            <img src={upload.photo_url} alt="올린 사진" />
+          ) : (
+            <>
+              <svg viewBox="0 0 30 26" aria-hidden="true">
+                <path d="M3 7h6l2-4h8l2 4h6v16H3z" />
+                <circle cx="15" cy="14" r="5" />
+              </svg>
+              <b>{uploading ? '사진을 정리하는 중…' : '사진 업로드하기'}</b>
+              <span>
+                클릭해서 옷 사진을
+                <br />
+                한 장 올려 주세요.
+              </span>
+            </>
+          )}
+        </button>
+        {upload && (
+          <button
+            type="button"
+            className="reg__wbtn"
+            style={{ left: 76, top: 316, width: 186, height: 41 }}
+            disabled={uploading}
+            onClick={() => fileInput.current.click()}
+          >
+            {uploading ? '사진을 정리하는 중…' : '사진 다시 올리기'}
           </button>
+        )}
+        <div className="reg__example">
+          <span>업로드 예시</span>
+          <div className="reg__crop" aria-hidden="true" />
         </div>
-
-        <div className="register__body">
-          <div className="register__photo">
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              hidden
-              onChange={handleFileChange}
+        {uploadError && (
+          <div className="reg__error" style={{ left: 35, top: 386, width: 600 }}>
+            <ErrorLine
+              message={uploadError.message}
+              onRetry={uploadError.retry && lastFile ? () => sendPhoto(lastFile) : undefined}
             />
-            {upload ? (
-              <>
-                <div className="photo-box">
-                  <img
-                    src={showOriginal ? upload.photo_url : upload.image_url}
-                    alt={showOriginal ? '원래 사진' : '2D 이미지'}
-                  />
-                </div>
-                <Button onClick={() => setShowOriginal(!showOriginal)}>
-                  {showOriginal ? '2D 이미지 보기' : '원래 사진 보기'}
-                </Button>
-                <Button disabled={uploading} onClick={() => fileInput.current.click()}>
-                  사진 다시 올리기
-                </Button>
-              </>
-            ) : (
-              <button
-                type="button"
-                className="photo-box photo-box--empty"
-                disabled={uploading}
-                onClick={() => fileInput.current.click()}
-              >
-                사진 올리기
-              </button>
-            )}
-            {/* 촬영 안내 (SCREEN-SPEC §6, D-017): 여러 벌이나 어수선한 배경은 배경 지우기가 잘 안 됨 */}
-            <p className="sub-text">
-              옷 한 벌만, 벽이나 바닥처럼 단순한 배경에서 찍으면 배경이 깔끔하게 지워져요.
-            </p>
-            {uploading && <p className="sub-text">사진을 정리하는 중…</p>}
-            {uploadError && (
-              <ErrorLine
-                message={uploadError.message}
-                onRetry={uploadError.retry && lastFile ? () => sendPhoto(lastFile) : undefined}
-              />
-            )}
           </div>
+        )}
 
-          {upload && (
-            <div className="register__keywords">
-              {pickFailed && (
-                <p className="sub-text">키워드를 미리 고르지 못했어요. 직접 골라 주세요.</p>
-              )}
+        {/* 04 · 옷 정보 입력: 시안의 칸 대신 키워드 버튼 줄 (사람이 정함, 2026-10-22) */}
+        <div className="reg__sec" style={{ left: 17, top: 391, width: 636, height: 414 }} />
+        <span className="reg__sec-t" style={{ left: 35, top: 408 }}>
+          04 · 옷 정보 입력
+        </span>
+        <div className="reg__keywords">
+          {!upload ? (
+            <p className="sub-text">사진을 올리면 키워드를 고를 수 있어요.</p>
+          ) : (
+            <>
+              {pickFailed && <p className="sub-text">키워드를 미리 고르지 못했어요. 직접 골라 주세요.</p>}
               {genderFailed && <p className="sub-text">{GENDER_FAILED}</p>}
               <div className="keyword-row">
-                <span className="keyword-row__label">구분<span className="required">*</span></span>
+                <span className="keyword-row__label">
+                  구분<span className="required">*</span>
+                </span>
                 <KeywordChips
                   label="구분"
                   single
@@ -227,22 +275,82 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, gender, onClose, onR
                   )}
                 </div>
               ))}
-            </div>
+            </>
           )}
         </div>
 
-        {upload && (
-          <div className="dialog__actions">
-            {/* 등록 실패: 한 줄과 [다시 시도] (SCREEN-SPEC §2.7, T-59) */}
-            {registerError && (
-              <ErrorLine message={registerError} onRetry={registering ? undefined : handleRegister} />
-            )}
-            <Button variant="primary" disabled={registering} onClick={handleRegister}>
-              {registering ? '등록하는 중…' : '등록하기'}
-            </Button>
+        {/* 등록 실패: 한 줄과 [다시 시도] (SCREEN-SPEC §2.7, T-59) */}
+        {registerError && (
+          <div className="reg__error" style={{ left: 17, top: 805, width: 240 }}>
+            <ErrorLine message={registerError} onRetry={registering ? undefined : handleRegister} />
           </div>
         )}
-      </div>
+        <button type="button" className="reg__cbtn reg__cbtn--cancel" onClick={requestClose}>
+          취소
+        </button>
+        <button
+          type="button"
+          className="reg__cbtn reg__cbtn--save"
+          disabled={!upload || registering}
+          onClick={handleRegister}
+        >
+          {registering ? '등록하는 중…' : '옷장에 저장하기'}
+        </button>
+
+        {/* 02 · 배경을 지운 2D 이미지 */}
+        <div className="reg__sec" style={{ left: 662, top: 17, width: 446, height: 405 }} />
+        <span className="reg__sec-t" style={{ left: 681, top: 38 }}>
+          02 · 배경을 지운 2D 이미지
+        </span>
+        <div className="reg__image">
+          {upload ? (
+            <img
+              src={view === 'original' ? upload.photo_url : upload.image_url}
+              alt={view === 'original' ? '원래 사진' : '2D 이미지'}
+            />
+          ) : (
+            <span className="sub-text">사진을 올리면 배경을 지운 이미지가 보여요.</span>
+          )}
+        </div>
+        <div className="reg__seg" role="radiogroup" aria-label="보기">
+          {[
+            ['image', '2D 이미지', 95],
+            ['original', '원본 사진', 82],
+          ].map(([key, label, width], i) => (
+            <button
+              key={key}
+              type="button"
+              role="radio"
+              aria-checked={view === key}
+              disabled={!upload}
+              className={`reg__seg-opt${view === key ? ' reg__seg-opt--on' : ''}`}
+              style={{ left: 683 + i * 105, top: 331, width }}
+              onClick={() => setView(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* 03 · 미리보기 */}
+        <div className="reg__sec" style={{ left: 662, top: 431, width: 446, height: 365 }} />
+        <span className="reg__sec-t" style={{ left: 681, top: 449 }}>
+          03 · 미리보기
+        </span>
+        <div className="reg__preview">
+          <div className="reg__preview-empty">
+            <Mannequin
+              className="reg__preview-mannequin"
+              {...mannequin}
+              outfit={previewOutfit}
+              title="미리보기 마네킹"
+            />
+            <p className="sub-text">
+              {previewOutfit ? '올린 옷을 마네킹에 입힌 모습이에요.' : '사진을 올리고 구분을 고르면 옷을 입혀 보여 줘요.'}
+            </p>
+          </div>
+        </div>
+      </section>
 
       {alert && <AlertDialog message={alert} onClose={() => setAlert(null)} />}
       {confirmClose && (
