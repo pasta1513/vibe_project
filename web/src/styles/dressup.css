@@ -166,6 +166,35 @@
   height: 580px;
 }
 
+/* 거울에 비친 뒷모습. 배경 그림의 빈 거울 유리(타원, 2.2° 기울어짐)에 맞춥니다. */
+.du-mirror {
+  position: absolute;
+  left: 948px;
+  top: 327px;
+  width: 116px;
+  height: 322px;
+  border-radius: 50%;
+  overflow: hidden;
+  transform: rotate(2.2deg);
+}
+
+.du-mirror svg {
+  position: absolute;
+  left: -6px;
+  top: 41px;
+  width: 128px;
+  height: 256px;
+  opacity: 0.85;
+}
+
+/* 유리 반짝임을 비친 모습 위에도 겹칩니다. */
+.du-mirror::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(118deg, transparent 30%, rgba(255, 255, 255, 0.35) 38%, transparent 46%);
+}
+
 /* ── 오른쪽 날씨·스타일·날짜 (시안 .side) ── */
 .du-side {
   position: absolute;
@@ -470,6 +499,18 @@
   top: 250px;
   width: 190px;
   height: 455px;
+}
+
+.du--recommend .du-mirror {
+  left: 947px;
+  top: 324px;
+  width: 112px;
+  height: 314px;
+}
+
+.du--recommend .du-mirror svg {
+  left: -8px;
+  top: 33px;
 }
 
 .du--recommend .du-side {
@@ -1030,4 +1071,76 @@
 
 .du-bb--primary svg {
   stroke: #fff;
+}
+
+/* 추천 페르소나·요청 글과 사면 좋을 옷 (P-39) */
+.du-side__request {
+  height: 40px;
+  margin: 4px 1px 8px;
+  padding: 0 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 20px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-heading);
+}
+
+.du-side__request:focus {
+  outline: none;
+  border-color: var(--du-coral-line);
+}
+
+.du-reco__shop-btn {
+  height: 28px;
+  margin-left: 12px;
+  padding: 0 12px;
+  border: 1.5px solid var(--du-coral-line);
+  border-radius: 14px;
+  background: var(--du-coral-soft);
+  color: var(--du-coral);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.du-reco__shop {
+  position: absolute;
+  left: 35px;
+  top: 56px;
+  z-index: 5;
+  width: 480px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--shadow-panel);
+  font-size: 14px;
+}
+
+.du-reco__shop p {
+  margin: 0 0 8px;
+  font-weight: 800;
+}
+
+.du-reco__shop ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  line-height: 1.6;
+}
+
+/* 추천 단계에서는 패널이 아래 추천 판(top 715)에 닿지 않게 요청 글 칸을 숨깁니다. 쓴 글은 그대로 남습니다. (P-39) */
+.du--recommend .du-side__request {
+  display: none;
+}
+
+/* 페르소나 칩과 요청 글 칸을 [AI 코디 추천받기] 아래로 옮김 (P-42) */
+.du-side__ai + .du-side__opts {
+  margin-top: 12px;
+}
+
+.du-side__request {
+  margin-bottom: 0;
+}
+
+.du--recommend .du-side__ai + .du-side__opts {
+  margin-top: 6px;
 }

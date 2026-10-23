@@ -45,7 +45,7 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
   const [detail, setDetail] = useState(null)
   const [loadError, setLoadError] = useState(null)
   // 왼쪽에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진, 'mannequin' 마네킹에 입혀 보기, 'fit' 모습 조절 (P-33),
-  // 'pattern' 무늬 바꾸기 (P-39): 왼쪽 마네킹에 바꾸는 중인 무늬를 입히고 오른쪽에 무늬 칸
+  // 'pattern' 무늬 바꾸기 (P-44): 왼쪽 마네킹에 바꾸는 중인 무늬를 입히고 오른쪽에 무늬 칸
   const [view, setView] = useState('image')
   const [patternPreview, setPatternPreview] = useState(null) // 무늬 칸에서 바꾸는 중인 무늬 주소
   const showPreview = useCallback((url) => setPatternPreview(url), [])
@@ -138,7 +138,7 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
     ? [color[0]?.name, types[0]?.name].filter(Boolean).join(' ') || CATEGORY_LABEL[detail.category]
     : '옷 상세'
   const mannequinView = view === 'mannequin' || view === 'fit' || view === 'pattern'
-  // 무늬 칸의 처음 값: 저장된 무늬 표현과 색 수. P-39 전에 등록한 옷은 자동 감지·7색
+  // 무늬 칸의 처음 값: 저장된 무늬 표현과 색 수. P-44 전에 등록한 옷은 자동 감지·7색
   const patternSettings = {
     mode: detail?.pattern_mode && detail.pattern_mode !== 'solid' ? detail.pattern_mode : 'auto',
     colors: detail?.pattern_colors ?? 7,
@@ -230,7 +230,7 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
           })}
         </div>
 
-        {/* 무늬 바꾸기 (P-39): 오른쪽 정보 칸을 덮는 무늬 칸. 등록 창과 같은 조절 */}
+        {/* 무늬 바꾸기 (P-44): 오른쪽 정보 칸을 덮는 무늬 칸. 등록 창과 같은 조절 */}
         {detail && view === 'pattern' && (
           <div className="detail__pattern">
             <h2 className="detail__pattern-t">무늬 바꾸기</h2>

@@ -79,7 +79,7 @@ function darker(hex, amount = 0.3) {
 
 // 캐릭터 의상 틀 9개 (D-016, DESIGN §5.5). 잠옷처럼 마네킹의 몸 치수로 그려서 18가지 모양에 저절로 맞습니다.
 // 돌려주는 것: 틀을 이루는 path 목록
-function outfitPaths(template, d) {
+function outfitPaths(template, d, back = false) {
   const { sh, wa, hip, sy, waistY, hipY, armX, armW, armTop, wristY, legX, legW, pantW, ankleY } = d
   const legLen = ankleY - hipY
   const sleeve = (bottomY, extra = 0) =>
@@ -97,8 +97,21 @@ function outfitPaths(template, d) {
     }),
   ]
   // 앞이 열린 아우터의 한쪽 판. s = -1(왼쪽), 1(오른쪽)
+  // 뒷모습(back)은 두 판이 가운데에서 맞닿아 등판 하나로 보입니다.
   const outerHalf = (s, hemY) => {
     const p = (x, y) => `${s * x} ${y}`
+    if (back) {
+      return [
+        `M ${p(0, sy - 2)}`,
+        `L ${p(sh + 3, sy + 1)}`,
+        `Q ${p(sh + 5, sy + 2)} ${p(sh + 5, sy + 10)}`,
+        `Q ${p(sh + 5, (sy + 10 + waistY) / 2)} ${p(wa + 5, waistY)}`,
+        `Q ${p(hip + 6, (waistY + hipY) / 2)} ${p(hip + 6, hipY)}`,
+        `L ${p(hip + 7, hemY)}`,
+        `L ${p(0, hemY)}`,
+        'Z',
+      ].join(' ')
+    }
     return [
       `M ${p(13, sy - 1)}`,
       `L ${p(sh + 3, sy + 1)}`,
@@ -242,11 +255,11 @@ function usePattern(url) {
 // 칸 하나의 옷. 의상 틀이 있으면 틀을 대표 색으로 칠하고, 무늬가 있으면 틀 모양 안에만 겹칩니다(clipPath).
 // 틀이 없으면 2D 이미지를 칸 상자에 얹습니다.
 // item: 옷 한 벌 정보 { image_url, outfit_template, main_color, pattern_url } 또는 2D 이미지 주소(문자열)
-function ClothingShape({ item, box, dims, faded }) {
+function ClothingShape({ item, box, dims, faded, back }) {
   const clipId = `outfit-clip-${useId().replace(/:/g, '')}`
   const info = typeof item === 'object' ? item : null
   const pattern = usePattern(info?.pattern_url)
-  const paths = info?.main_color ? outfitPaths(info.outfit_template, dims) : null
+  const paths = info?.main_color ? outfitPaths(info.outfit_template, dims, back) : null
   if (!paths) {
     return <ClothingImage box={box} url={info ? info.image_url : item} faded={faded} />
   }
@@ -332,6 +345,42 @@ function EmptySlot({ box, label, labelY }) {
   )
 }
 
+const HAIR = '#604032'
+const HAIR_LINE = '#45291f'
+
+// 뒷머리 (거울에 비친 뒷모습). 머리 그림(HEAD)과 같은 자리·크기에 맞춰 그립니다.
+// 여자는 어깨 아래로 내려오는 긴 머리, 남자는 짧은 머리에 귀와 목덜미가 보입니다.
+function BackHead({ gender }) {
+  if (gender === 'male') {
+    return (
+      <g strokeLinejoin="round">
+        <ellipse cx={0} cy={56} rx={31} ry={28} fill={SKIN} stroke={SKIN_LINE} strokeWidth="1.2" />
+        {[-1, 1].map((s) => (
+          <ellipse key={s} cx={s * 35} cy={57} rx={6} ry={9} fill={SKIN} stroke={SKIN_LINE} strokeWidth="1.2" />
+        ))}
+        <path
+          d="M -36 52 C -40 12, -22 -1, 0 -1 C 22 -1, 40 12, 36 52 Q 30 70, 18 76 Q 9 72, 0 77 Q -9 72, -18 76 Q -30 70, -36 52 Z"
+          fill={HAIR}
+          stroke={HAIR_LINE}
+          strokeWidth="1.2"
+        />
+        <path d="M -4 14 Q -10 34, -14 56 M 6 16 Q 9 36, 12 58" fill="none" stroke={HAIR_LINE} strokeWidth="1" />
+      </g>
+    )
+  }
+  return (
+    <g strokeLinejoin="round">
+      <path
+        d="M -41 46 C -45 -12, 45 -12, 42 46 C 44 70, 49 92, 54 112 Q 47 131, 40 114 Q 33 132, 26 115 Q 20 131, 13 116 Q 6 132, 0 116 Q -6 132, -13 116 Q -20 131, -26 115 Q -33 132, -40 114 Q -47 131, -53 112 C -48 92, -43 70, -41 46 Z"
+        fill={HAIR}
+        stroke={HAIR_LINE}
+        strokeWidth="1.2"
+      />
+      <path d="M -10 4 Q -22 50, -26 108 M 10 4 Q 22 50, 26 108 M 0 6 Q 1 60, 0 110" fill="none" stroke={HAIR_LINE} strokeWidth="0.8" opacity="0.6" />
+    </g>
+  )
+}
+
 // 마네킹 몸의 치수와 칸 상자. 마네킹과 옷만 그린 일러스트(GarmentIllustration)가 함께 씁니다.
 function bodyGeometry(gender, height, body) {
   const h = HEIGHT_RATIO[height] ?? 1
@@ -375,7 +424,7 @@ function bodyGeometry(gender, height, body) {
   return { w, sh, wa, hip, waistY, hipY, ankleY, armW, armX, armTop, wristY, legW, legX, pantW, shiftY, boxes, dims }
 }
 
-// 옷만 그린 2D 일러스트 (P-39 뒤, 사람이 정함 2026-10-23): 마네킹에 입히는 캐릭터 의상(틀 + 대표 색 + 무늬)을 옷만 따로 그립니다.
+// 옷만 그린 2D 일러스트 (P-44 뒤, 사람이 정함 2026-10-23): 마네킹에 입히는 캐릭터 의상(틀 + 대표 색 + 무늬)을 옷만 따로 그립니다.
 // 옷장 목록의 그림과 옷 상세의 [2D 일러스트]에 씁니다. 틀이나 대표 색이 없는 옷은 배경을 지운 2D 이미지를 그대로 보입니다.
 // item: 옷 한 벌 정보 { category, image_url, outfit_template, main_color, pattern_url, fit }
 // mannequin: 몸 치수를 정할 마네킹 모양 (없으면 여성·보통·보통)
@@ -403,6 +452,7 @@ function Mannequin({
   outfit,
   showEmpty = false,
   fadedSlots = [],
+  back = false, // 뒷모습 (새 옷 입기의 거울에 비친 모습)
   className,
   title,
 }) {
@@ -418,7 +468,7 @@ function Mannequin({
   const coversBottom = hasDress || Boolean(worn.bottom)
   const pajamaFill = `url(#${patternId})`
   const slotShape = (slot) => (
-    <ClothingShape item={worn[slot]} box={boxes[slot]} dims={dims} faded={fadedSlots.includes(slot)} />
+    <ClothingShape item={worn[slot]} box={boxes[slot]} dims={dims} faded={fadedSlots.includes(slot)} back={back} />
   )
   const emptySlots = showEmpty
     ? ['shoes', 'bottom', 'top', 'outer'].filter((slot) => {
@@ -503,9 +553,9 @@ function Mannequin({
               strokeWidth="1.5"
               strokeLinejoin="round"
             />
-            {/* 앞섶과 단추 */}
-            <line x1={0} y1={SHOULDER_Y + 14} x2={0} y2={hipY + 12} stroke={PAJAMA_LINE} strokeWidth="1.2" />
-            {[0.2, 0.42, 0.64, 0.86].map((t) => (
+            {/* 앞섶과 단추 (뒷모습에는 없음) */}
+            {!back && <line x1={0} y1={SHOULDER_Y + 14} x2={0} y2={hipY + 12} stroke={PAJAMA_LINE} strokeWidth="1.2" />}
+            {!back && [0.2, 0.42, 0.64, 0.86].map((t) => (
               <circle
                 key={t}
                 cx={3}
@@ -557,8 +607,17 @@ function Mannequin({
           </g>
         ))}
 
-        {/* 칼라 */}
-        {!coversTop && [-1, 1].map((s) => (
+        {/* 칼라 (뒷모습은 목 뒤로 둘린 깃) */}
+        {!coversTop && back && (
+          <path
+            d={`M -17 ${SHOULDER_Y - 2} Q 0 ${SHOULDER_Y + 5} 17 ${SHOULDER_Y - 2} L 15 ${SHOULDER_Y + 5} Q 0 ${SHOULDER_Y + 12} -15 ${SHOULDER_Y + 5} Z`}
+            fill={COLLAR}
+            stroke={PAJAMA_LINE}
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+        )}
+        {!coversTop && !back && [-1, 1].map((s) => (
           <path
             key={`collar${s}`}
             d={`M ${s * 1} ${SHOULDER_Y - 3} L ${s * 17} ${SHOULDER_Y - 1} L ${s * 14} ${SHOULDER_Y + 9} L ${s * 1} ${SHOULDER_Y + 16} Z`}
@@ -593,14 +652,18 @@ function Mannequin({
           />
         ))}
 
-        {/* 머리: 사람이 준 그림에서 잘라 낸 얼굴과 머리 (긴 머리는 어깨 위로 내려옴) */}
-        <image
-          href={head.href}
-          x={-head.cx * HEAD_SCALE}
-          y={CHIN_Y - head.chin * HEAD_SCALE}
-          width={head.w * HEAD_SCALE}
-          height={head.h * HEAD_SCALE}
-        />
+        {/* 머리: 사람이 준 그림에서 잘라 낸 얼굴과 머리 (긴 머리는 어깨 위로 내려옴). 뒷모습은 뒷머리 */}
+        {back ? (
+          <BackHead gender={gender} />
+        ) : (
+          <image
+            href={head.href}
+            x={-head.cx * HEAD_SCALE}
+            y={CHIN_Y - head.chin * HEAD_SCALE}
+            width={head.w * HEAD_SCALE}
+            height={head.h * HEAD_SCALE}
+          />
+        )}
       </g>
     </svg>
   )

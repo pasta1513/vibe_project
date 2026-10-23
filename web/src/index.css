@@ -706,7 +706,7 @@ button {
   color: #fff;
 }
 
-/* 무늬 바꾸기 (P-39): 오른쪽 정보 칸을 덮음 */
+/* 무늬 바꾸기 (P-44): 오른쪽 정보 칸을 덮음 */
 .detail__pattern {
   position: absolute;
   left: 510px;
@@ -1535,7 +1535,7 @@ button {
   justify-content: flex-end;
 }
 
-/* 02 · 2D 이미지와 무늬 (P-39): 오른쪽 칸 전체. 2D 이미지와 무늬를 나란히, 그 아래 마네킹과 조절 */
+/* 02 · 2D 이미지와 무늬 (P-44): 오른쪽 칸 전체. 2D 이미지와 무늬를 나란히, 그 아래 마네킹과 조절 */
 .pt {
   display: flex;
   flex-direction: column;

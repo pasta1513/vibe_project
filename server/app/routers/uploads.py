@@ -56,7 +56,7 @@ async def upload_photo(file: UploadFile = File(...),
         "photo_url": photos.url_for(original.name),
         "image_url": photos.url_for(image.name),
         "main_color": imaging.main_color(image),
-        # 무늬는 화면이 2D 이미지로 만들어 PUT /api/uploads/{id}/pattern으로 보냅니다. (P-39)
+        # 무늬는 화면이 2D 이미지로 만들어 PUT /api/uploads/{id}/pattern으로 보냅니다. (P-44)
         "pattern_url": None,
         "picked": picked,
     })
@@ -64,7 +64,7 @@ async def upload_photo(file: UploadFile = File(...),
 
 # 배경 고치고 적용 (API-SPEC §4, P-34): 화면이 고친 2D 이미지(PNG)로 임시 2D 이미지를 바꿉니다.
 # 사용자가 고친 이미지는 배경을 다시 지우지 않고, 대표 색만 다시 만듭니다.
-# 이전 무늬는 고치기 전 이미지로 만든 것이라 지웁니다. 화면이 고친 이미지로 무늬를 다시 만들어 보냅니다. (P-39)
+# 이전 무늬는 고치기 전 이미지로 만든 것이라 지웁니다. 화면이 고친 이미지로 무늬를 다시 만들어 보냅니다. (P-44)
 @router.put("/{upload_id}/image")
 async def apply_edited_image(upload_id: str, file: UploadFile = File(...)):
     content = await file.read(photos.MAX_BYTES + 1)
@@ -105,7 +105,7 @@ class PatternIn(BaseModel):
     svg: str | None = Field(None, max_length=imaging.MAX_PATTERN_BYTES)
 
 
-# 무늬 저장 (API-SPEC §4, P-39): 화면이 2D 이미지로 만든 무늬 그림을 임시 무늬 파일로 저장합니다.
+# 무늬 저장 (API-SPEC §4, P-44): 화면이 2D 이미지로 만든 무늬 그림을 임시 무늬 파일로 저장합니다.
 @router.put("/{upload_id}/pattern")
 def save_pattern(upload_id: str, body: PatternIn):
     files = photos.temp_files(upload_id)

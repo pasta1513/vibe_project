@@ -47,7 +47,7 @@ class Clothing(SQLModel, table=True):
     main_color: Optional[str] = None
     pattern_path: Optional[str] = None  # 무늬 그림. 만들지 못하면 없음 (P-32)
     # 무늬 표현('auto' 자동 감지, 'detail' 디테일 살리기, 'stripes' 줄무늬 정리, 'solid' 대표 색상만)과
-    # 벡터 색상 수(3~10). P-39 전에 등록한 옷은 없음 (DATA-MODEL §3)
+    # 벡터 색상 수(3~10). P-44 전에 등록한 옷은 없음 (DATA-MODEL §3)
     pattern_mode: Optional[str] = None
     pattern_colors: Optional[int] = None
     fit: Optional[str] = None  # 피팅값 JSON. 없으면 기본값 (P-33, DATA-MODEL §3)

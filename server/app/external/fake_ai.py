@@ -39,7 +39,17 @@ def find_similar(name, candidates):
     return match if match in candidates else None
 
 
-def recommend(closet, weather, tag):
+REASON_BY_PERSONA = {
+    "expert": "AI 연결 전 예시입니다. (전문가)",
+    "friend": "AI 연결 전 예시야. (친구)",
+    "my_style": "AI 연결 전 예시입니다. (내 스타일)",
+}
+# 요청 글이 있을 때만 주는 사면 좋을 옷 예시. 화면에서 그 칸을 볼 수 있게 하려는 것입니다. (P-39)
+SHOPPING_EXAMPLE = {"name": "AI 연결 전 예시 옷", "reason": "요청 글이 있을 때 보이는 예시입니다."}
+
+
+def recommend(closet, weather, tag, request=None, persona="expert", favorites=None):
+    reason = REASON_BY_PERSONA.get(persona, REASON_TEXT)
     if should_fake_fail("recommend"):
         raise ExternalError("ai_failed")
     by_category = {}
@@ -52,7 +62,7 @@ def recommend(closet, weather, tag):
     if by_category.get("top") and by_category.get("bottom"):
         choices.append("top_bottom")
     if not choices or not by_category.get("shoes"):
-        return []
+        return {"outfits": [], "shopping": []}
 
     outfits = []
     for _ in range(30):  # 서로 다른 코디를 고를 기회를 넉넉히 줍니다.
@@ -71,10 +81,10 @@ def recommend(closet, weather, tag):
         outfits.append({
             "outfit": outfit,
             "score": _random_score(),
-            "summary": REASON_TEXT,
-            "details": _details(outfit, REASON_TEXT),
+            "summary": reason,
+            "details": _details(outfit, reason),
         })
-    return outfits
+    return {"outfits": outfits, "shopping": [SHOPPING_EXAMPLE] if request else []}
 
 
 def score(outfit, weather, tag, items=None):

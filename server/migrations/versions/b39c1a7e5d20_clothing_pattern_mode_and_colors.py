@@ -1,6 +1,6 @@
 """clothing pattern mode and colors
 
-옷 표에 무늬 표현과 벡터 색상 수 칸을 더합니다 (P-39, DATA-MODEL §3). 이미 있는 옷은 비어 있습니다(없음).
+옷 표에 무늬 표현과 벡터 색상 수 칸을 더합니다 (P-44, DATA-MODEL §3). 이미 있는 옷은 비어 있습니다(없음).
 
 Revision ID: b39c1a7e5d20
 Revises: 6f73741edb79

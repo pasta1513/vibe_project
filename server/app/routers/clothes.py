@@ -41,7 +41,7 @@ class ClothingIn(BaseModel):
     # 등록 창에서 모습을 조절했을 때만 보냅니다. 없으면 종류 단어로 틀을 고르고 피팅값은 기본값입니다. (P-33)
     outfit_template: str | None = None
     fit: FitIn | None = None
-    # 무늬 표현과 벡터 색상 수 (P-39). 'solid'(대표 색상만)이면 무늬 파일을 쓰지 않습니다.
+    # 무늬 표현과 벡터 색상 수 (P-44). 'solid'(대표 색상만)이면 무늬 파일을 쓰지 않습니다.
     pattern_mode: Literal["auto", "detail", "stripes", "solid"] | None = None
     pattern_colors: int | None = Field(None, ge=3, le=10)
 
@@ -152,7 +152,7 @@ def register_clothing(body: ClothingIn, session: Session = Depends(get_session))
     if not {"original", "image"} <= set(files):
         raise ApiError("upload_missing", "올린 사진이 없어졌어요. 사진을 다시 올려 주세요.")
 
-    # 대표 색상만 쓰면 남아 있는 임시 무늬 파일은 버립니다. (P-39)
+    # 대표 색상만 쓰면 남아 있는 임시 무늬 파일은 버립니다. (P-44)
     if body.pattern_mode == "solid" and "pattern" in files:
         files.pop("pattern").unlink(missing_ok=True)
 
@@ -211,7 +211,7 @@ def save_fit(clothing_id: int, body: FitSaveIn, session: Session = Depends(get_s
 
 
 class PatternSaveIn(BaseModel):
-    """옷 상세의 무늬 바꾸기 (P-39). 대표 색상만('solid')이면 svg는 보내지 않습니다."""
+    """옷 상세의 무늬 바꾸기 (P-44). 대표 색상만('solid')이면 svg는 보내지 않습니다."""
     model_config = ConfigDict(extra="forbid")
 
     svg: str | None = Field(None, max_length=imaging.MAX_PATTERN_BYTES)
@@ -219,7 +219,7 @@ class PatternSaveIn(BaseModel):
     pattern_colors: int = Field(ge=3, le=10)
 
 
-# 무늬 바꾸고 저장 (옷 상세, P-39, D-020 제안): 화면이 만든 무늬 그림을 새 파일로 저장하고 이전 무늬 파일은 지웁니다.
+# 무늬 바꾸고 저장 (옷 상세, P-44, D-021 제안): 화면이 만든 무늬 그림을 새 파일로 저장하고 이전 무늬 파일은 지웁니다.
 # 같은 이름으로 덮으면 브라우저가 이전 무늬를 다시 쓰므로 늘 새 이름을 씁니다.
 @router.put("/{clothing_id}/pattern")
 def save_pattern(clothing_id: int, body: PatternSaveIn, session: Session = Depends(get_session)):

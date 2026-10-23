@@ -20,7 +20,7 @@ import WordAdder, { GENDER_FAILED } from './WordAdder.jsx'
 // 시안의 옷 이름·브랜드·태그·설명 칸과 왼쪽 메뉴의 관리 항목은 앱에 기능이 없어 넣지 않았습니다 (사람이 정함, 2026-10-22).
 // [+ 더하기]로 더한 단어는 이 창의 목록에 바로 붙고 켜진 채로 보입니다. 구분 줄에는 [+ 더하기]가 없습니다.
 const EMPTY_PICK = { category: null, color: [], type: [], material: [], season: [], pattern: [] }
-// 무늬 표현과 벡터 색상 수의 처음 값 (moire-closet과 같음, P-39)
+// 무늬 표현과 벡터 색상 수의 처음 값 (moire-closet과 같음, P-44)
 const DEFAULT_PATTERN = { mode: 'auto', colors: 7, solid: false }
 // 오른쪽 탭: 키, 이름, 설명(시안 문장), 아이콘 path
 const TABS = [
@@ -44,14 +44,14 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
   const [lastFile, setLastFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null) // { message, retry }
-  // 오른쪽 탭: 'edit' 배경 고치기 (P-34, 사진을 올리면 처음), 'pattern' 2D 이미지와 무늬 (P-39),
+  // 오른쪽 탭: 'edit' 배경 고치기 (P-34, 사진을 올리면 처음), 'pattern' 2D 이미지와 무늬 (P-44),
   // 'fit' 캐릭터에 맞추기 (D-016, P-33). 한 번 연 탭은 숨기기만 해서, 탭을 바꿔도 적용하기 전의 편집이 남습니다.
   const [view, setView] = useState('edit')
   const [opened, setOpened] = useState({ edit: true })
   // [취소]를 누르면 탭 내용을 처음(지금 적용된 상태)부터 다시 그립니다.
   const [editKey, setEditKey] = useState(0)
   const [patternKey, setPatternKey] = useState(0)
-  // 적용된 무늬 표현, 벡터 색상 수, 대표 색상만 (P-39). 등록할 때 함께 보냅니다.
+  // 적용된 무늬 표현, 벡터 색상 수, 대표 색상만 (P-44). 등록할 때 함께 보냅니다.
   const [patternSettings, setPatternSettings] = useState(DEFAULT_PATTERN)
   // [모습 조절]로 바꾼 틀과 피팅값. 조절하지 않았으면 null이고, 등록할 때 보내지 않습니다. 구분을 바꾸면 버립니다.
   const [custom, setCustom] = useState(null)

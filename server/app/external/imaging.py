@@ -141,7 +141,7 @@ def _flood(close: bytes, seeds: list[int], width: int, height: int) -> bytearray
     return removed
 
 
-# 무늬 그림 (D-016, D-020 제안, P-39). 무늬는 화면이 2D 이미지로 만들고(무늬 표현, 벡터 색상 수), 서버는 검사하고 저장만 합니다.
+# 무늬 그림 (D-016, D-021 제안, P-44). 무늬는 화면이 2D 이미지로 만들고(무늬 표현, 벡터 색상 수), 서버는 검사하고 저장만 합니다.
 # P-32의 vtracer 무늬 만들기는 더 쓰지 않습니다. 그때 만든 옷의 무늬 파일은 그대로 둡니다.
 MAX_PATTERN_BYTES = 400 * 1024
 _PATTERN_ATTRS = {"d", "fill"}
@@ -151,7 +151,7 @@ _FILL = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
 def valid_pattern(svg: str) -> bool:
-    """화면이 보낸 무늬 그림이 정해진 모양인지 봅니다 (P-39).
+    """화면이 보낸 무늬 그림이 정해진 모양인지 봅니다 (P-44).
 
     맨 위가 크기(width, height)가 있는 svg이고, 그 안에 d와 fill만 가진 path가 1개 이상 있어야 합니다.
     d는 직선 명령과 숫자만, fill은 #RRGGBB만 받습니다. 사진(<image>), 글자, 스크립트, 바깥 주소는 들어갈 수 없습니다.

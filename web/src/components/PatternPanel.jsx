@@ -4,9 +4,9 @@ import Button from './Button.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import Mannequin, { GarmentIllustration } from './Mannequin.jsx'
 
-// 무늬 칸 (SCREEN-SPEC §6.2, §6.3, P-39). 옷 등록 창의 [2D 이미지]와 옷 상세의 [무늬 바꾸기]에서 씁니다.
+// 무늬 칸 (SCREEN-SPEC §6.2, §6.3, P-44). 옷 등록 창의 [2D 이미지]와 옷 상세의 [무늬 바꾸기]에서 씁니다.
 // 무늬 표현(자동 감지, 디테일 살리기, 줄무늬 정리), 벡터 색상 수(3~10), 대표 색상만을 바꾸면
-// 무늬 그림과 마네킹 미리보기가 바로 바뀝니다. [적용]을 누르면 무늬를 서버에 저장합니다. (moire-closet과 같은 방식, D-020 제안)
+// 무늬 그림과 마네킹 미리보기가 바로 바뀝니다. [적용]을 누르면 무늬를 서버에 저장합니다. (moire-closet과 같은 방식, D-021 제안)
 // imageUrl: 배경을 지운 2D 이미지, mainColor: 대표 색
 // settings: { mode, colors, solid } 지금 적용된 값
 // save(svg, settings): 서버에 저장하는 요청 (대표 색상만이면 svg는 null). 응답을 돌려줌
