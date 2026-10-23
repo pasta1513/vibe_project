@@ -515,7 +515,7 @@
 
 .du--recommend .du-side {
   left: 1101px;
-  top: 150px;
+  top: 128px; /* 추천 판(top 715)과 겹치지 않게 올림 (2026-10-23) */
   width: 332px;
   padding: 12px 22px 16px;
 }
