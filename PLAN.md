@@ -463,5 +463,9 @@
   - API로: 나쁜 SVG 3가지 `bad_pattern`, 없는 임시 사진 `upload_missing`, 올바른 SVG 저장, 대표 색상만으로 등록하면 무늬 없음과 `solid/7`, 색 수 11은 거절. 이 확인으로 만든 옷은 지움
   - 이미 등록한 옷(id 1)의 vtracer 무늬는 그대로 보임
 - 실행하지 않음: 진짜 데이터(`data/app.db`)에 DB 변경 적용(사람이 정한 뒤, 매일 쓰는 앱 8080을 다시 켜면 적용됨), 배경 고치기 뒤 무늬 다시 만들기, 아주 복잡한 사진에서 400KB를 넘는 경우의 화면 줄, 옷 상세에서 무늬 고치기(이번에 넣지 않음)
-- 남은 것: D-019 확정, `requirements.txt`의 vtracer를 뺄지(패키지 삭제라 사람이 정함), 옷 상세에 같은 무늬 칸을 넣을지
-- 고친 문서: DECISIONS D-019(제안), PRD §4, SCREEN-SPEC §6.2, API-SPEC §4, DATA-MODEL §3·표, ARCHITECTURE, TEST-PLAN T-117 ~ T-119, README (상태 줄에 "수정", 내용 승인 대기)
+- 옷 상세의 무늬 바꾸기 (2026-10-23, 사람이 정함)
+  - 만든 것: `ClothingDetailDialog.jsx`(마네킹 보기에 [무늬 바꾸기], 오른쪽에 무늬 칸, 왼쪽 큰 마네킹에 바로 보기), `PatternPanel.jsx`(등록 창과 함께 쓰도록 저장 요청과 미리보기를 밖에서 받음), `api.js`(`saveClothingPattern`), `index.css`, 서버 `clothes.py`(`PUT /api/clothes/{id}/pattern`, 새 이름으로 저장하고 이전 무늬 파일을 지움)
+  - 확인: `npm run build`, `npm run lint`(오류 0, 경고 13개 그대로). 실제 앱(8080)과 확인용 서버(8090)를 다시 켬. 확인용 서버의 줄무늬 티셔츠(id 7): [무늬 바꾸기] → 디테일 살리기·7색으로 시작, 왼쪽 마네킹에 무늬 → 줄무늬 정리 [적용] → stripes/7, 새 파일 → 다시 열면 줄무늬 정리 → 대표 색상만 [적용] → solid, 무늬 없음 → 다시 열면 대표 색상만이 켜져 있음 → 디테일 살리기 [적용] → detail/7. 바꿀 때마다 이전 무늬 파일이 디스크에서 지워짐(서버 404)
+  - 실행하지 않음: P-39 전에 등록한 옷(vtracer 무늬)에서 바꾸기, 실제 앱에서 바꾸기
+- 남은 것: D-019 확정, `requirements.txt`의 vtracer를 뺄지(패키지 삭제라 사람이 정함)
+- 고친 문서: DECISIONS D-019(제안), PRD §4, SCREEN-SPEC §6.2·§6.3, API-SPEC §4, DATA-MODEL §3·표, ARCHITECTURE, TEST-PLAN T-117 ~ T-120, README (상태 줄에 "수정", 내용 승인 대기)

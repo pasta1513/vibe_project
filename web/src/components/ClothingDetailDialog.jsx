@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { CATEGORY_LABEL, KEYWORD_ROWS } from '../labels.js'
 import ConfirmDialog from './ConfirmDialog.jsx'
@@ -6,6 +6,7 @@ import ErrorLine from './ErrorLine.jsx'
 import KeywordChips from './KeywordChips.jsx'
 import Mannequin from './Mannequin.jsx'
 import OutfitFitter from './OutfitFitter.jsx'
+import PatternPanel from './PatternPanel.jsx'
 
 // 옷 상세 (SCREEN-SPEC §6.3). 시안 style/html의 "포근한 옷장 앱 상세 화면" 모달을 그대로 옮겼습니다. (P-38)
 // 기능은 그대로입니다: 2D·원래 사진·마네킹 보기, 모습 조절·저장, 선택 키워드 고치기, 지우기.
@@ -43,8 +44,11 @@ function LockIcon() {
 function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, onClose, onDeleted, onSaved }) {
   const [detail, setDetail] = useState(null)
   const [loadError, setLoadError] = useState(null)
-  // 왼쪽에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진, 'mannequin' 마네킹에 입혀 보기, 'fit' 모습 조절 (P-33)
+  // 왼쪽에 보이는 것: 'image' 2D 이미지, 'original' 원래 사진, 'mannequin' 마네킹에 입혀 보기, 'fit' 모습 조절 (P-33),
+  // 'pattern' 무늬 바꾸기 (P-39): 왼쪽 마네킹에 바꾸는 중인 무늬를 입히고 오른쪽에 무늬 칸
   const [view, setView] = useState('image')
+  const [patternPreview, setPatternPreview] = useState(null) // 무늬 칸에서 바꾸는 중인 무늬 주소
+  const showPreview = useCallback((url) => setPatternPreview(url), [])
   const [look, setLook] = useState(null) // 조절 중인 { outfit_template, fit }. 저장하면 detail에 반영
   const [optional, setOptional] = useState({ material: [], season: [], pattern: [] })
   const [busy, setBusy] = useState(false)
@@ -133,7 +137,13 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
   const title = detail
     ? [color[0]?.name, types[0]?.name].filter(Boolean).join(' ') || CATEGORY_LABEL[detail.category]
     : '옷 상세'
-  const mannequinView = view === 'mannequin' || view === 'fit'
+  const mannequinView = view === 'mannequin' || view === 'fit' || view === 'pattern'
+  // 무늬 칸의 처음 값: 저장된 무늬 표현과 색 수. P-39 전에 등록한 옷은 자동 감지·7색
+  const patternSettings = {
+    mode: detail?.pattern_mode && detail.pattern_mode !== 'solid' ? detail.pattern_mode : 'auto',
+    colors: detail?.pattern_colors ?? 7,
+    solid: detail?.pattern_mode === 'solid',
+  }
 
   return (
     <div className="detail-backdrop">
@@ -145,6 +155,13 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
               item={{ ...detail, ...look }}
               templates={outfitTable.templates.filter((t) => t.category === detail.category)}
               onChange={setLook}
+            />
+          ) : detail && view === 'pattern' ? (
+            <Mannequin
+              className="detail__mannequin"
+              {...mannequin}
+              outfit={{ [detail.category]: { ...detail, ...look, pattern_url: patternPreview } }}
+              title="무늬를 바꾸는 중인 미리보기"
             />
           ) : detail && view === 'mannequin' ? (
             <Mannequin
@@ -161,7 +178,7 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
               />
             )
           )}
-          {detail && mannequinView && (
+          {detail && mannequinView && view !== 'pattern' && (
             <div className="detail__look">
               <button
                 type="button"
@@ -169,6 +186,9 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
                 onClick={() => setView(view === 'fit' ? 'mannequin' : 'fit')}
               >
                 {view === 'fit' ? '조절 닫기' : '모습 조절'}
+              </button>
+              <button type="button" className="detail__look-btn" onClick={() => setView('pattern')}>
+                무늬 바꾸기
               </button>
               <button
                 type="button"
@@ -204,6 +224,32 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
             )
           })}
         </div>
+
+        {/* 무늬 바꾸기 (P-39): 오른쪽 정보 칸을 덮는 무늬 칸. 등록 창과 같은 조절 */}
+        {detail && view === 'pattern' && (
+          <div className="detail__pattern">
+            <h2 className="detail__pattern-t">무늬 바꾸기</h2>
+            <PatternPanel
+              imageUrl={detail.image_url}
+              mainColor={detail.main_color}
+              settings={patternSettings}
+              save={(svg, s) =>
+                api.saveClothingPattern(clothingId, {
+                  svg: s.solid ? null : svg,
+                  pattern_mode: s.solid ? 'solid' : s.mode,
+                  pattern_colors: s.colors,
+                })
+              }
+              onPreview={showPreview}
+              onApplied={(data) => {
+                setDetail({ ...detail, ...data })
+                setView('mannequin')
+                onSaved()
+              }}
+              onCancel={() => setView('mannequin')}
+            />
+          </div>
+        )}
 
         <button type="button" className="detail__close" aria-label="닫기" onClick={onClose}>
           <svg viewBox="0 0 24 24" aria-hidden="true">

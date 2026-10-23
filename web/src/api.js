@@ -120,5 +120,7 @@ export const api = {
   saveOptionalKeywords: (id, body) => request('PATCH', `/api/clothes/${id}/keywords`, body),
   // 마네킹 모습 조절 저장 (API-SPEC §4, P-33)
   saveFit: (id, body) => request('PUT', `/api/clothes/${id}/fit`, body),
+  // 옷 상세의 무늬 바꾸기 (P-39). body: { svg, pattern_mode, pattern_colors } (대표 색상만이면 svg는 null)
+  saveClothingPattern: (id, body) => request('PUT', `/api/clothes/${id}/pattern`, body),
   deleteClothing: (id) => request('DELETE', `/api/clothes/${id}`),
 }

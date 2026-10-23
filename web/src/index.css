@@ -686,6 +686,32 @@ button {
   color: #fff;
 }
 
+/* 무늬 바꾸기 (P-39): 오른쪽 정보 칸을 덮음 */
+.detail__pattern {
+  position: absolute;
+  left: 510px;
+  top: 18px;
+  width: 420px;
+  height: 584px;
+  z-index: 2;
+  padding: 4px 8px 8px;
+  background: #fbf6f0;
+  overflow-y: auto;
+  /* 무늬 칸은 등록 창의 초록을 씁니다 */
+  --reg-green: #56653f;
+}
+
+.detail__pattern-t {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.detail__pattern .pt__box {
+  height: 170px;
+}
+
+
 /* 보기 토글 (시안 .toggle) */
 .detail__toggle {
   position: absolute;

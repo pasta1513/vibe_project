@@ -210,6 +210,53 @@ def save_fit(clothing_id: int, body: FitSaveIn, session: Session = Depends(get_s
     return ok(clothing_summary(clothing))
 
 
+class PatternSaveIn(BaseModel):
+    """옷 상세의 무늬 바꾸기 (P-39). 대표 색상만('solid')이면 svg는 보내지 않습니다."""
+    model_config = ConfigDict(extra="forbid")
+
+    svg: str | None = Field(None, max_length=imaging.MAX_PATTERN_BYTES)
+    pattern_mode: Literal["auto", "detail", "stripes", "solid"]
+    pattern_colors: int = Field(ge=3, le=10)
+
+
+# 무늬 바꾸고 저장 (옷 상세, P-39, D-019 제안): 화면이 만든 무늬 그림을 새 파일로 저장하고 이전 무늬 파일은 지웁니다.
+# 같은 이름으로 덮으면 브라우저가 이전 무늬를 다시 쓰므로 늘 새 이름을 씁니다.
+@router.put("/{clothing_id}/pattern")
+def save_pattern(clothing_id: int, body: PatternSaveIn, session: Session = Depends(get_session)):
+    clothing = session.get(Clothing, clothing_id)
+    if clothing is None:
+        raise ApiError("clothing_not_found", "그 옷을 찾지 못했어요.", 404)
+    if clothing.is_deleted:
+        raise ApiError("already_deleted", "이미 지운 옷이에요.")
+    solid = body.pattern_mode == "solid"
+    if not solid and (body.svg is None or not imaging.valid_pattern(body.svg)):
+        raise ApiError("bad_pattern", "무늬가 너무 복잡해서 저장하지 못했어요. 색 수를 줄이거나 다른 무늬 표현을 골라 주세요.")
+
+    old = clothing.pattern_path
+    new_path = None
+    if not solid:
+        photos.ensure_dirs()
+        new_path = photos.PHOTO_DIR / f"{photos.new_upload_id()}-pattern.svg"
+        new_path.write_text(body.svg, encoding="utf-8")
+    clothing.pattern_path = new_path.name if new_path else None
+    clothing.pattern_mode = body.pattern_mode
+    clothing.pattern_colors = body.pattern_colors
+    session.add(clothing)
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        if new_path:
+            new_path.unlink(missing_ok=True)
+        raise
+    # 저장을 마친 뒤에 이전 무늬 파일을 지웁니다. 지우지 못해도 옷 정보는 이미 새 무늬를 가리킵니다.
+    if old:
+        (photos.PHOTO_DIR / old).unlink(missing_ok=True)
+    session.refresh(clothing)
+    return ok({**clothing_summary(clothing), "pattern_mode": clothing.pattern_mode,
+               "pattern_colors": clothing.pattern_colors})
+
+
 # 선택 키워드 고치고 저장
 @router.patch("/{clothing_id}/keywords")
 def save_optional_keywords(clothing_id: int, body: OptionalKeywordsIn,

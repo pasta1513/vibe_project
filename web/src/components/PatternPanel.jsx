@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import { api } from '../api.js'
 import { loadImage, patternFromImage, toSvg } from '../vectorize.js'
 import Button from './Button.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import Mannequin from './Mannequin.jsx'
 
-// 02 · 2D 이미지와 무늬 (SCREEN-SPEC §6.2, P-39). 옷 등록 창의 [2D 이미지]를 누르면 오른쪽 칸 전체에 뜹니다.
+// 무늬 칸 (SCREEN-SPEC §6.2, §6.3, P-39). 옷 등록 창의 [2D 이미지]와 옷 상세의 [무늬 바꾸기]에서 씁니다.
 // 무늬 표현(자동 감지, 디테일 살리기, 줄무늬 정리), 벡터 색상 수(3~10), 대표 색상만을 바꾸면
 // 무늬 그림과 마네킹 미리보기가 바로 바뀝니다. [적용]을 누르면 무늬를 서버에 저장합니다. (moire-closet과 같은 방식, D-019 제안)
-// upload: { upload_id, image_url, main_color }
+// imageUrl: 배경을 지운 2D 이미지, mainColor: 대표 색
 // settings: { mode, colors, solid } 지금 적용된 값
-// item: 03 미리보기에 입힐 옷 정보 (구분과 종류를 고르지 않았으면 null)
-// onApplied({ pattern_url, settings }), onCancel()
+// save(svg, settings): 서버에 저장하는 요청 (대표 색상만이면 svg는 null). 응답을 돌려줌
+// item: 칸 안 마네킹에 입힐 옷 정보 (구분과 종류를 고르지 않았으면 null)
+// onPreview(url): 주면 칸 안에 마네킹을 그리지 않고, 바뀐 무늬 주소(대표 색상만이면 null)를 알려 줍니다 (옷 상세는 왼쪽 큰 마네킹에 그림)
+// onApplied(data, settings): data는 저장 응답, onCancel()
 
 const MODES = [
   ['auto', '자동 감지'],
@@ -19,7 +20,7 @@ const MODES = [
   ['stripes', '줄무늬 정리'],
 ]
 
-function PatternPanel({ upload, settings, item, mannequin, onApplied, onCancel }) {
+function PatternPanel({ imageUrl, mainColor, settings, save, item, mannequin, onPreview, onApplied, onCancel }) {
   const [mode, setMode] = useState(settings.mode)
   const [colors, setColors] = useState(settings.colors)
   const [solid, setSolid] = useState(settings.solid)
@@ -30,29 +31,34 @@ function PatternPanel({ upload, settings, item, mannequin, onApplied, onCancel }
 
   useEffect(() => {
     let alive = true
-    loadImage(upload.image_url)
+    loadImage(imageUrl)
       .then((img) => alive && setImage(img))
       .catch((err) => alive && setLoadError(err.message))
     return () => {
       alive = false
     }
-  }, [upload.image_url])
+  }, [imageUrl])
 
   const result = useMemo(() => (image ? patternFromImage(image, mode, colors) : null), [image, mode, colors])
   const svg = result && !solid ? toSvg(result) : null
   // 미리보기는 저장하기 전의 무늬라 data: 주소로 그립니다. 버릴 파일이 남지 않습니다.
   const previewUrl = svg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}` : null
 
+  useEffect(() => {
+    onPreview?.(previewUrl)
+  }, [onPreview, previewUrl])
+
   async function apply() {
     setApplying(true)
     setApplyError(null)
-    const res = await api.savePattern(upload.upload_id, svg)
+    const next = { mode, colors, solid }
+    const res = await save(svg, next)
     setApplying(false)
     if (res.result !== 'ok') {
       setApplyError(res.error.message)
       return
     }
-    onApplied({ pattern_url: res.data.pattern_url, settings: { mode, colors, solid } })
+    onApplied(res.data, next)
   }
 
   const noCloth = image && !result
@@ -60,26 +66,28 @@ function PatternPanel({ upload, settings, item, mannequin, onApplied, onCancel }
     <div className="pt">
       <div className="pt__boxes">
         <figure className="pt__box">
-          <img src={upload.image_url} alt="배경을 지운 2D 이미지" />
+          <img src={imageUrl} alt="배경을 지운 2D 이미지" />
           <figcaption>2D 이미지</figcaption>
         </figure>
-        <figure className="pt__box" style={solid ? { background: upload.main_color } : undefined}>
+        <figure className="pt__box" style={solid ? { background: mainColor } : undefined}>
           {previewUrl && <img src={previewUrl} alt="캐릭터용 무늬" />}
           <figcaption>{solid ? '대표 색상' : '캐릭터용 무늬'}</figcaption>
         </figure>
       </div>
 
-      <div className="pt__mannequin">
-        {item ? (
-          <Mannequin
-            {...mannequin}
-            outfit={{ [item.category]: { ...item, pattern_url: previewUrl } }}
-            title="무늬를 입힌 마네킹"
-          />
-        ) : (
-          <p className="sub-text">구분과 종류를 고르면 마네킹에도 입혀 보여 줘요.</p>
-        )}
-      </div>
+      {!onPreview && (
+        <div className="pt__mannequin">
+          {item ? (
+            <Mannequin
+              {...mannequin}
+              outfit={{ [item.category]: { ...item, pattern_url: previewUrl } }}
+              title="무늬를 입힌 마네킹"
+            />
+          ) : (
+            <p className="sub-text">구분과 종류를 고르면 마네킹에도 입혀 보여 줘요.</p>
+          )}
+        </div>
+      )}
 
       <div className="pt__row">
         <span className="pt__label">무늬 표현</span>

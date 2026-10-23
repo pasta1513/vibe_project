@@ -361,11 +361,13 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
         {upload && view === 'pattern' ? (
           <div className="reg__editor">
             <PatternPanel
-              upload={upload}
+              imageUrl={upload.image_url}
+              mainColor={upload.main_color}
               settings={patternSettings}
+              save={(svg) => api.savePattern(upload.upload_id, svg)}
               item={previewItem}
               mannequin={mannequin}
-              onApplied={({ pattern_url, settings }) => {
+              onApplied={({ pattern_url }, settings) => {
                 setUpload({ ...upload, pattern_url })
                 setPatternSettings(settings)
                 setView('original')
