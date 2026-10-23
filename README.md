@@ -1,4 +1,4 @@
-# moire (코디 추천 웹앱)
+# moire
 
 moire는 "My Outfit Identity Reflection Everyday"의 약자입니다. (D-019)
 
