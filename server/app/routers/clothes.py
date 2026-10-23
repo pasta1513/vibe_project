@@ -20,18 +20,42 @@ OPTIONAL_KINDS = ("material", "season", "pattern")
 KIND_NAMES = {"category": "구분", "color": "색", "type": "종류"}
 
 
-class FitIn(BaseModel):
-    """피팅값 (DATA-MODEL §3, P-33). 위치는 틀 상자 크기에 대한 비율, 기울기는 도. 범위 밖이면 입력 오류입니다."""
+class BoxFitIn(BaseModel):
+    """옷 전체나 내부 무늬의 위치와 크기 (2026-10-23 바꿈, 확인 중). ChatGPT 프로젝트 fit.ts와 같은 범위입니다.
+    위치는 몸 좌표(옷 전체) 또는 틀 상자에 대한 % (내부 무늬), 크기는 배율."""
     model_config = ConfigDict(extra="forbid")
 
-    x: float = Field(0, ge=-0.2, le=0.2)
-    y: float = Field(0, ge=-0.2, le=0.2)
-    sx: float = Field(1, ge=0.8, le=1.2)
-    sy: float = Field(1, ge=0.8, le=1.2)
-    rotate: float = Field(0, ge=-10, le=10)
-    px: float = Field(0, ge=-0.5, le=0.5)
-    py: float = Field(0, ge=-0.5, le=0.5)
-    ps: float = Field(1, ge=0.5, le=2.0)
+    x: float = Field(0, ge=-100, le=100)
+    y: float = Field(0, ge=-100, le=100)
+    scaleX: float = Field(1, ge=0.5, le=2)
+    scaleY: float = Field(1, ge=0.5, le=2)
+
+
+class SleeveIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    angle: float = Field(0, ge=-25, le=25)
+    length: float = Field(1, ge=0.65, le=1.35)
+    width: float = Field(1, ge=0.65, le=1.4)
+
+
+class ShoulderFitIn(BaseModel):
+    """어깨·소매 맞추기 (ChatGPT 프로젝트 sleeve-fit.ts와 같은 범위)."""
+    model_config = ConfigDict(extra="forbid")
+
+    shoulder: float = Field(1, ge=0.8, le=1.2)
+    left: SleeveIn = SleeveIn()
+    right: SleeveIn = SleeveIn()
+
+
+class FitIn(BaseModel):
+    """피팅값 (DATA-MODEL §3, P-33, 2026-10-23 바꿈 — 확인 중). 범위 밖이면 입력 오류입니다.
+    옛 모양(x·y·sx·sy·rotate·px·py·ps)은 받지 않습니다. 이미 저장된 옛 값은 화면이 기본값으로 봅니다."""
+    model_config = ConfigDict(extra="forbid")
+
+    fit: BoxFitIn = BoxFitIn()
+    patternFit: BoxFitIn = BoxFitIn()
+    shoulderFit: ShoulderFitIn | None = None
 
 
 class ClothingIn(BaseModel):
@@ -189,7 +213,7 @@ def _fit_text(fit: FitIn | None) -> str | None:
     """기본값과 같으면 저장하지 않습니다."""
     if fit is None or fit == FitIn():
         return None
-    return json.dumps(fit.model_dump())
+    return json.dumps(fit.model_dump(exclude_none=True))
 
 
 # 마네킹 모습 조절하고 저장 (옷 상세, P-33)

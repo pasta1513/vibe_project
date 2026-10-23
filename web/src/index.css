@@ -1864,6 +1864,71 @@ button {
   color: var(--reg-muted, #8a7466);
 }
 
+/* 어깨 · 소매 맞추기 (2026-10-23, ChatGPT 프로젝트 SleeveControls) */
+.fitter__sleeves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #f0e8de;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.fitter--panel .fitter__sleeves {
+  grid-column: 1 / -1;
+}
+
+.fitter__sleeves legend {
+  padding: 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fitter__fine {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--reg-muted, #8a7466);
+}
+
+.fitter__sleeves .fitter__reset {
+  align-self: flex-start;
+  width: auto;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.fitter__sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+}
+
+.fitter__sides > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fitter__side-t {
+  font-size: 13px;
+}
+
+.fitter__sleeves .fitter__row > span:first-child {
+  width: 56px;
+}
+
+.fitter__sleeve-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* 옷 등록 창과 옷 상세 (SCREEN-SPEC §6.2, §6.3) */
 
 .photo-box {
