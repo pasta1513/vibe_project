@@ -17,26 +17,42 @@
 }
 
 :root {
-  /* 색 (DESIGN §2.1) */
+  /* 방 그림의 색 (DESIGN §2.1). 화면 단계에서 다시 봅니다. */
   --color-wall: #f1efe8;
   --color-floor: #b4b2a9;
   --color-prop: #d3d1c7;
   --color-prop-dark: #b4b2a9;
-  --color-accent: #d85a30;
+
+  /* 화면 요소의 색 (DESIGN §2.1, 2026-10-22 시안 `style/html/common.css`에 맞춤, P-38) */
+  --color-accent: #ee6a5a;
+  --color-accent-soft: #fbe3dc;
+  --color-accent-line: #f1a596;
   --color-on-accent: #ffffff;
-  --color-star: #ba7517;
-  --color-star-empty: #b4b2a9;
-  --color-dashed: #888780;
-  --color-danger: #a32d2d;
-  --color-text: #2c2c2a;
-  --color-text-sub: #5f5e5a;
-  --color-toast-bg: #444441;
+  --color-star: #f6a623;
+  --color-star-empty: #e6d7c8;
+  --color-dashed: #d9c4b2;
+  --color-danger: #c0392b;
+  --color-heading: #3b2a22;
+  --color-text: #4a3a32;
+  --color-text-sub: #8a7466;
+  --color-toast-bg: #4a3a32;
   --color-toast-text: #ffffff;
   --color-surface: #ffffff;
-  --color-border: #d3d1c7;
+  --color-panel: #fdf7f0;
+  --color-cream: #fdf6ee;
+  --color-chip: #f3e9df;
+  --color-chip-hover: #efdfd1;
+  --color-ghost: #f1e8de;
+  --color-border: #efdccb;
   --color-diary-paper: #faeeda;
   --color-diary-border: #fac775;
   --color-diary-text: #633806;
+
+  /* 그림자 (DESIGN §4.1, 시안) */
+  --shadow-panel: 0 8px 24px rgba(150, 100, 70, 0.12);
+  --shadow-item: 0 2px 6px rgba(150, 100, 70, 0.08);
+  --shadow-item-hover: 0 6px 12px rgba(150, 100, 70, 0.15);
+  --shadow-primary: 0 4px 10px rgba(238, 106, 90, 0.3);
 
   /* 글자 (DESIGN §3) */
   --font-base: 'Pretendard', system-ui, sans-serif;
@@ -55,12 +71,13 @@
   --space-4: 16px;
   --space-6: 24px;
   --space-8: 32px;
-  --radius-button: 8px;
+  --radius-button: 12px;
   --radius-card: 12px;
-  --radius-dialog: 16px;
+  --radius-dialog: 22px;
+  --radius-panel: 22px;
   --radius-pill: 999px;
   --border: 1px solid var(--color-border);
 
-  /* 메뉴바 높이 */
+  /* 메뉴바 높이: 지금 셸(index.css .menubar)이 쓰는 값. 새 셸로 바꾸는 단계에서 지웁니다. */
   --menubar-height: 56px;
 }
