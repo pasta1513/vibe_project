@@ -23,9 +23,9 @@ class RecommendIn(BaseModel):
     day: date = Field(alias="date")
     region: Optional[str] = None  # 사용자가 바꾼 지역. 없으면 내 지역 → 서울
     tag_id: Optional[int] = None  # 추천을 받을 때는 태그가 꼭 있어야 합니다. (PRD §5)
-    # 요청 글: 원하는 상황이나 분위기. 추천에만 쓰고 저장하지 않습니다. (P-38, 사람이 정함 2026-10-22)
+    # 요청 글: 원하는 상황이나 분위기. 추천에만 쓰고 저장하지 않습니다. (P-39, 사람이 정함 2026-10-22)
     request: Optional[str] = Field(None, max_length=200)
-    # 페르소나: 전문가, 친구, 내 스타일(즐겨찾기 기반). 없으면 전문가 (P-38, 사람이 정함 2026-10-22)
+    # 페르소나: 전문가, 친구, 내 스타일(즐겨찾기 기반). 없으면 전문가 (P-39, 사람이 정함 2026-10-22)
     persona: Literal["expert", "friend", "my_style"] = "expert"
 
 

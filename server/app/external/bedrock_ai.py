@@ -258,7 +258,7 @@ RECOMMEND_SYSTEM = (
     "name은 옷 이름(예: 베이지 트렌치코트), reason은 왜 있으면 좋은지 한 문장입니다."
 )
 
-# 페르소나마다 summary와 details 칸 설명. 지시문보다 답 칸 설명에 적은 말투를 더 잘 따릅니다. (P-39)
+# 페르소나마다 summary와 details 칸 설명. 지시문보다 답 칸 설명에 적은 말투를 더 잘 따릅니다. (P-40)
 PERSONA_FIELDS = {
     "expert": (
         "고른 이유 한 줄. 존댓말. 색 조합이나 소재·질감을 꼭 한 번 말함. "
@@ -277,7 +277,7 @@ PERSONA_FIELDS = {
     ),
 }
 
-# 페르소나마다 고르는 기준과 말투 (P-38, 사람이 정함 2026-10-22). 공통 규칙 뒤에 붙입니다.
+# 페르소나마다 고르는 기준과 말투 (P-39, 사람이 정함 2026-10-22). 공통 규칙 뒤에 붙입니다.
 PERSONA_SYSTEM = {
     "expert": (
         "[페르소나: 전문가] 당신은 패션 스타일리스트입니다. 코디를 고를 때 색 조합(톤온톤, 보색, 무채색에 포인트 색), "
@@ -308,7 +308,7 @@ def _favorites_text(favorites) -> str:
 
 
 def recommend_messages(closet, weather, tag, request=None, persona="expert", favorites=None):
-    """추천에 보낼 (지시문, 글). Bedrock을 부르지 않고 확인할 수 있게 따로 둡니다. (P-38)"""
+    """추천에 보낼 (지시문, 글). Bedrock을 부르지 않고 확인할 수 있게 따로 둡니다. (P-39)"""
     # 구분마다 묶어 보내서, 칸에 다른 구분의 번호를 쓰는 실수를 줄입니다.
     groups = []
     for slot, slot_name in SLOT_NAMES.items():
@@ -327,7 +327,7 @@ def recommend_messages(closet, weather, tag, request=None, persona="expert", fav
 
 # 코디 추천 (PRD §5, P-26). 옷 사진은 보내지 않고 구분과 키워드만 보냅니다 (사람이 정함, 2026-10-21).
 # 옷장이 커져도 한 번에 보내는 양이 적게 유지됩니다. 칸과 번호가 맞는지는 ai.py가 검사합니다.
-# 요청 글, 페르소나, 사면 좋을 옷은 P-38에서 더함.
+# 요청 글, 페르소나, 사면 좋을 옷은 P-39에서 더함.
 def recommend(closet, weather, tag, request=None, persona="expert", favorites=None):
     system, text = recommend_messages(closet, weather, tag, request, persona, favorites)
     slot_schema = {s: {"type": "integer", "description": f"{SLOT_NAMES[s]} 옷 번호, 입지 않으면 0"}
@@ -350,12 +350,12 @@ def recommend(closet, weather, tag, request=None, persona="expert", favorites=No
                  "tag_fit": {"type": "string", "description": "태그에 맞는지 짧은 판단"},
                  "score": {"type": "number", "description": "0.1~5.0, 소수점 한 자리"},
                  "summary": {"type": "string", "description": summary_desc},
-                 # 설명은 칸마다가 아니라 묶음에 한 번만 둡니다. 칸마다 두면 신발 번호 칸을 빼먹었습니다. (P-39)
+                 # 설명은 칸마다가 아니라 묶음에 한 번만 둡니다. 칸마다 두면 신발 번호 칸을 빼먹었습니다. (P-40)
                  "details": {"type": "object", "description": f"입은 칸마다 {detail_desc}",
                              "properties": {s: {"type": "string"} for s in SLOT_NAMES}},
              },
              "required": ["kind", *SLOT_NAMES, "weather_fit", "tag_fit", "score", "summary", "details"]}},
-             # 사면 좋을 옷은 판단을 먼저 적게 합니다. 이 두 칸은 저장하지 않습니다. (P-39)
+             # 사면 좋을 옷은 판단을 먼저 적게 합니다. 이 두 칸은 저장하지 않습니다. (P-40)
              "closet_gap": {"type": "string",
                             "description": "옷장에 날씨·태그·요청에 맞는 옷이 모자라는지 짧은 판단"},
              "need_shopping": {"type": "boolean", "description": "모자라면 true, 충분하면 false"},
@@ -385,7 +385,7 @@ def recommend(closet, weather, tag, request=None, persona="expert", favorites=No
             "details": {s: t for s, t in details.items()
                         if outfit.get(s) is not None and isinstance(t, str) and t},
         })
-    # 모자라지 않다고 판단했으면 shopping에 무엇을 적었든 보이지 않습니다. (P-39)
+    # 모자라지 않다고 판단했으면 shopping에 무엇을 적었든 보이지 않습니다. (P-40)
     shopping = answer.get("shopping") if answer.get("need_shopping") is True else []
     return {"outfits": results, "shopping": shopping}
 

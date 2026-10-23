@@ -88,7 +88,7 @@ MAX_SHOPPING = 2
 
 
 def _owned(name: str, closet: list[dict]) -> bool:
-    """제안한 옷 이름에 옷장 옷 하나의 색과 종류가 함께 들어 있으면 이미 가진 옷으로 봅니다. (P-39)
+    """제안한 옷 이름에 옷장 옷 하나의 색과 종류가 함께 들어 있으면 이미 가진 옷으로 봅니다. (P-40)
     예: 옷장에 네이비 코트가 있으면 "네이비 울 코트"는 뺍니다. "베이지 트렌치코트"는 남깁니다."""
     for item in closet:
         kw = item.get("keywords") or {}
@@ -99,8 +99,8 @@ def _owned(name: str, closet: list[dict]) -> bool:
 
 
 def _clean_shopping(items, closet: list[dict] | None = None) -> list[dict]:
-    """사면 좋을 옷: 이름과 이유가 모두 있는 것만 2개까지. 모양이 틀려도 추천 코디는 그대로 나갑니다. (P-38)
-    옷장에 이미 있는 옷은 뺍니다. (P-39)"""
+    """사면 좋을 옷: 이름과 이유가 모두 있는 것만 2개까지. 모양이 틀려도 추천 코디는 그대로 나갑니다. (P-39)
+    옷장에 이미 있는 옷은 뺍니다. (P-40)"""
     cleaned = []
     for item in items if isinstance(items, list) else []:
         if len(cleaned) == MAX_SHOPPING:
@@ -120,7 +120,7 @@ def recommend(closet: list[dict], weather: dict, tag: str, request: str | None =
 
     closet: 지운 옷을 뺀 옷 목록. 옷마다 {"id", "category", "keywords"}.
     request: 사용자가 쓴 요청 글 (없으면 None). persona: expert, friend, my_style.
-    favorites: "내 스타일"일 때 취향으로 넘기는 즐겨찾기 (recommendations.favorites_for_ai). (P-38)
+    favorites: "내 스타일"일 때 취향으로 넘기는 즐겨찾기 (recommendations.favorites_for_ai). (P-39)
     돌려주는 것: {"outfits": [{"outfit", "score", "note_type": "reason", "summary", "details"}, ...],
                  "shopping": [{"name", "reason"}, ...]}
     검사를 통과하지 못한 코디는 빼고, 하나도 남지 않으면 ExternalError("ai_invalid")를 냅니다.
