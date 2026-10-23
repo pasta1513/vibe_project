@@ -353,6 +353,12 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
           아직 등록한 옷이 없어요. 잠시 후 옷장으로 이동합니다.
         </p>
         <Mannequin className="du-empty__mannequin" {...mannequin} title="지금 마네킹 모양, 기본 잠옷 차림" />
+        {/* 그림 속 카드의 점 3개 위에 겹쳐, 차례로 진해지는 로딩 점 */}
+        <span className="du-empty__dots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
       </section>
     )
   }

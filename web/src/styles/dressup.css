@@ -175,6 +175,59 @@
   height: 460px;
 }
 
+/* 카드의 로딩 점: 그림의 점(중심 x 749·768·786, y 856, 지름 9) 위에 겹쳐 차례로 베이지 → 올리브로 진해지고 살짝 튐 */
+.du-empty__dots {
+  position: absolute;
+  left: 740px;
+  top: 846px;
+  display: flex;
+  gap: 8.5px;
+  padding: 5px 4px;
+  background: #fbf3ed; /* 카드 바탕색으로 그림 속 점을 가림 */
+}
+
+.du-empty__dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e2ccb1;
+  animation: du-empty-dot 1.2s ease-in-out infinite;
+}
+
+.du-empty__dots i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.du-empty__dots i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes du-empty-dot {
+  0%,
+  60%,
+  100% {
+    background: #e2ccb1;
+    transform: translateY(0);
+  }
+  30% {
+    background: #8b8746;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes du-empty-dot {
+    0%,
+    60%,
+    100% {
+      background: #e2ccb1;
+    }
+    30% {
+      background: #8b8746;
+    }
+  }
+}
+
 /* ── 오른쪽 날씨·스타일·날짜 (시안 .side) ── */
 .du-side {
   position: absolute;
