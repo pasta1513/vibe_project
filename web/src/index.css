@@ -1770,9 +1770,9 @@ button {
 .fitter.fitter--panel {
   width: 100%;
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 180px 1fr;
   grid-template-rows: auto auto 1fr;
-  gap: 12px 18px;
+  gap: 12px 14px;
   align-items: start;
 }
 
@@ -1785,7 +1785,8 @@ button {
 .fitter--panel .fitter__stage {
   grid-column: 1;
   grid-row: 2;
-  width: 200px;
+  overflow: hidden; /* 크게 조절한 옷이 옆 조절 글자를 덮지 않게 */
+  width: 180px;
   height: 320px;
   padding: 8px;
   border: none;
@@ -1810,12 +1811,14 @@ button {
 }
 
 .fitter--panel .fitter__row {
-  gap: 8px;
+  gap: 6px;
   font-size: 13px;
 }
 
+/* 이름 칸은 "좌우 위치" 글자 폭만큼(기본 84px보다 좁게), 슬라이더가 남는 폭을 씀 */
 .fitter--panel .fitter__row > span:first-child {
-  width: 64px;
+  flex: 0 0 56px;
+  width: 56px;
   font-size: 13px;
 }
 
