@@ -1,11 +1,13 @@
 import { useEffect, useId, useState } from 'react'
 import headFemale from '../assets/mannequin/head-female.png'
 import headMale from '../assets/mannequin/head-male.png'
+import { BODY_MARKUP, pajamaMarkup } from './pajama.js'
 
 // 마네킹과 기본 잠옷 (DESIGN §5.1, §5.2).
 // 성별마다 기본 그림 하나를 두고, 키와 체형은 비율로 늘이거나 줄입니다. 머리는 그대로 둡니다.
-// (2026-10-22 바꿈, P-38) 얼굴과 머리는 사람이 준 마네킹 그림에서 잘라 낸 PNG를 쓰고,
-// 몸·잠옷·슬리퍼는 그 그림처럼 하늘색 바탕에 흰 물방울, 칼라와 소맷단, 가는 테두리로 다시 그렸습니다. (사람이 정함)
+// (2026-10-22 바꿈, P-38) 얼굴과 머리는 사람이 준 마네킹 그림에서 잘라 낸 PNG를 씁니다. (사람이 정함)
+// (2026-10-23 바꿈) 목 아래 몸과 잠옷은 ChatGPT 프로젝트의 코드(pajama.js)를 그대로 쓰고,
+// 얼굴 폭에 맞춰 1.25배 한 뒤 체형은 가로, 키는 세로 비율로 늘이거나 줄입니다. (사람이 정함)
 //
 // outfit: 칸마다 옷 한 벌 정보 { image_url, outfit_template, main_color, pattern_url, fit }. { top, bottom, dress, shoes, outer }
 //   의상 틀이 있으면 캐릭터 의상으로 그리고(D-016), 없으면 2D 이미지를 얹습니다. 2D 이미지 주소(문자열)도 받습니다.
@@ -17,14 +19,7 @@ import headMale from '../assets/mannequin/head-male.png'
 const HEIGHT_RATIO = { short: 0.92, medium: 1, tall: 1.08 }
 const BODY_RATIO = { slim: 0.85, medium: 1, chubby: 1.2 }
 
-const SKIN = '#FDE6D8'
-const SKIN_LINE = '#EFA48A'
-const PAJAMA = '#BCDCFA'
-const PAJAMA_DOT = '#FFFFFF'
-const PAJAMA_LINE = '#6FA6E6'
-const COLLAR = '#D9EBFD'
-const SLIPPER = '#B4D5F8'
-const SLIPPER_LINE = '#5E97DE'
+const MALE_WIDTH = 1.07 // 남성은 같은 몸을 가로로 조금 넓힘 (ChatGPT 코드와 같음)
 const DASHED = '#888780'
 const EMPTY_TEXT = '#5F5E5A'
 
@@ -35,21 +30,26 @@ const EMPTY_LABEL = {
   outer: '아우터를 골라 주세요',
 }
 
-// 기본 그림의 몸 치수 (키 1배, 체형 1배일 때)
-const BASE = {
-  female: { shoulder: 34, waist: 28, hip: 32 },
-  male: { shoulder: 38, waist: 33, hip: 32 },
-}
 // 머리 그림 (web/src/assets/mannequin). w, h: PNG 크기(px), cx: 얼굴 가운데, chin: 턱 아래 끝. 그림 1px를 0.4로 줄입니다.
 const HEAD = {
   female: { href: headFemale, w: 312, h: 356, cx: 154, chin: 240 },
   male: { href: headMale, w: 206, h: 214, cx: 103, chin: 214 },
 }
 const HEAD_SCALE = 0.4
-const CHIN_Y = 86
-const SHOULDER_Y = 88
-const BODY_LENGTH = 260 // 어깨부터 발바닥까지
 const SOLE_TARGET_Y = 384 // 발바닥을 늘 같은 높이에 두어 키 차이가 위로 보이게 합니다.
+
+// ChatGPT 몸(pajama.js)의 좌표. x는 가운데(120)를 0으로 옮긴 값입니다.
+const BODY_SCALE = 1.25 // ChatGPT 좌표 1 = 마네킹 좌표 1.25 (얼굴 폭으로 맞춤)
+const BODY_CENTER_X = 120
+const BODY_CHIN_Y = 105 // 얼굴 아래 끝. 머리 그림의 턱을 여기에 둡니다.
+const BODY_SOLE_Y = 324 // 발바닥
+// 옷 틀을 그릴 몸 치수 (잠옷 윗옷·바지 모양에서 잼)
+const FIGURE = {
+  shoulderY: 110, waistY: 160, hipY: 187, crotchY: 224, ankleY: 307,
+  sh: 28, wa: 28, hip: 32, legX: 22, legW: 20, pantW: 26,
+}
+// 팔: 어깨 가운데(x, y)에서 잠옷 소매와 같은 각도로 바깥 아래로 내려갑니다. len: 손목까지, w: 소매 폭
+const ARM = { x: 30, y: 120, len: 74, w: 21, angle: (16.7 * Math.PI) / 180 }
 
 // 몸통(잠옷 윗옷) 모양: 어깨 → 허리 → 엉덩이, 좌우 대칭
 function torsoPath(sh, wa, hip, sy, wy, hy) {
@@ -77,23 +77,46 @@ function darker(hex, amount = 0.3) {
   return `rgb(${ch(16)}, ${ch(8)}, ${ch(0)})`
 }
 
+// 비스듬한 소매 한쪽의 점 (s = -1 왼쪽, 1 오른쪽). 팔 방향으로 ChatGPT 좌표에서 계산한 뒤 마네킹 좌표로 옮깁니다.
+// frac: 어깨에서 손목까지 길이의 비율, extra: 소매 폭에 더할 값, more: 길이에 더할 값 (ChatGPT 좌표)
+function sleevePoints(d, s, frac, extra = 0, more = 0) {
+  const w = (ARM.w + extra) / 2
+  const len = ARM.len * frac + more
+  const sin = Math.sin(ARM.angle)
+  const cos = Math.cos(ARM.angle)
+  // u: 팔에 수직인 방향, v: 팔을 따라 아래로
+  const at = (u, v) => [
+    (s * ARM.x + u * cos + v * s * sin) * d.scaleX,
+    d.originY + (ARM.y - u * s * sin + v * cos) * d.scaleY,
+  ]
+  return { a: at(-w, w * 0.4), top: at(0, -w * 0.6), b: at(w, w * 0.4), c: at(w, len), e: at(-w, len) }
+}
+
+// 소매가 차지하는 오른쪽 끝(x)과 아래 끝(y)
+function sleeveReach(d, frac, extra = 0, more = 0) {
+  const p = sleevePoints(d, 1, frac, extra, more)
+  const pts = [p.a, p.b, p.c, p.e]
+  return { x: Math.max(...pts.map((q) => q[0])), y: Math.max(...pts.map((q) => q[1])) }
+}
+
 // 캐릭터 의상 틀 9개 (D-016, DESIGN §5.5). 잠옷처럼 마네킹의 몸 치수로 그려서 18가지 모양에 저절로 맞습니다.
 // 돌려주는 것: 틀을 이루는 path 목록
 function outfitPaths(template, d) {
-  const { sh, wa, hip, sy, waistY, hipY, armX, armW, armTop, wristY, legX, legW, pantW, ankleY } = d
+  const { sh, wa, hip, sy, waistY, hipY, crotchY, legX, legW, pantW, ankleY } = d
   const legLen = ankleY - hipY
-  const sleeve = (bottomY, extra = 0) =>
+  const sleeve = (frac, extra = 0, more = 0) =>
     [-1, 1].map((s) => {
-      const x = s * armX - (armW + extra) / 2
-      const w = armW + extra
-      const r = w / 2
-      return `M ${x} ${armTop + r} A ${r} ${r} 0 0 1 ${x + w} ${armTop + r} L ${x + w} ${bottomY} L ${x} ${bottomY} Z`
+      const p = sleevePoints(d, s, frac, extra, more)
+      const f = (q) => `${q[0]} ${q[1]}`
+      return `M ${f(p.a)} Q ${f(p.top)} ${f(p.b)} L ${f(p.c)} L ${f(p.e)} Z`
     })
   const legs = (bottomY) => [
-    `M ${-hip} ${hipY - 10} L ${hip} ${hipY - 10} L ${hip} ${hipY + 16} L ${-hip} ${hipY + 16} Z`,
+    `M ${-hip} ${hipY - 10} L ${hip} ${hipY - 10} L ${hip} ${crotchY} L ${-hip} ${crotchY} Z`,
+    // 바짓가랑이 안쪽 선은 잠옷 바지처럼 사타구니에서 비스듬히 벌어져 다리 사이에 살이 보이지 않습니다.
     ...[-1, 1].map((s) => {
-      const x = s * legX - pantW / 2
-      return `M ${x} ${hipY} L ${x + pantW} ${hipY} L ${x + pantW} ${bottomY} L ${x} ${bottomY} Z`
+      const outer = s * (legX + pantW / 2)
+      const inner = s * (legX - pantW / 2) * Math.max(0, (bottomY - crotchY) / (ankleY - crotchY))
+      return `M 0 ${hipY} L ${outer} ${hipY} L ${outer} ${bottomY} L ${inner} ${bottomY} L 0 ${crotchY} Z`
     }),
   ]
   // 앞이 열린 아우터의 한쪽 판. s = -1(왼쪽), 1(오른쪽)
@@ -113,9 +136,9 @@ function outfitPaths(template, d) {
   }
   switch (template) {
     case 'top_short':
-      return [...sleeve(armTop + (wristY - armTop) * 0.38, 4), torsoPath(sh, wa, hip, sy, waistY, hipY)]
+      return [...sleeve(0.38, 4), torsoPath(sh, wa, hip, sy, waistY, hipY)]
     case 'top_long':
-      return [...sleeve(wristY), torsoPath(sh, wa, hip, sy, waistY, hipY)]
+      return [...sleeve(1), torsoPath(sh, wa, hip, sy, waistY, hipY)]
     case 'bottom_pants':
       return legs(ankleY)
     case 'bottom_shorts':
@@ -131,7 +154,7 @@ function outfitPaths(template, d) {
       const hem = hipY + legLen * 0.62
       const flare = hip * 1.45
       return [
-        ...sleeve(armTop + (wristY - armTop) * 0.3, 4),
+        ...sleeve(0.3, 4),
         [
           `M ${-sh + 6} ${sy}`,
           `L ${sh - 6} ${sy}`,
@@ -151,7 +174,7 @@ function outfitPaths(template, d) {
     case 'outer_short':
     case 'outer_long': {
       const hem = template === 'outer_long' ? hipY + legLen * 0.55 : hipY + 22
-      return [...sleeve(wristY + 2, 5), outerHalf(-1, hem), outerHalf(1, hem)]
+      return [...sleeve(1, 5, 2), outerHalf(-1, hem), outerHalf(1, hem)]
     }
     case 'shoes':
       return [-1, 1].map((s) => {
@@ -168,16 +191,17 @@ function outfitPaths(template, d) {
 
 // 틀이 차지하는 상자. 무늬를 이 크기에 맞춰 늘이거나 줄입니다. outfitPaths와 같은 치수를 씁니다. (DESIGN §5.5)
 function outfitBox(template, d) {
-  const { hip, sy, hipY, armX, armW, wristY, legX, legW, pantW, ankleY } = d
+  const { hip, sy, hipY, legX, legW, pantW, ankleY } = d
   const legLen = ankleY - hipY
-  const sleeveOut = (extra = 0) => armX + (armW + extra) / 2
   const legOut = Math.max(hip, legX + pantW / 2)
   const box = (half, top, bottom) => ({ x: -half, y: top, w: half * 2, h: bottom - top })
   switch (template) {
     case 'top_short':
-      return box(sleeveOut(4), sy, hipY + 12)
-    case 'top_long':
-      return box(sleeveOut(), sy, Math.max(hipY + 12, wristY))
+      return box(sleeveReach(d, 0.38, 4).x, sy, hipY + 12)
+    case 'top_long': {
+      const reach = sleeveReach(d, 1)
+      return box(reach.x, sy, Math.max(hipY + 12, reach.y))
+    }
     case 'bottom_pants':
       return box(legOut, hipY - 10, ankleY)
     case 'bottom_shorts':
@@ -185,11 +209,12 @@ function outfitBox(template, d) {
     case 'bottom_skirt':
       return box(hip * 1.4, hipY - 12, hipY + legLen * 0.5)
     case 'dress':
-      return box(Math.max(hip * 1.45, sleeveOut(4)), sy, hipY + legLen * 0.62)
+      return box(Math.max(hip * 1.45, sleeveReach(d, 0.3, 4).x), sy, hipY + legLen * 0.62)
     case 'outer_short':
     case 'outer_long': {
       const hem = template === 'outer_long' ? hipY + legLen * 0.55 : hipY + 22
-      return box(Math.max(sleeveOut(5), hip + 7), sy - 1, Math.max(hem, wristY + 2))
+      const reach = sleeveReach(d, 1, 5, 2)
+      return box(Math.max(reach.x, hip + 7), sy - 1, Math.max(hem, reach.y))
     }
     case 'shoes':
       return box(legX + 3 + legW / 2 + 8, ankleY - 3, ankleY + 18)
@@ -334,45 +359,50 @@ function EmptySlot({ box, label, labelY }) {
 
 // 마네킹 몸의 치수와 칸 상자. 마네킹과 옷만 그린 일러스트(GarmentIllustration)가 함께 씁니다.
 function bodyGeometry(gender, height, body) {
-  const h = HEIGHT_RATIO[height] ?? 1
   const w = BODY_RATIO[body] ?? 1
-  const base = BASE[gender] ?? BASE.female
+  const h = HEIGHT_RATIO[height] ?? 1
+  // ChatGPT 좌표 → 마네킹 좌표: x는 가로 배율, y는 세로 배율을 곱하고 발바닥을 SOLE_TARGET_Y에 맞춤
+  const scaleX = BODY_SCALE * w * (gender === 'male' ? MALE_WIDTH : 1)
+  const scaleY = BODY_SCALE * h
+  const originY = SOLE_TARGET_Y - BODY_SOLE_Y * scaleY
+  const X = (x) => x * scaleX
+  const Y = (y) => originY + y * scaleY
+  const F = FIGURE
 
-  const sh = base.shoulder * w
-  const wa = base.waist * w
-  const hip = base.hip * w
-  const length = BODY_LENGTH * h
-  const torsoLen = length * 0.4
-  const waistY = SHOULDER_Y + torsoLen * 0.6
-  const hipY = SHOULDER_Y + torsoLen
-  const footH = 16
-  const ankleY = SHOULDER_Y + length - footH
-  const soleY = SHOULDER_Y + length
-
-  const armW = 18 * w
-  const armX = sh + armW / 2 - 8
-  const armTop = SHOULDER_Y + 4
-  const wristY = SHOULDER_Y + length * 0.38
-
-  const legW = 22 * w
-  const legX = hip - legW / 2 - 1
-  const pantW = legW + 6
-
-  const shiftY = SOLE_TARGET_Y - soleY
+  const dims = {
+    scaleX,
+    scaleY,
+    originY,
+    sh: X(F.sh),
+    wa: X(F.wa),
+    hip: X(F.hip),
+    sy: Y(F.shoulderY),
+    waistY: Y(F.waistY),
+    hipY: Y(F.hipY),
+    crotchY: Y(F.crotchY),
+    legX: X(F.legX),
+    legW: X(F.legW),
+    pantW: X(F.pantW),
+    ankleY: Y(F.ankleY),
+  }
+  const { sy, hipY, legX, pantW, ankleY } = dims
+  const chinY = Y(BODY_CHIN_Y)
+  const soleY = SOLE_TARGET_Y
+  // 몸과 잠옷 문자열(ChatGPT 좌표)을 마네킹 자리에 놓는 transform
+  const bodyTransform = `translate(0 ${originY}) scale(${scaleX} ${scaleY}) translate(${-BODY_CENTER_X} 0)`
 
   // 칸 상자 (마네킹과 같은 비율로 늘고 줄어듭니다)
-  const sleeve = armX + armW / 2
+  const sleeve = sleeveReach(dims, 1).x
   const legOuter = legX + pantW / 2
   const boxes = {
-    top: { x: -sleeve - 2, y: SHOULDER_Y - 6, w: (sleeve + 2) * 2, h: hipY + 14 - (SHOULDER_Y - 6) },
+    top: { x: -sleeve - 2, y: sy - 6, w: (sleeve + 2) * 2, h: hipY + 14 - (sy - 6) },
     bottom: { x: -legOuter - 2, y: hipY - 6, w: (legOuter + 2) * 2, h: ankleY + 2 - (hipY - 6) },
-    shoes: { x: -legOuter - 10, y: ankleY - 6, w: (legOuter + 10) * 2, h: footH + 12 },
-    outer: { x: -sleeve - 8, y: SHOULDER_Y - 10, w: (sleeve + 8) * 2, h: hipY + 34 - (SHOULDER_Y - 10) },
+    shoes: { x: -legOuter - 10, y: ankleY - 6, w: (legOuter + 10) * 2, h: soleY - ankleY + 12 },
+    outer: { x: -sleeve - 8, y: sy - 10, w: (sleeve + 8) * 2, h: hipY + 34 - (sy - 10) },
   }
   boxes.dress = { x: boxes.top.x, y: boxes.top.y, w: boxes.top.w, h: boxes.bottom.y + boxes.bottom.h - boxes.top.y }
 
-  const dims = { sh, wa, hip, sy: SHOULDER_Y, waistY, hipY, armX, armW, armTop, wristY, legX, legW, pantW, ankleY }
-  return { w, sh, wa, hip, waistY, hipY, ankleY, armW, armX, armTop, wristY, legW, legX, pantW, shiftY, boxes, dims }
+  return { chinY, bodyTransform, boxes, dims }
 }
 
 // 옷만 그린 2D 일러스트 (P-39 뒤, 사람이 정함 2026-10-23): 마네킹에 입히는 캐릭터 의상(틀 + 대표 색 + 무늬)을 옷만 따로 그립니다.
@@ -406,19 +436,18 @@ function Mannequin({
   className,
   title,
 }) {
-  const patternId = `pj-dots-${useId().replace(/:/g, '')}`
+  const uid = useId()
   const head = HEAD[gender] ?? HEAD.female
-  const { w, sh, wa, hip, waistY, hipY, ankleY, armW, armX, armTop, wristY, legW, legX, pantW, shiftY, boxes, dims } =
-    bodyGeometry(gender, height, body)
+  const { chinY, bodyTransform, boxes, dims } = bodyGeometry(gender, height, body)
 
   const worn = outfit ?? {}
   const hasDress = Boolean(worn.dress)
-  // 옷을 입은 칸의 잠옷은 그리지 않고 팔다리를 살색으로 둡니다. 반팔이나 치마 아래로 잠옷이 보이지 않게 합니다.
-  const coversTop = hasDress || Boolean(worn.top)
-  const coversBottom = hasDress || Boolean(worn.bottom)
-  const pajamaFill = `url(#${patternId})`
   const slotShape = (slot) => (
     <ClothingShape item={worn[slot]} box={boxes[slot]} dims={dims} faded={fadedSlots.includes(slot)} />
+  )
+  // 기본 잠옷: 옷을 입은 칸은 그리지 않아서 반팔이나 치마 아래로 잠옷이 보이지 않습니다.
+  const pajama = (part) => (
+    <g transform={bodyTransform} dangerouslySetInnerHTML={{ __html: pajamaMarkup(part, `${uid}-${part === '상의' ? 'top' : 'bottom'}`) }} />
   )
   const emptySlots = showEmpty
     ? ['shoes', 'bottom', 'top', 'outer'].filter((slot) => {
@@ -431,179 +460,47 @@ function Mannequin({
     <svg
       className={className}
       viewBox="-100 -12 200 400"
+      overflow="visible" // 큰 키·통통한 남성의 아우터 소매처럼 칸을 조금 넘는 옷도 잘리지 않게
       role="img"
       aria-label={title ?? (outfit ? '옷을 입은 마네킹' : '잠옷을 입은 마네킹')}
     >
-      <defs>
-        <pattern id={patternId} width="12" height="12" patternUnits="userSpaceOnUse">
-          <rect width="12" height="12" fill={PAJAMA} />
-          <circle cx="3" cy="3" r="1.4" fill={PAJAMA_DOT} />
-          <circle cx="9" cy="9" r="1.4" fill={PAJAMA_DOT} />
-        </pattern>
-      </defs>
-      <g transform={`translate(0 ${shiftY})`}>
-        {/* 발: 하늘색 슬리퍼 */}
-        {[-1, 1].map((s) => (
-          <ellipse
-            key={`foot${s}`}
-            cx={s * (legX + 3)}
-            cy={ankleY + 8}
-            rx={legW / 2 + 7}
-            ry={9}
-            fill={SLIPPER}
-            stroke={SLIPPER_LINE}
-            strokeWidth="1.5"
-          />
-        ))}
+      {/* 발밑 그림자 */}
+      <ellipse cx={0} cy={SOLE_TARGET_Y - 1} rx={76} ry={5} fill="#8c829d" opacity=".13" />
 
-        {/* 잠옷 바지. 하의나 원피스를 입으면 다리만 살색으로 */}
-        {!coversBottom && (
-          <rect x={-hip} y={hipY - 4} width={hip * 2} height={26} rx={5} fill={pajamaFill} stroke={PAJAMA_LINE} strokeWidth="1.5" />
-        )}
-        {[-1, 1].map((s) => (
-          <g key={`leg${s}`}>
-            <rect
-              x={s * legX - (coversBottom ? legW : pantW) / 2}
-              y={hipY + 4}
-              width={coversBottom ? legW : pantW}
-              height={ankleY - hipY}
-              rx={coversBottom ? legW / 2 : 4}
-              fill={coversBottom ? SKIN : pajamaFill}
-              stroke={coversBottom ? SKIN_LINE : PAJAMA_LINE}
-              strokeWidth="1.5"
-            />
-            {/* 바짓단 */}
-            {!coversBottom && (
-              <rect
-                x={s * legX - pantW / 2}
-                y={ankleY - 8}
-                width={pantW}
-                height={8}
-                rx={2}
-                fill={COLLAR}
-                stroke={PAJAMA_LINE}
-                strokeWidth="1.5"
-              />
-            )}
-          </g>
-        ))}
-        {/* 바지 가운데 선 */}
-        {!coversBottom && <line x1={0} y1={hipY + 8} x2={0} y2={hipY + 20} stroke={PAJAMA_LINE} strokeWidth="1.2" />}
+      {/* 몸: 목, 팔과 손, 다리, 맨발 */}
+      <g transform={bodyTransform} dangerouslySetInnerHTML={{ __html: BODY_MARKUP }} />
 
-        {/* 목 */}
-        <rect x={-8 * w} y={CHIN_Y - 8} width={16 * w} height={SHOULDER_Y - CHIN_Y + 14} fill={SKIN} />
+      {/* 옷: 신발 → 하의(또는 잠옷 바지) → 상의(또는 잠옷 윗옷), 원피스 → 아우터 순서로 겹칩니다. */}
+      {worn.shoes && slotShape('shoes')}
+      {hasDress ? (
+        slotShape('dress')
+      ) : (
+        <>
+          {worn.bottom ? slotShape('bottom') : pajama('하의')}
+          {worn.top ? slotShape('top') : pajama('상의')}
+        </>
+      )}
+      {worn.outer && worn.outer !== 'none' && slotShape('outer')}
 
-        {/* 잠옷 윗옷 */}
-        {!coversTop && (
-          <>
-            <path
-              d={torsoPath(sh, wa, hip, SHOULDER_Y, waistY, hipY)}
-              fill={pajamaFill}
-              stroke={PAJAMA_LINE}
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-            />
-            {/* 앞섶과 단추 */}
-            <line x1={0} y1={SHOULDER_Y + 14} x2={0} y2={hipY + 12} stroke={PAJAMA_LINE} strokeWidth="1.2" />
-            {[0.2, 0.42, 0.64, 0.86].map((t) => (
-              <circle
-                key={t}
-                cx={3}
-                cy={SHOULDER_Y + 14 + (hipY - SHOULDER_Y - 6) * t}
-                r={1.8}
-                fill={COLLAR}
-                stroke={PAJAMA_LINE}
-                strokeWidth="0.8"
-              />
-            ))}
-          </>
-        )}
-
-        {/* 소매와 손 (동그란 벙어리장갑 모양) */}
-        {[-1, 1].map((s) => (
-          <g key={`arm${s}`}>
-            <rect
-              x={s * armX - armW / 2}
-              y={armTop}
-              width={armW}
-              height={wristY - armTop}
-              rx={armW / 2}
-              fill={coversTop ? SKIN : pajamaFill}
-              stroke={coversTop ? SKIN_LINE : PAJAMA_LINE}
-              strokeWidth="1.5"
-            />
-            {/* 소맷단 */}
-            {!coversTop && (
-              <rect
-                x={s * armX - armW / 2 - 1}
-                y={wristY - 8}
-                width={armW + 2}
-                height={8}
-                rx={2}
-                fill={COLLAR}
-                stroke={PAJAMA_LINE}
-                strokeWidth="1.5"
-              />
-            )}
-            <ellipse
-              cx={s * armX}
-              cy={wristY + 6}
-              rx={armW / 2}
-              ry={10}
-              fill={SKIN}
-              stroke={SKIN_LINE}
-              strokeWidth="1.2"
-            />
-          </g>
-        ))}
-
-        {/* 칼라 */}
-        {!coversTop && [-1, 1].map((s) => (
-          <path
-            key={`collar${s}`}
-            d={`M ${s * 1} ${SHOULDER_Y - 3} L ${s * 17} ${SHOULDER_Y - 1} L ${s * 14} ${SHOULDER_Y + 9} L ${s * 1} ${SHOULDER_Y + 16} Z`}
-            fill={COLLAR}
-            stroke={PAJAMA_LINE}
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          />
-        ))}
-
-        {/* 옷: 신발 → 하의 → 상의(또는 원피스) → 아우터 순서로 겹칩니다. */}
-        {worn.shoes && slotShape('shoes')}
-        {hasDress ? (
-          slotShape('dress')
-        ) : (
-          <>
-            {worn.bottom && slotShape('bottom')}
-            {worn.top && slotShape('top')}
-          </>
-        )}
-        {worn.outer && worn.outer !== 'none' && slotShape('outer')}
-
-        {/* 빈 칸 표시. 아우터 안내는 어깨 쪽, 상의 안내는 허리 쪽에 두어 겹치지 않게 합니다. */}
-        {emptySlots.map((slot) => (
-          <EmptySlot
-            key={slot}
-            box={boxes[slot]}
-            label={EMPTY_LABEL[slot]}
-            labelY={
-              slot === 'outer' ? SHOULDER_Y + 14 : slot === 'top' ? (waistY + hipY) / 2 : undefined
-            }
-          />
-        ))}
-
-        {/* 머리: 사람이 준 그림에서 잘라 낸 얼굴과 머리 (긴 머리는 어깨 위로 내려옴) */}
-        <image
-          href={head.href}
-          x={-head.cx * HEAD_SCALE}
-          y={CHIN_Y - head.chin * HEAD_SCALE}
-          width={head.w * HEAD_SCALE}
-          height={head.h * HEAD_SCALE}
+      {/* 빈 칸 표시. 아우터 안내는 어깨 쪽, 상의 안내는 허리 쪽에 두어 겹치지 않게 합니다. */}
+      {emptySlots.map((slot) => (
+        <EmptySlot
+          key={slot}
+          box={boxes[slot]}
+          label={EMPTY_LABEL[slot]}
+          labelY={slot === 'outer' ? dims.sy + 14 : slot === 'top' ? (dims.waistY + dims.hipY) / 2 : undefined}
         />
-      </g>
+      ))}
+
+      {/* 머리: 사람이 준 그림에서 잘라 낸 얼굴과 머리 (긴 머리는 어깨 위로 내려옴) */}
+      <image
+        href={head.href}
+        x={-head.cx * HEAD_SCALE}
+        y={chinY - head.chin * HEAD_SCALE}
+        width={head.w * HEAD_SCALE}
+        height={head.h * HEAD_SCALE}
+      />
     </svg>
   )
 }
-
 export default Mannequin
