@@ -140,12 +140,12 @@ AI 시간은 P-28에서 Nova Lite로 잰 뒤 정했습니다 (사람이 정함, 
 
 | 사용자 행동 | 화면이 보내는 것 | 서버가 할 일 | 받는 것 |
 | --- | --- | --- | --- |
-| 추천받기 | 날짜, 지역 정보, 태그 | ① 태그가 있는지 확인 ② 옷이 부족한지 판단 ③ 날씨를 받음 ④ 지운 옷을 뺀 옷장, 날씨, 태그로 AI에게 코디를 받음 ⑤ 서로 다른지, 목록에 있는 옷인지, 점수가 범위 안인지 검사 | 날씨, 추천 코디 최대 3벌 (코디마다 코디 구성, 점수 결과, 즐겨찾기 표시), 3벌이 안 되면 "더 등록하면 다양해짐" 표시. 옷이 부족하면 대신 "먼저 등록할 구분" |
+| 추천받기 | 날짜, 지역 정보, 태그, 페르소나, 요청 글(선택, 200자까지) | ① 태그가 있는지 확인 ② 옷이 부족한지 판단 ③ "내 스타일"이면 즐겨찾기가 있는지 확인하고 앞에서 20개를 모음 ④ 날씨를 받음 ⑤ 지운 옷을 뺀 옷장, 날씨, 태그, 페르소나, 요청 글("내 스타일"이면 즐겨찾기도)로 AI에게 코디와 사면 좋을 옷을 받음 ⑥ 서로 다른지, 목록에 있는 옷인지, 점수가 범위 안인지 검사. 사면 좋을 옷은 이름과 이유가 있는 것만 2개까지, 이름에 옷장 옷의 색과 종류가 함께 들어 있으면 뺌 (P-40) | 날씨, 추천 코디 최대 3벌 (코디마다 코디 구성, 점수 결과, 즐겨찾기 표시), 3벌이 안 되면 "더 등록하면 다양해짐" 표시, 사면 좋을 옷 (없으면 빈 목록). 옷이 부족하면 대신 "먼저 등록할 구분" |
 | 점수 확인하기 | 코디 구성, 날짜, 지역 정보, 태그 (없을 수 있음) | ① 빈 칸과 지운 옷이 없는지 검사 ② 날씨를 받음 ③ AI에게 점수, 한 줄 코멘트, 옷마다 평가를 받음 (태그가 없으면 태그 기준은 빼고) ④ 점수 범위 검사 | 날씨, 점수 결과 (코멘트) |
 
 | 사용자 행동 | 성공하면 화면 | 실패 종류 | 다음 행동 |
 | --- | --- | --- | --- |
-| 추천받기 | 추천 마네킹 최대 3개와 점수, 이유 한 줄, 오른쪽 위 하트 (SCREEN-SPEC §5.3) | 태그를 고르지 않음 (화면이 먼저 알림) · **옷이 부족함: 실패가 아님.** 먼저 등록할 구분을 안내 · 날씨를 받지 못함 · AI가 답하지 않음 · AI 답이 검사를 하나도 통과하지 못함 | 태그 고르기 · 옷장에 가서 등록 · 다시 시도 |
+| 추천받기 | 추천 마네킹 최대 3개와 점수, 이유 한 줄, 오른쪽 위 하트 (SCREEN-SPEC §5.3) | 태그를 고르지 않음 (화면이 먼저 알림) · **옷이 부족함: 실패가 아님.** 먼저 등록할 구분을 안내 · "내 스타일"인데 즐겨찾기가 없음 (경고창, P-39) · 요청 글이 200자를 넘거나 정해지지 않은 페르소나 (입력 오류) · 날씨를 받지 못함 · AI가 답하지 않음 · AI 답이 검사를 하나도 통과하지 못함 | 태그 고르기 · 옷장에 가서 등록 · 다시 시도 |
 | 점수 확인하기 | 점수 확인 단계. 점수 카드(날짜, 별과 숫자, 코멘트 한 줄), 조건 띠 잠김 | 빈 칸이 있음 (화면이 경고창으로 먼저 막음) · 지운 옷이 들어 있음 · 날씨를 받지 못함 · AI가 답하지 않거나 범위 밖 점수 | 빈 칸 채우기 · 다시 시도 (고른 옷은 그대로) |
 
 ### 5.3 확정하기
@@ -286,7 +286,7 @@ SCREEN-SPEC에 있지만 화면 안에서만 바뀌는 행동입니다.
 | 4 | 배경 고치고 적용 (P-34) | `PUT /api/uploads/{id}/image` |
 | 2.4 | 사진과 2D 이미지 받아 오기 | `GET /api/photos/{파일 이름}` |
 | 5.1 | 날짜 바꾸기, 지역 바꾸기 (날씨 받기). 묻는 값: `date` (YYYY-MM-DD), `region` (사용자가 바꾼 지역일 때만) | `GET /api/weather` |
-| 5.2 | 추천받기 / 점수 확인하기. 추천받기가 보내는 것: `date`, `region` (바꾼 지역일 때만), `tag_id` (없으면 실패 `tag_required`). 받는 것: `weather`, `outfits` (코디마다 `outfit`, `score`, `note_type`, `summary`, `details`, 즐겨찾기 표시 `favorite_id`), 3벌 미만 표시 `fewer_than_three`, 옷이 부족하면 `insufficient` (`missing`: 먼저 등록할 구분, `dress_alternative`: 원피스로도 채울 수 있는지. 이때 `weather`는 없음). 점수 확인하기가 보내는 것: `outfit` (`top`, `bottom`, `dress`, `shoes`, `outer`. 아우터 "입지 않음"은 비움), `date`, `region` (바꾼 지역일 때만), `tag_id` (없을 수 있음). 받는 것: `weather`, `result` | `POST /api/recommendations` / `POST /api/scores` |
+| 5.2 | 추천받기 / 점수 확인하기. 추천받기가 보내는 것: `date`, `region` (바꾼 지역일 때만), `tag_id` (없으면 실패 `tag_required`), `persona` (`expert`, `friend`, `my_style`. 없으면 `expert`, 그 밖이면 `invalid_input`), `request` (선택, 200자까지. 넘으면 `invalid_input`). "내 스타일"인데 즐겨찾기가 없으면 실패 `no_favorites`. 받는 것: `weather`, `outfits` (코디마다 `outfit`, `score`, `note_type`, `summary`, `details`, 즐겨찾기 표시 `favorite_id`), 3벌 미만 표시 `fewer_than_three`, 사면 좋을 옷 `shopping` (`[{name, reason}]`, 최대 2개, 없으면 빈 목록. P-39), 옷이 부족하면 `insufficient` (`missing`: 먼저 등록할 구분, `dress_alternative`: 원피스로도 채울 수 있는지. 이때 `weather`는 없음). 점수 확인하기가 보내는 것: `outfit` (`top`, `bottom`, `dress`, `shoes`, `outer`. 아우터 "입지 않음"은 비움), `date`, `region` (바꾼 지역일 때만), `tag_id` (없을 수 있음). 받는 것: `weather`, `result` | `POST /api/recommendations` / `POST /api/scores` |
 | 5.3 | 확정하기. [바꾸기]는 같은 내용에 `"confirmed": true`를 붙여 다시 보냄 | `POST /api/diary` |
 | 6 | 코디 일기 목록 / 입혀 보기 / 지우기. 목록의 기록마다: `id`, `date`, `outfit` (칸마다 옷 한 벌 정보, 지운 옷 포함), `mannequin`, `weather`, `tag` (`id`, `name`, 없을 수 있음), `result`, `deleted_slots`, `favorite_id`. 입혀 보기가 보내는 것: `date`, `region` (바꾼 지역일 때만). 받는 것: `date`, `outfit` (지운 옷 칸은 비움), `tag_id`, `deleted_slots`, `weather`, 날씨를 받지 못하면 `weather_error` (옷 고르기는 열림) | `GET /api/diary` / `POST /api/diary/{id}/try-on` / `DELETE /api/diary/{id}` |
 | 5.4 | 즐겨찾기 넣기 (점수 확인 단계, 추천 카드. 보내는 것: `outfit`, `tag_id`) / 코디 일기 카드에서 넣기 / 빼기. 받는 것: 새 즐겨찾기 `id`. 같은 구성이 있으면 실패 `duplicate`와 있는 즐겨찾기 번호 `favorite_id` (카드의 하트를 ♥로 바꾸는 데 씀) | `POST /api/favorites` / `POST /api/favorites/from-diary/{id}` / `DELETE /api/favorites/{id}` |

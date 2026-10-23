@@ -11,7 +11,14 @@ import { api } from '../api.js'
 // 시안의 순서: 상의, 하의, 원피스, 아우터, 신발 (가방·악세서리는 앱에 없어 넣지 않음, 사람이 정함 2026-10-22)
 const CLOSET_ORDER = ['top', 'bottom', 'dress', 'outer', 'shoes']
 const LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.code, c.label]))
-const STAR_PATH = 'M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6L2.5 9.3l6.6-.8z'
+// 추천 페르소나와 요청 글 길이 한도. 서버도 같은 값으로 다시 검사합니다. (P-39, 사람이 정함 2026-10-22)
+const PERSONAS = [
+  ['expert', '전문가'],
+  ['friend', '친구'],
+  ['my_style', '내 스타일'],
+]
+const REQUEST_MAX = 200
+const STAR_PATH ='M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6L2.5 9.3l6.6-.8z'
 
 // 날씨 그림: 맑음은 시안의 해, 나머지는 같은 굵기로 그림
 export function WeatherIcon({ condition, className }) {
@@ -114,6 +121,10 @@ export function SidePanel({
   tags,
   tagId,
   onTag,
+  persona,
+  onPersona,
+  requestText,
+  onRequestText,
   onRecommend,
   recommending,
 }) {
@@ -213,6 +224,31 @@ export function SidePanel({
         {recommending ? '추천을 고르는 중…' : 'AI 코디 추천받기'}
         {!recommending && <span aria-hidden="true">→</span>}
       </button>
+
+      {/* 누가 추천해 줄지와 요청 글. 저장하지 않습니다. 버튼 아래에 둡니다 (P-39, P-42 옮김) */}
+      <div className="du-side__opts" role="radiogroup" aria-label="추천 페르소나">
+        {PERSONAS.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={persona === value}
+            className={`du-tag${persona === value ? ' du-tag--on' : ''}`}
+            onClick={() => onPersona(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <input
+        className="du-side__request"
+        type="text"
+        aria-label="요청 글"
+        placeholder="원하는 상황 (선택) 예: 소개팅이라 깔끔하게"
+        maxLength={REQUEST_MAX}
+        value={requestText}
+        onChange={(e) => onRequestText(e.target.value)}
+      />
     </aside>
   )
 }
@@ -248,6 +284,7 @@ export function RecommendPanel({
   onGoCloset,
 }) {
   const [open, setOpen] = useState(null) // 이유를 펼친 카드 번호
+  const [shoppingOpen, setShoppingOpen] = useState(false)
   if (recommendation.insufficient) {
     return (
       <section className="du-reco" aria-label="AI 추천 코디">
@@ -262,6 +299,7 @@ export function RecommendPanel({
     )
   }
   const outfits = recommendation.outfits
+  const shopping = recommendation.shopping ?? []
   return (
     <section className="du-reco" aria-label="AI 추천 코디">
       <h3>
@@ -271,7 +309,33 @@ export function RecommendPanel({
             옷이 부족해 {outfits.length}벌만 추천했어요. 옷을 더 등록하면 추천이 다양해져요.
           </small>
         )}
+        {/* 사면 좋을 옷: 옷장에 맞는 옷이 모자랄 때만 AI가 줍니다. 없으면 버튼도 없습니다. (P-39) */}
+        {shopping.length > 0 && (
+          <button
+            type="button"
+            className="du-reco__shop-btn"
+            aria-expanded={shoppingOpen}
+            onClick={() => setShoppingOpen(!shoppingOpen)}
+          >
+            사면 좋을 옷 {shopping.length}
+          </button>
+        )}
       </h3>
+      {shoppingOpen && shopping.length > 0 && (
+        <div className="du-reco__shop" role="dialog" aria-label="사면 좋을 옷">
+          <p>이런 옷이 있으면 더 좋아요</p>
+          <ul>
+            {shopping.map((s, i) => (
+              <li key={i}>
+                <b>{s.name}</b> {s.reason}
+              </li>
+            ))}
+          </ul>
+          <button type="button" className="du-reco__btn" onClick={() => setShoppingOpen(false)}>
+            닫기
+          </button>
+        </div>
+      )}
       {outfits.map((item, index) => {
         const worn = Object.fromEntries(
           Object.entries(item.outfit).map(([slot, id]) => [slot, id ? clothingOf[id] : null]),
