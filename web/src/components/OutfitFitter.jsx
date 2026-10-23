@@ -5,7 +5,7 @@ import { DEFAULT_FIT, normalizeFit, normalizeLook, normalizeShoulderFit, support
 
 // 마네킹 모습 조절 (SCREEN-SPEC §6.2, §6.3, DESIGN §5.5, P-33).
 // 등록 화면과 옷 상세가 같이 씁니다. 미리보기 마네킹, 틀 고르기, 슬라이더, 끌기, 초기화를 보입니다.
-// (2026-10-23 바꿈, 확인 중) ChatGPT 프로젝트(moire-source-v15)의 FitControls·SleeveControls를 그대로 옮겼습니다:
+// (2026-10-23 바꿈, 확인 중) moire 프로젝트(moire-source-v15)의 FitControls·SleeveControls를 그대로 옮겼습니다:
 // 옷 전체와 내부 무늬의 좌우·상하 위치, 가로·세로 크기, 그리고 소매가 있는 옷의 "어깨 · 소매 맞추기". 틀 고르기(모양)는 우리 것을 남깁니다.
 //
 // item: 옷 한 벌 정보 { category, image_url, main_color, pattern_url, outfit_template, fit }
@@ -66,7 +66,7 @@ function OutfitFitter({ mannequin, item, templates, onChange, layout }) {
     emit({ ...look, shoulderFit: normalizeShoulderFit({ ...shoulder, [side]: { ...shoulder[side], [key]: value } }) })
   }
 
-  // 끌기 (ChatGPT FitControls): 화면 좌표를 몸 좌표로 바꿔 옮긴 만큼 더합니다. 내부 무늬는 틀 상자 크기에 대한 값으로 바꿉니다.
+  // 끌기 (FitControls): 화면 좌표를 몸 좌표로 바꿔 옮긴 만큼 더합니다. 내부 무늬는 틀 상자 크기에 대한 값으로 바꿉니다.
   function point(event) {
     const group = event.currentTarget.querySelector('[data-body]')
     const matrix = group?.getScreenCTM()
@@ -164,7 +164,7 @@ function OutfitFitter({ mannequin, item, templates, onChange, layout }) {
       </button>
     </div>
   )
-  // 어깨 · 소매 맞추기 (ChatGPT SleeveControls). 소매가 있는 틀만
+  // 어깨 · 소매 맞추기 (SleeveControls). 소매가 있는 틀만
   const sleevePanel = sleeves && (
     <fieldset className="fitter__sleeves">
       <legend>어깨 · 소매 맞추기</legend>

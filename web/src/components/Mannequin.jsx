@@ -7,7 +7,7 @@ import { SLOT_TEMPLATE, TEMPLATE_BOX, fittedBox, garmentMarkup, hasTemplate, nor
 // 마네킹과 기본 잠옷 (DESIGN §5.1, §5.2).
 // 성별마다 기본 그림 하나를 두고, 키와 체형은 비율로 늘이거나 줄입니다. 머리는 그대로 둡니다.
 // (2026-10-22 바꿈, P-38) 얼굴과 머리는 사람이 준 마네킹 그림에서 잘라 낸 PNG를 씁니다. (사람이 정함)
-// (2026-10-23 바꿈) 목 아래 몸과 잠옷은 ChatGPT 프로젝트의 코드(pajama.js)를 그대로 쓰고,
+// (2026-10-23 바꿈) 목 아래 몸과 잠옷은 moire 프로젝트의 코드(pajama.js)를 그대로 쓰고,
 // 얼굴 폭에 맞춰 1.25배 한 뒤 체형은 가로, 키는 세로 비율로 늘이거나 줄입니다. (사람이 정함)
 //
 // outfit: 칸마다 옷 한 벌 정보 { image_url, outfit_template, main_color, pattern_url, fit }. { top, bottom, dress, shoes, outer }
@@ -20,7 +20,7 @@ import { SLOT_TEMPLATE, TEMPLATE_BOX, fittedBox, garmentMarkup, hasTemplate, nor
 const HEIGHT_RATIO = { short: 0.92, medium: 1, tall: 1.08 }
 const BODY_RATIO = { slim: 0.85, medium: 1, chubby: 1.2 }
 
-const MALE_WIDTH = 1.07 // 남성은 같은 몸을 가로로 조금 넓힘 (ChatGPT 코드와 같음)
+const MALE_WIDTH = 1.07 // 남성은 같은 몸을 가로로 조금 넓힘 (moire 프로젝트와 같음)
 const DASHED = '#888780'
 const EMPTY_TEXT = '#5F5E5A'
 
@@ -39,8 +39,8 @@ const HEAD = {
 const HEAD_SCALE = 0.4
 const SOLE_TARGET_Y = 384 // 발바닥을 늘 같은 높이에 두어 키 차이가 위로 보이게 합니다.
 
-// ChatGPT 몸(pajama.js)의 좌표. x는 가운데(120)를 0으로 옮긴 값입니다.
-const BODY_SCALE = 1.25 // ChatGPT 좌표 1 = 마네킹 좌표 1.25 (얼굴 폭으로 맞춤)
+// 몸(pajama.js)의 좌표. x는 가운데(120)를 0으로 옮긴 값입니다.
+const BODY_SCALE = 1.25 // 몸 좌표 1 = 마네킹 좌표 1.25 (얼굴 폭으로 맞춤)
 const BODY_CENTER_X = 120
 const BODY_CHIN_Y = 105 // 얼굴 아래 끝. 머리 그림의 턱을 여기에 둡니다.
 const BODY_SOLE_Y = 324 // 발바닥
@@ -85,7 +85,7 @@ function usePattern(url) {
   }, [url])
   return url ? pattern : null
 }
-// 칸 하나의 옷 (2026-10-23 바꿈, 확인 중). 의상 틀과 대표 색이 있으면 ChatGPT 프로젝트의 방식(garments.js)으로
+// 칸 하나의 옷 (2026-10-23 바꿈, 확인 중). 의상 틀과 대표 색이 있으면 moire 프로젝트의 방식(garments.js)으로
 // 틀 그림 + 대표 색 + 무늬(틀 안에만) + 피팅값(옷 전체, 내부 무늬, 어깨·소매)을 그립니다. 좌표는 몸과 같습니다.
 // 틀이 없으면 2D 이미지를 칸 상자에 얹습니다.
 // item: 옷 한 벌 정보 { image_url, outfit_template, main_color, pattern_url, fit } 또는 2D 이미지 주소(문자열)
@@ -146,11 +146,11 @@ function EmptySlot({ box, label, labelY }) {
   )
 }
 
-// 마네킹 몸을 놓는 자리와 빈 칸 상자. 몸·잠옷·옷은 ChatGPT 좌표 그대로 bodyTransform 안에 그립니다.
+// 마네킹 몸을 놓는 자리와 빈 칸 상자. 몸·잠옷·옷은 몸 좌표 그대로 bodyTransform 안에 그립니다.
 function bodyGeometry(gender, height, body) {
   const w = BODY_RATIO[body] ?? 1
   const h = HEIGHT_RATIO[height] ?? 1
-  // ChatGPT 좌표 → 마네킹 좌표: x는 가로 배율, y는 세로 배율을 곱하고 발바닥을 SOLE_TARGET_Y에 맞춤
+  // 몸 좌표 → 마네킹 좌표: x는 가로 배율, y는 세로 배율을 곱하고 발바닥을 SOLE_TARGET_Y에 맞춤
   const scaleX = BODY_SCALE * w * (gender === 'male' ? MALE_WIDTH : 1)
   const scaleY = BODY_SCALE * h
   const originY = SOLE_TARGET_Y - BODY_SOLE_Y * scaleY
@@ -174,7 +174,7 @@ export function GarmentIllustration({ item, className, title }) {
   if (!item?.main_color || !hasTemplate(item.outfit_template)) {
     return <img className={className} src={item?.image_url} alt={title ?? '2D 이미지'} />
   }
-  // ChatGPT의 fittedBox: 피팅값까지 들어간 옷 상자에 여유를 둡니다.
+  // fittedBox: 피팅값까지 들어간 옷 상자에 여유를 둡니다.
   const [x, y, w, h] = fittedBox(item.outfit_template, normalizeLook(item.fit))
   const pad = Math.max(w, h) * 0.08
   return (
@@ -223,7 +223,7 @@ function Mannequin({
       {/* 발밑 그림자 */}
       <ellipse cx={0} cy={SOLE_TARGET_Y - 1} rx={76} ry={5} fill="#8c829d" opacity=".13" />
 
-      {/* 몸(목, 팔과 손, 다리, 맨발)과 옷. 옷은 ChatGPT 순서대로 하의(또는 잠옷 바지) → 상의(또는 잠옷 윗옷), 원피스 → 아우터 → 신발 */}
+      {/* 몸(목, 팔과 손, 다리, 맨발)과 옷. 옷은 이 순서대로 하의(또는 잠옷 바지) → 상의(또는 잠옷 윗옷), 원피스 → 아우터 → 신발 */}
       <g transform={bodyTransform} data-body="">
         <g dangerouslySetInnerHTML={{ __html: BODY_MARKUP }} />
         {hasDress ? (

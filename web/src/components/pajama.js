@@ -1,5 +1,5 @@
 // 마네킹의 몸과 기본 잠옷 (2026-10-23, 사람이 정함)
-// ChatGPT 프로젝트(moire-source-v15)의 캐릭터 코드를 그대로 가져왔습니다.
+// moire 프로젝트(moire-source-v15)의 캐릭터 코드를 그대로 가져왔습니다.
 // 좌표는 그 프로젝트의 viewBox `0 0 240 360` 그대로이고, Mannequin.jsx가 transform 하나로 위치와 크기를 맞춥니다.
 // - BODY_MARKUP: `public/avatars/body.svg`에서 그림자와 머리카락을 뺀 몸(목, 팔과 손, 다리, 맨발, 속옷).
 //   얼굴 그림(PNG)과 이어지도록 피부색만 바꿨습니다.

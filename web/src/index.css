@@ -1864,7 +1864,7 @@ button {
   color: var(--reg-muted, #8a7466);
 }
 
-/* 어깨 · 소매 맞추기 (2026-10-23, ChatGPT 프로젝트 SleeveControls) */
+/* 어깨 · 소매 맞추기 (2026-10-23, moire 프로젝트 SleeveControls) */
 .fitter__sleeves {
   display: flex;
   flex-direction: column;

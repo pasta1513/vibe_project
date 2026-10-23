@@ -1,5 +1,5 @@
 // 캐릭터 의상 틀 그림과 피팅 계산 (2026-10-23, 사람이 정함 — 확인 중)
-// ChatGPT 프로젝트(moire-source-v15)의 코드를 그대로 가져왔습니다. 좌표는 몸(pajama.js)과 같은 viewBox `0 0 240 360`이라,
+// moire 프로젝트(moire-source-v15)의 코드를 그대로 가져왔습니다. 좌표는 몸(pajama.js)과 같은 viewBox `0 0 240 360`이라,
 // Mannequin.jsx가 몸과 같은 transform 안에 그리면 위치가 저절로 맞습니다.
 // - TEMPLATE_SVG, TEMPLATE_BOX: `public/garments/*.svg`와 `src/data/templates.json`의 상자. 우리 틀 9개에 하나씩 대응
 //   (반바지는 그쪽에 없어 청바지 그림을 무릎 위에서 자름)
@@ -10,7 +10,7 @@
 
 const svgInner = (svg) => svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
 
-// 우리 틀 코드 → ChatGPT 그림 (사람이 정함)
+// 우리 틀 코드 → 옷 그림 (사람이 정함)
 const TEMPLATE_SVG = {
   top_short: svgInner(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 360"><path d="M98 109 L84 115 L62 149 L80 160 L90 145 L88 193 Q120 199 152 193 L150 145 L160 160 L178 149 L156 115 L142 109 Q120 124 98 109Z" fill="currentColor" stroke="#33352b" stroke-opacity=".14" stroke-width="1.2" stroke-linejoin="round"/><path d="M101 110 Q120 131 139 110 M91 188 Q120 193 149 188" fill="none" stroke="#303128" stroke-opacity=".18" stroke-width="1.2"/></svg>`),
   top_long: svgInner(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 360"><path d="M99 110 L83 116 Q78 120 75 132 L61 185 L78 190 L92 148 L89 196 Q120 200 151 196 L148 148 L162 190 L179 185 L165 132 Q162 120 157 116 L141 110 Q120 131 99 110Z" fill="currentColor" stroke="#33352b" stroke-opacity=".14" stroke-width="1.2" stroke-linejoin="round"/><path d="M99 110 Q120 131 141 110 M64 179 L79 184 M161 184 L176 179 M91 191 Q120 195 149 191" fill="none" stroke="#303128" stroke-opacity=".18" stroke-width="1.2"/></svg>`),

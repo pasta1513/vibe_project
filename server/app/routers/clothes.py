@@ -21,7 +21,7 @@ KIND_NAMES = {"category": "구분", "color": "색", "type": "종류"}
 
 
 class BoxFitIn(BaseModel):
-    """옷 전체나 내부 무늬의 위치와 크기 (2026-10-23 바꿈, 확인 중). ChatGPT 프로젝트 fit.ts와 같은 범위입니다.
+    """옷 전체나 내부 무늬의 위치와 크기 (2026-10-23 바꿈, 확인 중). moire 프로젝트 fit.ts와 같은 범위입니다.
     위치는 몸 좌표(옷 전체) 또는 틀 상자에 대한 % (내부 무늬), 크기는 배율."""
     model_config = ConfigDict(extra="forbid")
 
@@ -40,7 +40,7 @@ class SleeveIn(BaseModel):
 
 
 class ShoulderFitIn(BaseModel):
-    """어깨·소매 맞추기 (ChatGPT 프로젝트 sleeve-fit.ts와 같은 범위)."""
+    """어깨·소매 맞추기 (moire 프로젝트 sleeve-fit.ts와 같은 범위)."""
     model_config = ConfigDict(extra="forbid")
 
     shoulder: float = Field(1, ge=0.8, le=1.2)
