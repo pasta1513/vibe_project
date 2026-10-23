@@ -7,6 +7,7 @@ import AlertDialog from './AlertDialog.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import Mannequin from './Mannequin.jsx'
+import SelectBox from './SelectBox.jsx'
 import WordAdder, { isBlankName } from './WordAdder.jsx'
 
 // 설정 (SCREEN-SPEC §9). 시안 style/html 11의 틀(큰 패널과 왼쪽 메뉴)을 옮기고,
@@ -454,22 +455,19 @@ function SettingsScreen({ mannequin, initialPage, onMannequinSaved, showToast })
               저장한 지역 <b>{settings.home_region ?? '없음'}</b>
             </p>
             <div className="st-region">
-              <label className="st-search">
+              <div className="st-search">
                 <svg width="20" height="22" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 22s-7-7-7-12a7 7 0 0 1 14 0c0 5-7 12-7 12z" fill="#f0574b" />
                   <circle cx="12" cy="10" r="2.6" fill="#fff" />
                 </svg>
-                <select aria-label="내 지역 고르기" value={region} onChange={(event) => setRegion(event.target.value)}>
-                  <option value="" disabled>
-                    지역 고르기
-                  </option>
-                  {settings.regions.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <SelectBox
+                  ariaLabel="내 지역 고르기"
+                  placeholder="지역 고르기"
+                  value={region}
+                  onChange={setRegion}
+                  options={settings.regions.map((name) => ({ value: name, label: name }))}
+                />
+              </div>
               <button
                 type="button"
                 className="st-save"

@@ -9,6 +9,7 @@
 """
 
 import io
+import re
 from collections import deque
 from pathlib import Path
 from xml.etree import ElementTree
@@ -140,50 +141,35 @@ def _flood(close: bytes, seeds: list[int], width: int, height: int) -> bytearray
     return removed
 
 
-# 무늬 그림 (D-016, P-32). 옷 부분을 작게 줄여 vtracer(MIT)로 색 영역의 윤곽을 따 path로 만듭니다.
-PATTERN_SIDE = 256
-# 처음 값(A)으로 만들고, 파일이 너무 크면 단순한 값(B)으로 한 번 더 만듭니다. (제안, P-32에서 지금 사진으로 맞춤)
-PATTERN_OPTIONS = [
-    dict(mode="spline", color_precision=6, filter_speckle=4, layer_difference=16),
-    dict(mode="polygon", color_precision=6, filter_speckle=8, layer_difference=32),
-]
-MAX_PATTERN_BYTES = 200 * 1024
-_PATTERN_ATTRS = {"d", "fill", "transform"}
+# 무늬 그림 (D-016, D-020 제안, P-39). 무늬는 화면이 2D 이미지로 만들고(무늬 표현, 벡터 색상 수), 서버는 검사하고 저장만 합니다.
+# P-32의 vtracer 무늬 만들기는 더 쓰지 않습니다. 그때 만든 옷의 무늬 파일은 그대로 둡니다.
+MAX_PATTERN_BYTES = 400 * 1024
+_PATTERN_ATTRS = {"d", "fill"}
+# 화면이 만드는 path는 직사각형뿐이라 M, h, v, Z와 숫자만 씁니다.
+_PATH_D = re.compile(r"^[0-9MhvZ.\s-]+$")
+_FILL = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
-def make_pattern(image_path: Path | None, pattern_path: Path, remove: bool = True) -> bool:
-    """2D 이미지의 옷 부분으로 무늬 그림(SVG)을 만들어 저장합니다. 만들지 못하면 False.
+def valid_pattern(svg: str) -> bool:
+    """화면이 보낸 무늬 그림이 정해진 모양인지 봅니다 (P-39).
 
-    투명한 칸은 vtracer가 건너뛰어서 배경과 옷 안쪽의 빈 곳은 채워지지 않습니다.
-    사진(<image>)이나 Base64를 넣지 않고, path 말고 다른 것이 있으면 버립니다.
+    맨 위가 크기(width, height)가 있는 svg이고, 그 안에 d와 fill만 가진 path가 1개 이상 있어야 합니다.
+    d는 직선 명령과 숫자만, fill은 #RRGGBB만 받습니다. 사진(<image>), 글자, 스크립트, 바깥 주소는 들어갈 수 없습니다.
     """
-    import vtracer
-
-    try:
-        with Image.open(image_path) as source:
-            image = ImageOps.exif_transpose(source).convert("RGBA")
-        image.thumbnail((MAX_SIDE, MAX_SIDE))
-        if remove:  # P-30 전에 만든 2D 이미지는 배경이 남아 있음. 사용자가 고친 이미지는 그대로 (P-34)
-            remove_background(image)
-        box = image.getchannel("A").getbbox()
-        if box is None:
-            return False
-        image = image.crop(box)
-        image.thumbnail((PATTERN_SIDE, PATTERN_SIDE))
-        buffer = io.BytesIO()
-        image.save(buffer, "PNG")
-    except (OSError, ValueError, TypeError, Image.DecompressionBombError):
+    if not isinstance(svg, str) or len(svg.encode("utf-8")) > MAX_PATTERN_BYTES:
         return False
-    for options in PATTERN_OPTIONS:
-        try:
-            svg = vtracer.convert_raw_image_to_svg(buffer.getvalue(), img_format="png", colormode="color",
-                                                   hierarchical="stacked", path_precision=2, **options)
-        except Exception:  # vtracer 안쪽의 오류는 종류를 알 수 없어 모두 "못 만듦"으로 봅니다.
+    # DOCTYPE, ENTITY 같은 선언은 받지 않습니다 (XML 확장 공격 막기).
+    if "<!" in svg:
+        return False
+    if not _only_paths(svg):
+        return False
+    root = ElementTree.fromstring(svg)
+    try:
+        if not (float(root.get("width")) > 0 and float(root.get("height")) > 0):
             return False
-        if len(svg.encode("utf-8")) <= MAX_PATTERN_BYTES and _only_paths(svg):
-            pattern_path.write_text(svg, encoding="utf-8")
-            return True
-    return False
+    except ValueError:
+        return False
+    return all(_PATH_D.match(child.get("d", "")) and _FILL.match(child.get("fill", "")) for child in root)
 
 
 def working_size(photo_path: Path) -> tuple[int, int]:

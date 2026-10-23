@@ -51,24 +51,34 @@
   font-weight: 500;
 }
 
-/* 달 고르기와 정렬 (시안 .sel) */
+/* 달 고르기와 정렬 (시안 .sel). 앱 안에서 그리는 고르기 칸(SelectBox)에 시안 모양을 입힘 (2026-10-23) */
 .dy-sel {
   position: absolute;
   top: 16px;
   height: 41px;
-  min-height: 0;
-  padding: 0 40px 0 22px;
-  border-radius: 21px;
-  border: 1px solid var(--color-border);
-  background: #fefaf5 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 5l4 4 4-4' fill='none' stroke='%233b2a22' stroke-width='2'/%3E%3C/svg%3E") right 18px center / 14px no-repeat;
-  font-size: 16px;
-  color: var(--color-heading);
-  appearance: none;
-  -webkit-appearance: none;
 }
 
-.dy-sel:hover {
-  background-color: #fff;
+.dy-sel .selbox__btn {
+  height: 41px;
+  padding: 0 18px 0 22px;
+  border-radius: 21px;
+  border: 1px solid var(--color-border);
+  background: #fefaf5;
+  font-size: 16px;
+}
+
+.dy-sel .selbox__btn:hover {
+  background: #fff;
+}
+
+.dy-sel .selbox__chev {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+
+.dy-sel .selbox__opt {
+  font-size: 15px;
 }
 
 .dy-main__body {

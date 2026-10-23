@@ -382,7 +382,14 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
       style={{ '--src': `url(${background})` }}
     >
       {!scoreStage && (
-        <ClosetPanel clothes={clothes} outfit={outfit} onWear={wear} tab={closetTab} onTab={setClosetTab} />
+        <ClosetPanel
+          clothes={clothes}
+          outfit={outfit}
+          onWear={wear}
+          tab={closetTab}
+          onTab={setClosetTab}
+          mannequin={mannequin}
+        />
       )}
 
       {!scoreStage && (
@@ -465,6 +472,7 @@ function DressUpScreen({ mannequin, regions, onNoClothes, onConfirmed, initial, 
             outfit={outfit}
             clothingOf={clothingOf}
             tagsOf={(id) => clothingTags[id] ?? []}
+            mannequin={mannequin}
           />
           <ResultPanel result={result} mascotSrc={scoreBg} />
           <ScoreActions

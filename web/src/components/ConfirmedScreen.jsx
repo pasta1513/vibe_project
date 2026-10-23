@@ -8,7 +8,7 @@ import '../styles/confirmed.css'
 import AlertDialog from './AlertDialog.jsx'
 import { WeatherIcon } from './DressUpPanels.jsx'
 import ErrorLine from './ErrorLine.jsx'
-import Mannequin from './Mannequin.jsx'
+import Mannequin, { GarmentIllustration } from './Mannequin.jsx'
 
 // 확정한 뒤 화면 (SCREEN-SPEC §5.6). 시안 style/html의 13_3(맑음), 13_4(비), 13_5(눈)를 옮겼습니다. (P-38)
 // 흐림은 시안이 없어 맑음 배경을 씁니다. 배경은 시안 PNG에서 캐릭터 자리를 메운 그림이고, 그 자리에 확정한 옷을 입은 마네킹.
@@ -146,7 +146,8 @@ function ConfirmedScreen({ confirmed, mannequin, onGoDiary, onGoDressUp, showToa
             return (
               <li key={slot} className="cf-item">
                 <span className="cf-item__img">
-                  <img src={item.image_url} alt="" />
+                  {/* 옷만 그린 2D 일러스트 (사람이 정함, 2026-10-23) */}
+                  <GarmentIllustration className="garment-illust" item={item} mannequin={mannequin} title="" />
                 </span>
                 <span className="cf-item__nm">{name}</span>
                 <span className="cf-item__tg">

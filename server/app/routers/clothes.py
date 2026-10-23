@@ -20,18 +20,42 @@ OPTIONAL_KINDS = ("material", "season", "pattern")
 KIND_NAMES = {"category": "구분", "color": "색", "type": "종류"}
 
 
-class FitIn(BaseModel):
-    """피팅값 (DATA-MODEL §3, P-33). 위치는 틀 상자 크기에 대한 비율, 기울기는 도. 범위 밖이면 입력 오류입니다."""
+class BoxFitIn(BaseModel):
+    """옷 전체나 내부 무늬의 위치와 크기 (2026-10-23 바꿈, 확인 중). moire 프로젝트 fit.ts와 같은 범위입니다.
+    위치는 몸 좌표(옷 전체) 또는 틀 상자에 대한 % (내부 무늬), 크기는 배율."""
     model_config = ConfigDict(extra="forbid")
 
-    x: float = Field(0, ge=-0.2, le=0.2)
-    y: float = Field(0, ge=-0.2, le=0.2)
-    sx: float = Field(1, ge=0.8, le=1.2)
-    sy: float = Field(1, ge=0.8, le=1.2)
-    rotate: float = Field(0, ge=-10, le=10)
-    px: float = Field(0, ge=-0.5, le=0.5)
-    py: float = Field(0, ge=-0.5, le=0.5)
-    ps: float = Field(1, ge=0.5, le=2.0)
+    x: float = Field(0, ge=-100, le=100)
+    y: float = Field(0, ge=-100, le=100)
+    scaleX: float = Field(1, ge=0.5, le=2)
+    scaleY: float = Field(1, ge=0.5, le=2)
+
+
+class SleeveIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    angle: float = Field(0, ge=-25, le=25)
+    length: float = Field(1, ge=0.65, le=1.35)
+    width: float = Field(1, ge=0.65, le=1.4)
+
+
+class ShoulderFitIn(BaseModel):
+    """어깨·소매 맞추기 (moire 프로젝트 sleeve-fit.ts와 같은 범위)."""
+    model_config = ConfigDict(extra="forbid")
+
+    shoulder: float = Field(1, ge=0.8, le=1.2)
+    left: SleeveIn = SleeveIn()
+    right: SleeveIn = SleeveIn()
+
+
+class FitIn(BaseModel):
+    """피팅값 (DATA-MODEL §3, P-33, 2026-10-23 바꿈 — 확인 중). 범위 밖이면 입력 오류입니다.
+    옛 모양(x·y·sx·sy·rotate·px·py·ps)은 받지 않습니다. 이미 저장된 옛 값은 화면이 기본값으로 봅니다."""
+    model_config = ConfigDict(extra="forbid")
+
+    fit: BoxFitIn = BoxFitIn()
+    patternFit: BoxFitIn = BoxFitIn()
+    shoulderFit: ShoulderFitIn | None = None
 
 
 class ClothingIn(BaseModel):
@@ -41,6 +65,9 @@ class ClothingIn(BaseModel):
     # 등록 창에서 모습을 조절했을 때만 보냅니다. 없으면 종류 단어로 틀을 고르고 피팅값은 기본값입니다. (P-33)
     outfit_template: str | None = None
     fit: FitIn | None = None
+    # 무늬 표현과 벡터 색상 수 (P-39). 'solid'(대표 색상만)이면 무늬 파일을 쓰지 않습니다.
+    pattern_mode: Literal["auto", "detail", "stripes", "solid"] | None = None
+    pattern_colors: int | None = Field(None, ge=3, le=10)
 
 
 class FitSaveIn(BaseModel):
@@ -91,6 +118,8 @@ def clothing_detail(session: Session, clothing: Clothing) -> dict:
         **clothing_summary(clothing),
         "photo_url": photos.url_for(clothing.photo_path),
         "keywords": grouped,
+        "pattern_mode": clothing.pattern_mode,
+        "pattern_colors": clothing.pattern_colors,
     }
 
 
@@ -147,13 +176,18 @@ def register_clothing(body: ClothingIn, session: Session = Depends(get_session))
     if not {"original", "image"} <= set(files):
         raise ApiError("upload_missing", "올린 사진이 없어졌어요. 사진을 다시 올려 주세요.")
 
+    # 대표 색상만 쓰면 남아 있는 임시 무늬 파일은 버립니다. (P-39)
+    if body.pattern_mode == "solid" and "pattern" in files:
+        files.pop("pattern").unlink(missing_ok=True)
+
     type_names = [k.name for k in keywords if k.kind == "type"]
     clothing = Clothing(category=body.category, photo_path=files["original"].name,
                         image_path=files["image"].name,
                         outfit_template=body.outfit_template or outfits.pick_template(body.category, type_names),
                         fit=_fit_text(body.fit),
                         main_color=imaging.main_color(files["image"]),
-                        pattern_path=files["pattern"].name if "pattern" in files else None)
+                        pattern_path=files["pattern"].name if "pattern" in files else None,
+                        pattern_mode=body.pattern_mode, pattern_colors=body.pattern_colors)
     session.add(clothing)
     session.flush()
     for keyword in keywords:
@@ -179,7 +213,7 @@ def _fit_text(fit: FitIn | None) -> str | None:
     """기본값과 같으면 저장하지 않습니다."""
     if fit is None or fit == FitIn():
         return None
-    return json.dumps(fit.model_dump())
+    return json.dumps(fit.model_dump(exclude_none=True))
 
 
 # 마네킹 모습 조절하고 저장 (옷 상세, P-33)
@@ -198,6 +232,53 @@ def save_fit(clothing_id: int, body: FitSaveIn, session: Session = Depends(get_s
     session.commit()
     session.refresh(clothing)
     return ok(clothing_summary(clothing))
+
+
+class PatternSaveIn(BaseModel):
+    """옷 상세의 무늬 바꾸기 (P-39). 대표 색상만('solid')이면 svg는 보내지 않습니다."""
+    model_config = ConfigDict(extra="forbid")
+
+    svg: str | None = Field(None, max_length=imaging.MAX_PATTERN_BYTES)
+    pattern_mode: Literal["auto", "detail", "stripes", "solid"]
+    pattern_colors: int = Field(ge=3, le=10)
+
+
+# 무늬 바꾸고 저장 (옷 상세, P-39, D-020 제안): 화면이 만든 무늬 그림을 새 파일로 저장하고 이전 무늬 파일은 지웁니다.
+# 같은 이름으로 덮으면 브라우저가 이전 무늬를 다시 쓰므로 늘 새 이름을 씁니다.
+@router.put("/{clothing_id}/pattern")
+def save_pattern(clothing_id: int, body: PatternSaveIn, session: Session = Depends(get_session)):
+    clothing = session.get(Clothing, clothing_id)
+    if clothing is None:
+        raise ApiError("clothing_not_found", "그 옷을 찾지 못했어요.", 404)
+    if clothing.is_deleted:
+        raise ApiError("already_deleted", "이미 지운 옷이에요.")
+    solid = body.pattern_mode == "solid"
+    if not solid and (body.svg is None or not imaging.valid_pattern(body.svg)):
+        raise ApiError("bad_pattern", "무늬가 너무 복잡해서 저장하지 못했어요. 색 수를 줄이거나 다른 무늬 표현을 골라 주세요.")
+
+    old = clothing.pattern_path
+    new_path = None
+    if not solid:
+        photos.ensure_dirs()
+        new_path = photos.PHOTO_DIR / f"{photos.new_upload_id()}-pattern.svg"
+        new_path.write_text(body.svg, encoding="utf-8")
+    clothing.pattern_path = new_path.name if new_path else None
+    clothing.pattern_mode = body.pattern_mode
+    clothing.pattern_colors = body.pattern_colors
+    session.add(clothing)
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        if new_path:
+            new_path.unlink(missing_ok=True)
+        raise
+    # 저장을 마친 뒤에 이전 무늬 파일을 지웁니다. 지우지 못해도 옷 정보는 이미 새 무늬를 가리킵니다.
+    if old:
+        (photos.PHOTO_DIR / old).unlink(missing_ok=True)
+    session.refresh(clothing)
+    return ok({**clothing_summary(clothing), "pattern_mode": clothing.pattern_mode,
+               "pattern_colors": clothing.pattern_colors})
 
 
 # 선택 키워드 고치고 저장

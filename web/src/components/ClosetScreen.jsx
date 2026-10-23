@@ -5,6 +5,7 @@ import { CATEGORIES, subjectParticle } from '../labels.js'
 import ClothingDetailDialog from './ClothingDetailDialog.jsx'
 import ClothingRegisterDialog from './ClothingRegisterDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
+import { GarmentIllustration } from './Mannequin.jsx'
 
 // 옷장 (옷 관리, SCREEN-SPEC §6.1). 시안 style/html의 "포근한 옷장 앱 상세 화면"을 그대로 옮겼습니다:
 // 시안 PNG를 배경으로, 왼쪽에 구분 목록(전체와 구분마다 개수), 오른쪽에 옷 카드. 첫 카드는 07_2의 "+ 옷 추가하기". (P-38)
@@ -145,7 +146,8 @@ function ClosetScreen({ mannequin, outfitTable, showToast }) {
                     onClick={() => setDetailId(item.id)}
                     aria-label={`${LABEL[item.category]} ${(tags[item.id] ?? []).join(' ')}`}
                   >
-                    <img src={item.image_url} alt="" />
+                    {/* 옷만 그린 2D 일러스트 (사람이 정함, 2026-10-23) */}
+                    <GarmentIllustration className="cl__card-pic" item={item} mannequin={mannequin} title="" />
                     <span className="cl__tags">
                       {(tags[item.id] ?? []).slice(0, 2).map((t) => (
                         <b key={t}>#{t}</b>

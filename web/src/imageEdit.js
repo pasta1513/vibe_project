@@ -61,7 +61,7 @@ function flood(image, mask, seeds, color, tolerance) {
 }
 
 // 원래 사진에서 자동 마스크를 새로 계산합니다. 허용 오차를 바꿀 때마다 원래 사진 기준으로 다시 부릅니다.
-// picks: 사용자가 "배경색 고르기"로 누른 칸 [{ index, color }]. 마지막으로 고른 색을 가장자리의 기준 색으로 쓰고,
+// picks: 사용자가 "자동 배경 제거"(배경색 고르기)로 누른 칸 [{ index, color }]. 마지막으로 고른 색을 가장자리의 기준 색으로 쓰고,
 //        누른 칸에서도 그 칸의 색으로 지웁니다 (팔과 몸 사이처럼 가장자리와 떨어진 배경).
 export function autoMask(original, tolerance, picks = []) {
   const { width, height } = original

@@ -16,14 +16,26 @@ import ErrorLine from './ErrorLine.jsx'
 // 서버가 자동으로 지운 2D 이미지를 처음 상태로 두고, 원래 사진 위에서 마스크를 고칩니다.
 // upload: { upload_id, photo_url, image_url }
 // onApplied({ image_url, main_color, pattern_url }): [적용]이 끝나면 부름. onCancel: [취소]
+// (2026-10-23 바꿈) 등록 화면 [배경 고치기] 탭의 시안 배치: 왼쪽 그림, 오른쪽 도구 버튼 세로, 아래 슬라이더와
+// [원본에서 배경 다시 제거](= 초기화). 기능은 같고 이름은 시안을 따릅니다. (사람이 정함)
 
-const HINT = '배경이 복잡하거나 옷과 배경색이 비슷하면 브러시로 직접 고쳐 주세요.'
 const MAX_UNDO = 20
+// 시안의 도구 버튼 이름과 아이콘. "자동 배경 제거"는 지금의 배경색 고르기 도구(누른 색과 비슷한 배경을 지움)입니다 (사람이 정함, 2026-10-23).
 const TOOLS = [
-  ['pick', '배경색 고르기'],
-  ['erase', '지우기'],
-  ['restore', '복원'],
+  ['pick', '자동 배경 제거', 'M4 20 14 10M13 4v3M18 9h-3M16 6l-2 2M18 14v3M16.5 15.5h3M7 4v3M5.5 5.5h3'],
+  ['erase', '브러시 지우기', 'M4 20h4L19 9l-4-4L4 16zM13 7l4 4'],
+  ['restore', '복원하기', 'M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3'],
 ]
+const UNDO_ICON = 'M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5'
+const ORIGINAL_ICON = 'M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM12 4v16'
+
+function ToolIcon({ d }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  )
+}
 
 function loadImage(url) {
   return new Promise((resolve, reject) => {
@@ -124,6 +136,7 @@ function BackgroundEditor({ upload, onApplied, onCancel }) {
 
   function reset() {
     const w = work.current
+    if (!w) return
     remember()
     w.auto = w.serverMask
     w.brush = new Uint8Array(w.width * w.height)
@@ -211,67 +224,25 @@ function BackgroundEditor({ upload, onApplied, onCancel }) {
   const w = work.current
   const nothingLeft = w ? keptCount(finalMask(w.auto, w.brush)) === 0 : false
 
-  return (
-    <div className="bg-editor">
-      <p className="sub-text">{HINT}</p>
-      <div className="photo-box bg-editor__stage">
-        <canvas
-          ref={canvasRef}
-          className={`bg-editor__canvas bg-editor__canvas--${tool}`}
-          aria-label="배경 고치기"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          onPointerLeave={() => ringRef.current && (ringRef.current.style.display = 'none')}
-        />
-        <div ref={ringRef} className="bg-editor__ring" aria-hidden="true" />
-      </div>
-
-      <div className="bg-editor__tools" role="radiogroup" aria-label="도구">
-        {TOOLS.map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={tool === value}
-            className={`btn bg-editor__tool${tool === value ? ' bg-editor__tool--on' : ''}`}
-            onClick={() => setTool(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <label className="fitter__row">
-        <span>브러시 굵기</span>
-        <input type="range" min={4} max={60} step={1} value={size} onChange={(e) => setSize(Number(e.target.value))} />
-        <span className="fitter__value">{size}px</span>
-      </label>
-      <label className="fitter__row">
-        <span>허용 오차</span>
-        <input
-          type="range"
-          min={0}
-          max={120}
-          step={1}
-          value={tolerance}
-          onPointerDown={remember}
-          onKeyDown={remember}
-          onChange={(e) => changeTolerance(Number(e.target.value))}
-        />
-        <span className="fitter__value">{tolerance}</span>
-      </label>
-
-      <div className="bg-editor__row">
-        <Button disabled={undoCount === 0} onClick={undo}>
-          실행 취소
-        </Button>
-        <Button onClick={reset}>초기화</Button>
-        <Button onClick={() => setShowOriginal(!showOriginal)}>{showOriginal ? '고친 모습 보기' : '원래 사진 보기'}</Button>
-      </div>
+  const stage = (
+    <div className="photo-box bg-editor__stage">
+      <canvas
+        ref={canvasRef}
+        className={`bg-editor__canvas bg-editor__canvas--${tool}`}
+        aria-label="배경 고치기"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onPointerLeave={() => ringRef.current && (ringRef.current.style.display = 'none')}
+      />
+      <div ref={ringRef} className="bg-editor__ring" aria-hidden="true" />
+    </div>
+  )
+  const footer = (
+    <>
       {nothingLeft && (
-        <p className="sub-text">옷 부분이 남아 있지 않아요. [초기화]나 복원 브러시로 되살려 주세요.</p>
+        <p className="sub-text">옷 부분이 남아 있지 않아요. [원본에서 배경 다시 제거]나 [복원하기]로 되살려 주세요.</p>
       )}
       {applyError && <ErrorLine message={applyError} onRetry={applying ? undefined : apply} />}
       <div className="bg-editor__row">
@@ -280,6 +251,78 @@ function BackgroundEditor({ upload, onApplied, onCancel }) {
           {applying ? '적용하는 중…' : '적용'}
         </Button>
       </div>
+    </>
+  )
+
+  const pct = (v, min, max) => ({ '--p': `${((v - min) / (max - min)) * 100}%` })
+  return (
+    <div className="bg-editor bg-editor--panel">
+      <div className="bg-editor__main">
+        {stage}
+        <div className="bg-editor__side">
+          <div role="radiogroup" aria-label="도구" className="bg-editor__group">
+            {TOOLS.map(([value, label, icon]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={tool === value}
+                className={`bg-editor__sbtn${tool === value ? ' bg-editor__sbtn--on' : ''}`}
+                onClick={() => setTool(value)}
+              >
+                <ToolIcon d={icon} />
+                {label}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="bg-editor__sbtn" disabled={undoCount === 0} onClick={undo}>
+            <ToolIcon d={UNDO_ICON} />
+            되돌리기
+          </button>
+          <button
+            type="button"
+            className={`bg-editor__sbtn${showOriginal ? ' bg-editor__sbtn--on' : ''}`}
+            aria-pressed={showOriginal}
+            onClick={() => setShowOriginal(!showOriginal)}
+          >
+            <ToolIcon d={ORIGINAL_ICON} />
+            원본 보기
+          </button>
+        </div>
+      </div>
+      <label className="fitter__row bg-editor__range">
+        <span>브러시 크기</span>
+        <input
+          type="range"
+          min={4}
+          max={60}
+          step={1}
+          value={size}
+          style={pct(size, 4, 60)}
+          onChange={(e) => setSize(Number(e.target.value))}
+        />
+        <span className="fitter__value">{size}</span>
+      </label>
+      <label className="fitter__row bg-editor__range">
+        <span>제거 강도</span>
+        <input
+          type="range"
+          min={0}
+          max={120}
+          step={1}
+          value={tolerance}
+          style={pct(tolerance, 0, 120)}
+          onPointerDown={remember}
+          onKeyDown={remember}
+          onChange={(e) => changeTolerance(Number(e.target.value))}
+        />
+        <span className="fitter__value">{tolerance}</span>
+      </label>
+      <button type="button" className="bg-editor__redo" onClick={reset}>
+        원본에서 배경 다시 제거
+      </button>
+      <p className="bg-editor__note">다시 실행하면 수동 편집은 초기화됩니다.</p>
+      {footer}
     </div>
   )
 }

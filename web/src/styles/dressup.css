@@ -187,16 +187,34 @@
   margin-left: 8px;
 }
 
-.du-side__city select {
+.du-side__city .selbox {
+  flex: none;
+}
+
+/* 지역 고르기: 큰 굵은 지역 이름 그대로 (앱 안에서 그리는 고르기 칸, 2026-10-23) */
+.du-side__city .selbox__btn {
   min-height: 0;
   padding: 0;
   border: none;
   background: none;
   font-size: 26px;
   font-weight: 800;
-  color: var(--color-heading);
-  appearance: none;
-  -webkit-appearance: none;
+}
+
+.du-side__city .selbox__chev {
+  display: none;
+}
+
+.du-side__city .selbox__list {
+  right: auto;
+  min-width: 140px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.du-side__city .selbox__opt {
+  font-size: 15px;
+  font-weight: 400;
 }
 
 .du-side__city svg {

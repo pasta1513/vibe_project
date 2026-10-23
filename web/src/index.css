@@ -560,7 +560,8 @@ button {
   background: #fdf1ec;
 }
 
-.cl__card img {
+.cl__card img,
+.cl__card-pic {
   position: absolute;
   left: 8px;
   top: 8px;
@@ -647,6 +648,25 @@ button {
   object-fit: contain;
 }
 
+/* 옷만 그린 2D 일러스트 (GarmentIllustration): 담긴 칸을 채움 */
+.garment-illust {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pt__illust {
+  padding: 8px 8px 26px;
+}
+
+.detail__illust {
+  width: 100%;
+  height: 100%;
+  padding: 24px 24px 40px;
+  object-fit: contain;
+}
+
 .detail__mannequin {
   width: 100%;
   height: 100%;
@@ -685,6 +705,32 @@ button {
   background: var(--color-accent);
   color: #fff;
 }
+
+/* 무늬 바꾸기 (P-39): 오른쪽 정보 칸을 덮음 */
+.detail__pattern {
+  position: absolute;
+  left: 510px;
+  top: 18px;
+  width: 420px;
+  height: 584px;
+  z-index: 2;
+  padding: 4px 8px 8px;
+  background: #fbf6f0;
+  overflow-y: auto;
+  /* 무늬 칸은 등록 창의 초록을 씁니다 */
+  --reg-green: #56653f;
+}
+
+.detail__pattern-t {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.detail__pattern .pt__box {
+  height: 170px;
+}
+
 
 /* 보기 토글 (시안 .toggle) */
 .detail__toggle {
@@ -1111,7 +1157,7 @@ button {
 .reg__drop {
   left: 36px;
   top: 135px;
-  width: 265px;
+  width: 240px;
   height: 233px;
   display: flex;
   flex-direction: column;
@@ -1175,8 +1221,17 @@ button {
   background: #f7f1ea;
 }
 
+.reg__wbtn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
 .reg__example {
-  left: 312px;
+  left: 290px;
   top: 134px;
   width: 321px;
   height: 233px;
@@ -1208,12 +1263,12 @@ button {
   font-size: 13px;
 }
 
-/* 04 · 키워드 */
+/* 02 · 키워드 (칸 안에서 스크롤) */
 .reg__keywords {
   left: 35px;
   top: 434px;
-  width: 604px;
-  height: 360px;
+  width: 580px;
+  height: 350px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1269,15 +1324,235 @@ button {
   box-shadow: 0 4px 10px rgba(238, 106, 90, 0.25);
 }
 
-/* 02 · 2D 이미지 (투명한 곳은 체크무늬) */
-.reg__image {
-  left: 683px;
-  top: 70px;
-  width: 405px;
-  height: 251px;
+/* 시안 .seg .opt: 알약 모양, 고르면 시안의 초록 */
+.fitter__seg-opt {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 18px;
+  border: 1px solid #e6ddd2;
+  background: #fff;
+  font-size: 13px;
+  color: var(--color-heading);
+}
+
+.fitter__seg-opt:hover:not(.fitter__seg-opt--on):not(:disabled) {
+  background: #f7f1ea;
+}
+
+.fitter__seg-opt--on {
+  background: var(--reg-green, #56653f);
+  border-color: var(--reg-green, #56653f);
+  color: #fff;
+}
+
+/* 오른쪽 탭 세 개 (2026-10-23, 사람이 준 시안). 고른 탭은 연한 코랄 바탕, 코랄 글자와 밑줄 */
+.reg__tabs {
+  left: 638px;
+  top: 17px;
+  width: 473px;
+  height: 56px;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #f0e8de;
+  border-radius: 12px;
+  background: #fdfaf7;
+}
+
+.reg__tab {
+  position: relative;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  border: 1px solid #efe7dd;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  color: var(--color-heading);
+  transition: background 0.15s;
+}
+
+.reg__tab svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reg__tab:hover:not(:disabled):not(.reg__tab--on) {
+  background: #f7f1ea;
+}
+
+.reg__tab--on {
+  border-color: #fbd9d2;
+  background: #fde9e5;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.reg__tab--on::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-accent);
+}
+
+.reg__panel {
+  left: 656px;
+  top: 95px;
+  width: 437px;
+  height: 690px;
+  overflow-y: auto;
+}
+
+.reg__panel [hidden] {
+  display: none !important;
+}
+
+.reg__panel-t {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.reg__panel-d {
+  margin: 6px 0 14px;
+  font-size: 13px;
+  color: var(--reg-muted);
+}
+
+.reg__panel-empty {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/* 배경 고치기 탭: 왼쪽 그림, 오른쪽 도구 버튼 세로 (DESIGN §5.6) */
+.reg__panel .bg-editor--panel {
+  width: 100%;
+  gap: 12px;
+}
+
+.bg-editor__main {
+  display: flex;
+  gap: 12px;
+}
+
+.reg__panel .bg-editor--panel .bg-editor__stage {
+  flex: 1;
+  width: auto;
+  height: 300px;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.bg-editor__side,
+.bg-editor__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bg-editor__side {
+  width: 150px;
+}
+
+.bg-editor__sbtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 14px;
+  border: 1px solid #e6ddd2;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  color: var(--color-heading);
+  transition: background 0.15s;
+}
+
+.bg-editor__sbtn svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bg-editor__sbtn:hover:not(:disabled):not(.bg-editor__sbtn--on) {
+  background: #f7f1ea;
+}
+
+.bg-editor__sbtn--on {
+  border-color: #fbd9d2;
+  background: #fde9e5;
+  color: var(--color-accent);
+}
+
+.bg-editor__range {
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+.bg-editor__range > span:first-child {
+  width: 84px;
+}
+
+.bg-editor__redo {
+  height: 42px;
+  border: 1px solid #e6ddd2;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  color: var(--color-heading);
+}
+
+.bg-editor__redo:hover {
+  background: #f7f1ea;
+}
+
+.bg-editor__note {
+  margin: -4px 0 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--reg-muted);
+}
+
+.reg__panel .bg-editor__row {
+  justify-content: flex-end;
+}
+
+/* 02 · 2D 이미지와 무늬 (P-39): 오른쪽 칸 전체. 2D 이미지와 무늬를 나란히, 그 아래 마네킹과 조절 */
+.pt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.pt__boxes {
+  display: flex;
+  gap: 10px;
+}
+
+.pt__box {
+  position: relative;
+  flex: 1;
+  height: 190px;
+  margin: 0;
   border-radius: 6px;
   background-color: #fff;
   background-image: linear-gradient(45deg, #eee8e2 25%, transparent 25%), linear-gradient(-45deg, #eee8e2 25%, transparent 25%),
@@ -1287,74 +1562,169 @@ button {
   overflow: hidden;
 }
 
-.reg__image img {
+.pt__box img {
+  width: 100%;
+  height: 100%;
+  padding: 8px 8px 26px;
+  object-fit: contain;
+}
+
+.pt__box figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 3px 0;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  text-align: center;
+}
+
+.pt__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 등록 화면 [2D 이미지] 탭: 이름이 위에 붙은 카드 두 장, 그 아래 조절을 칸으로 묶음 */
+.pt--panel {
+  gap: 12px;
+}
+
+.pt__card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #f0e8de;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.pt__card figcaption {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pt__card-pic {
+  position: relative;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #f6f2ee;
+  overflow: hidden;
+}
+
+.pt__card-pic--check {
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #eee8e2 25%, transparent 25%), linear-gradient(-45deg, #eee8e2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eee8e2 75%), linear-gradient(-45deg, transparent 75%, #eee8e2 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+}
+
+.pt__card-pic > img,
+.pt__card-pic > svg {
   width: 100%;
   height: 100%;
   padding: 8px;
   object-fit: contain;
 }
 
-.reg__seg {
-  position: static;
+.pt__card-pic .sub-text {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  margin: 0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  text-align: center;
 }
 
-/* 시안 .seg .opt: 알약 모양, 고르면 시안의 초록 */
-.reg__seg-opt,
-.fitter__seg-opt {
-  position: absolute;
-  height: 36px;
-  border-radius: 18px;
-  border: 1px solid #e6ddd2;
+.pt--panel .pt__controls {
+  padding: 14px 16px;
+  border: 1px solid #f0e8de;
+  border-radius: 10px;
   background: #fff;
+}
+
+.pt__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pt__label {
+  flex: 0 0 84px;
+  color: var(--color-text-sub);
+}
+
+.pt__seg {
+  display: flex;
+  gap: 6px;
+}
+
+.pt__seg button {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid #e6ddd2;
+  border-radius: 17px;
+  background: #fff;
+  font-family: inherit;
   font-size: 13px;
   color: var(--color-heading);
+  cursor: pointer;
 }
 
-.reg__seg-opt:hover:not(.reg__seg-opt--on):not(:disabled),
-.fitter__seg-opt:hover:not(.fitter__seg-opt--on):not(:disabled) {
-  background: #f7f1ea;
-}
-
-.reg__seg-opt--on,
-.fitter__seg-opt--on {
-  background: var(--reg-green, #56653f);
-  border-color: var(--reg-green, #56653f);
-  color: #fff;
-}
-
-/* 02 · 배경 고치기: 오른쪽 칸 전체 (DESIGN §5.6). 도구와 슬라이더는 시안 모양 */
-.reg__editor {
-  left: 680px;
-  top: 64px;
-  width: 412px;
-  height: 720px;
-  overflow-y: auto;
-}
-
-.reg__editor .bg-editor {
-  gap: 12px;
-}
-
-.reg__editor .bg-editor__stage {
-  width: 100%;
-  height: 300px;
-  border-radius: 6px;
-}
-
-.reg__editor .bg-editor__tool {
-  min-height: 36px;
-  padding: 0 16px;
-  border: 1px solid #e6ddd2;
-  border-radius: 18px;
-  background: #fff;
-  font-size: 13px;
-  font-weight: 400;
-}
-
-.reg__editor .bg-editor__tool--on {
+.pt__seg button.on {
   background: var(--reg-green);
   border-color: var(--reg-green);
   color: #fff;
+}
+
+.pt__seg button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pt__note {
+  margin: -4px 0 0 92px;
+  font-size: 12px;
+  color: var(--color-text-sub);
+}
+
+.pt__palette {
+  display: flex;
+  gap: 6px;
+  margin-left: 92px;
+}
+
+.pt__palette span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.pt__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.pt__check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--reg-green);
 }
 
 /* 시안의 슬라이더: 초록 채움과 동그란 손잡이 */
@@ -1386,69 +1756,49 @@ button {
   border: 0;
 }
 
-/* 03 · 미리보기 (시안 .seg, 마네킹 칸, "옷 전체 조절") */
-.reg__preview {
-  left: 683px;
-  top: 479px;
-  width: 410px;
-  height: 312px;
-}
-
-.reg__preview-empty {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  height: 100%;
-}
-
+/* 미리보기 마네킹 (사진을 올리기 전, 구분과 종류를 고르기 전) */
 .reg__preview-mannequin {
   flex: none;
-  width: 163px;
-  height: 263px;
-  margin-top: 44px;
+  width: 180px;
+  height: 290px;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #eef0f3;
 }
 
-.fitter--panel {
-  position: relative;
+/* [캐릭터에 맞추기] 탭: 위에 [옷 전체 | 내부 무늬], 왼쪽 마네킹과 로고 안내, 오른쪽 조절 (2026-10-23) */
+.fitter.fitter--panel {
   width: 100%;
-  height: 100%;
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px 14px;
+  align-items: start;
 }
 
-.fitter--panel .fitter__seg-opt:first-child {
-  left: 0;
-  top: 0;
-  width: 75px;
-  height: 34px;
-}
-
-.fitter--panel .fitter__seg-opt:last-child {
-  left: 81px;
-  top: 0;
-  width: 78px;
-  height: 34px;
+.fitter__seg {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
 }
 
 .fitter--panel .fitter__stage {
-  position: absolute;
-  left: 0;
-  top: 44px;
-  width: 163px;
-  height: 263px;
+  grid-column: 1;
+  grid-row: 2;
+  overflow: hidden; /* 크게 조절한 옷이 옆 조절 글자를 덮지 않게 */
+  width: 180px;
+  height: 320px;
   padding: 8px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #eef0f3;
   cursor: grab;
 }
 
 .fitter__controls {
-  position: absolute;
-  left: 181px;
-  top: 52px;
-  width: 229px;
+  grid-column: 2;
+  grid-row: 2 / span 2;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1462,23 +1812,33 @@ button {
 
 .fitter--panel .fitter__row {
   gap: 6px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
+/* 이름 칸은 "좌우 위치" 글자 폭만큼(기본 84px보다 좁게), 슬라이더가 남는 폭을 씀 */
 .fitter--panel .fitter__row > span:first-child {
-  width: 59px;
-  font-size: 11px;
+  flex: 0 0 56px;
+  width: 56px;
+  font-size: 13px;
+}
+
+.fitter--panel .fitter__row input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  width: auto;
 }
 
 .fitter--panel .fitter__row select {
+  flex: 1;
+  min-width: 0;
   min-height: 28px;
   padding: 2px 8px;
   font-size: 12px;
 }
 
 .fitter--panel .fitter__value {
-  width: 36px;
-  font-size: 10px;
+  width: 40px;
+  font-size: 12px;
   text-align: right;
 }
 
@@ -1499,14 +1859,177 @@ button {
 }
 
 .fitter__note {
-  position: absolute;
-  left: 181px;
-  top: 0;
-  width: 229px;
+  grid-column: 1;
+  grid-row: 3;
   margin: 0;
   font-size: 11px;
   line-height: 1.4;
   color: var(--reg-muted, #8a7466);
+}
+
+/* 앱 안에서 그리는 고르기 칸 (SelectBox, 2026-10-23). 기본 <select>의 펼침 목록이 화면 배율과 어긋나 크게 나와서 직접 그림 */
+.selbox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.selbox__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 30px;
+  padding: 2px 10px;
+  border: 1px solid #e6ddd2;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-heading);
+  text-align: left;
+  cursor: pointer;
+}
+
+.selbox__btn:hover,
+.selbox--open .selbox__btn {
+  border-color: var(--color-accent);
+}
+
+.selbox__btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.selbox__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selbox__chev {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s;
+}
+
+.selbox--open .selbox__chev {
+  transform: rotate(180deg);
+}
+
+.selbox__list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid #e6ddd2;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(80, 60, 40, 0.14);
+}
+
+.selbox__opt {
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--color-heading);
+  cursor: pointer;
+}
+
+.selbox__opt--active {
+  background: #f7f1ea;
+}
+
+.selbox__opt--on {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.selbox__text--placeholder {
+  color: var(--color-text-sub);
+}
+
+/* 어깨 · 소매 맞추기 (2026-10-23, moire 프로젝트 SleeveControls) */
+.fitter__sleeves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #f0e8de;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.fitter--panel .fitter__sleeves {
+  grid-column: 1 / -1;
+}
+
+.fitter__sleeves legend {
+  padding: 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fitter__fine {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--reg-muted, #8a7466);
+}
+
+.fitter__sleeves .fitter__reset {
+  align-self: flex-start;
+  width: auto;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.fitter__sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+}
+
+.fitter__sides > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fitter__side-t {
+  font-size: 13px;
+}
+
+.fitter__sleeves .fitter__row > span:first-child {
+  width: 56px;
+}
+
+/* 왼쪽·오른쪽 소매: 이름(각도·길이·폭)은 두 글자 폭만, 슬라이더가 바로 옆부터 남는 폭을 모두 씀 */
+.fitter__sides .fitter__row > span:first-child {
+  flex: 0 0 24px;
+  width: 24px;
+}
+
+.fitter__sleeve-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* 옷 등록 창과 옷 상세 (SCREEN-SPEC §6.2, §6.3) */

@@ -6,6 +6,7 @@ import ConfirmDialog from './ConfirmDialog.jsx'
 import DatePickerDialog from './DatePickerDialog.jsx'
 import DiaryCard from './DiaryCard.jsx'
 import ErrorLine from './ErrorLine.jsx'
+import SelectBox from './SelectBox.jsx'
 import { outfitKey } from '../labels.js'
 
 // 코디 일기 (SCREEN-SPEC §7): 기록이 3열 카드로 놓입니다. 시안 style/html 09를 옮겼습니다. (P-38)
@@ -87,18 +88,28 @@ function DiaryScreen({ onGoDressUp, onTryOn }) {
         </h2>
         {entries && entries.length > 0 && (
           <>
-            <select className="dy-sel" style={{ left: 945, width: 162 }} aria-label="달" value={month} onChange={(e) => setMonth(e.target.value)}>
-              <option value="all">전체 기간</option>
-              {months.map((m) => (
-                <option key={m} value={m}>
-                  {Number(m.slice(0, 4))}년 {Number(m.slice(5))}월
-                </option>
-              ))}
-            </select>
-            <select className="dy-sel" style={{ left: 1119, width: 130 }} aria-label="정렬" value={order} onChange={(e) => setOrder(e.target.value)}>
-              <option value="new">최신순</option>
-              <option value="old">오래된순</option>
-            </select>
+            <SelectBox
+              className="dy-sel"
+              style={{ left: 945, width: 162 }}
+              ariaLabel="달"
+              value={month}
+              onChange={setMonth}
+              options={[
+                { value: 'all', label: '전체 기간' },
+                ...months.map((m) => ({ value: m, label: `${Number(m.slice(0, 4))}년 ${Number(m.slice(5))}월` })),
+              ]}
+            />
+            <SelectBox
+              className="dy-sel"
+              style={{ left: 1119, width: 130 }}
+              ariaLabel="정렬"
+              value={order}
+              onChange={setOrder}
+              options={[
+                { value: 'new', label: '최신순' },
+                { value: 'old', label: '오래된순' },
+              ]}
+            />
           </>
         )}
 
