@@ -13,7 +13,7 @@ from ..external import ExternalError, ai
 from ..models import Clothing, ClothingKeyword, Favorite, Keyword, StyleTag
 from ..responses import ApiError, ok
 from ..rules import SLOTS, missing_for_outfit, outfit_key
-from .weather import daily_weather
+from .weather import LocationIn, daily_weather
 
 router = APIRouter(prefix="/api/recommendations")
 log = logging.getLogger("uvicorn.error")
@@ -21,7 +21,8 @@ log = logging.getLogger("uvicorn.error")
 
 class RecommendIn(BaseModel):
     day: date = Field(alias="date")
-    region: Optional[str] = None  # 사용자가 바꾼 지역. 없으면 내 지역 → 서울
+    region: Optional[str] = None  # 사용자가 바꾼 지역. 없으면 현재 위치 → 내 지역 → 서울
+    location: Optional[LocationIn] = None  # 현재 위치 (D-022). 고른 지역이 없을 때만 씀
     tag_id: Optional[int] = None  # 추천을 받을 때는 태그가 꼭 있어야 합니다. (PRD §5)
     # 요청 글: 원하는 상황이나 분위기. 추천에만 쓰고 저장하지 않습니다. (P-39, 사람이 정함 2026-10-22)
     request: Optional[str] = Field(None, max_length=200)
@@ -106,7 +107,7 @@ def recommend(body: RecommendIn, session: Session = Depends(get_session)):
             raise ApiError("no_favorites", "즐겨찾기에 코디를 먼저 넣어 주세요.")
 
     # ③ 날씨 ④ AI ⑤ 검사 (검사는 ai.recommend 안에서 합니다)
-    weather = daily_weather(session, body.day, body.region)
+    weather = daily_weather(session, body.day, body.region, body.location)
     request_text = (body.request or "").strip() or None
     try:
         answer = ai.recommend(closet, weather, tag.name, request=request_text,

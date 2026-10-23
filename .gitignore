@@ -1,6 +1,8 @@
 # API 키 (D-004: git에 올리지 않음)
 .env
 .env.*
+# 키를 비운 예시 파일만 올립니다.
+!.env.example
 
 # 서버: Python 가상환경과 캐시 (D-008)
 .venv/

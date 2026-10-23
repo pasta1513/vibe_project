@@ -7,6 +7,7 @@ weather.py가 부르는 함수 모양은 가짜 날씨와 같습니다.
 """
 
 import json
+import math
 import os
 import time
 import urllib.error
@@ -36,14 +37,26 @@ REGION_COORDS = {
 # 새벽에 잠깐 온 비로 하루가 "비"가 되지 않게 합니다. 기온은 하루 전체 칸으로 계산합니다. (사람이 정함, 2026-10-22)
 ACTIVE_HOURS = range(6, 21)
 
-_cache = {}  # 지역 → (받은 시각, 예보, 지금 날씨)
+_cache = {}  # 좌표 → (받은 시각, 예보, 지금 날씨)
 
 
-def _get(path: str, region: str) -> dict:
+def round_point(lat: float, lon: float) -> tuple[float, float]:
+    """현재 위치 좌표를 소수 둘째 자리(약 1km)로 반올림합니다. 캐시도 이 좌표로 묶습니다. (D-022)"""
+    return round(lat, 2), round(lon, 2)
+
+
+def nearest_region(lat: float, lon: float) -> str:
+    """좌표에서 가장 가까운 시·도 (17곳의 대표 좌표 기준, D-022)"""
+    scale = math.cos(math.radians(lat))  # 경도 1도는 위도가 높을수록 짧습니다.
+    return min(REGION_COORDS, key=lambda name: (REGION_COORDS[name][0] - lat) ** 2
+               + ((REGION_COORDS[name][1] - lon) * scale) ** 2)
+
+
+def _get(path: str, point: tuple[float, float]) -> dict:
     key = os.environ.get("OPENWEATHERMAP_API_KEY", "").strip()
     if not key:
         raise ExternalError("weather_failed", "OPENWEATHERMAP_API_KEY가 없습니다.")
-    lat, lon = REGION_COORDS[region]
+    lat, lon = point
     query = urllib.parse.urlencode({"lat": lat, "lon": lon, "units": "metric", "appid": key})
     try:
         with urllib.request.urlopen(f"{BASE_URL}/{path}?{query}", timeout=REQUEST_TIMEOUT) as response:
@@ -55,13 +68,13 @@ def _get(path: str, region: str) -> dict:
         raise ExternalError("weather_failed", type(exc).__name__) from None
 
 
-def _fetch(region: str) -> tuple[dict, dict]:
-    cached = _cache.get(region)
+def _fetch(point: tuple[float, float]) -> tuple[dict, dict]:
+    cached = _cache.get(point)
     if cached and time.monotonic() - cached[0] < CACHE_SECONDS:
         return cached[1], cached[2]
-    forecast = _get("forecast", region)
-    current = _get("weather", region)
-    _cache[region] = (time.monotonic(), forecast, current)
+    forecast = _get("forecast", point)
+    current = _get("weather", point)
+    _cache[point] = (time.monotonic(), forecast, current)
     return forecast, current
 
 
@@ -118,6 +131,7 @@ def daily_from(forecast: dict, current: dict, day: date, today: date) -> dict:
             "condition": _condition(active_kinds or kinds)}
 
 
-def get_daily_weather(day: date, region: str) -> dict:
-    forecast, current = _fetch(region)
+def get_daily_weather(day: date, region: str, point: tuple[float, float] | None = None) -> dict:
+    """point: 현재 위치 좌표 (D-022). 없으면 region의 대표 좌표"""
+    forecast, current = _fetch(round_point(*point) if point else REGION_COORDS[region])
     return {"region": region, **daily_from(forecast, current, day, date.today())}

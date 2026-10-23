@@ -151,6 +151,7 @@ export function SidePanel({
         </svg>
       </div>
       {w && w.is_default_region && <p className="du-side__notice">설정에서 내 지역을 저장해 주세요.</p>}
+      {w && w.is_current_location && <p className="du-side__notice">현재 위치({w.area}) 날씨예요.</p>}
 
       <div className="du-side__weather" aria-live="polite">
         {weather.loading && <p className="sub-text">날씨를 받는 중…</p>}

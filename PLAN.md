@@ -82,6 +82,7 @@
 | P-41 | 추천만 다른 모델로 (BEDROCK_MODEL_ID2) | 완료 | `server/.env`의 `BEDROCK_MODEL_ID2`가 있으면 추천만 그 모델로 보낸다. Claude 모델은 도구 강제와 temperature 없이 부른다. 추천 실패 이유를 서버 기록에 남긴다. 서울에서는 아시아·태평양(apac.) 모델만 쓴다 (Sonnet 5.5는 global.만 있어 쓰지 않음, 사람이 정함 2026-10-23). Claude 3.5 Sonnet 비교는 계정의 Anthropic 사용 목적 양식 처리 뒤 |
 | P-42 | 추천: 페르소나마다 모델, 버튼 위치 | 완료 | 페르소나 칩과 원하는 상황 입력칸을 [AI 코디 추천받기] 아래로 옮긴다. 전문가는 Claude 3.5 Sonnet(`BEDROCK_MODEL_ID2`), 친구·내 스타일은 Nova Lite. 전문가 모델을 못 부르면 실패로 보여 줌. D-020 (사람이 정함, 2026-10-23) |
 | P-43 | 새 옷 입기: 거울에 비친 뒷모습 | 확인 기다림 | 옷 고르기·추천 보기 배경의 거울에서 여자아이를 지우고, 그 자리에 고른 마네킹 모양과 지금 입힌 코디의 뒷모습이 비친다. 옷을 바꾸면 거울도 바로 바뀐다. 뒷머리는 SVG로 그린다 (사람이 정함, 2026-10-23). 사람이 화면을 보고 승인한다 |
+| P-45 | 현재 위치 날씨와 `server/.env.example` (kmj 브랜치에서 가져옴) | 완료 | 지역을 고르지 않았으면 날씨가 처음 필요할 때 위치 권한을 한 번 묻고, 그 좌표의 날씨를 "부산(현재 위치)"처럼 보인다. 순서는 고른 지역 → 현재 위치 → 내 지역 → 서울, 위치는 저장하지 않음 (D-022). 키를 비운 `server/.env.example`을 git에 올린다. T-126, T-127 (사람이 정함, 2026-10-23) |
 
 ## 실제 검증 결과
 
@@ -130,6 +131,7 @@
 | P-39 | 2026-10-22 | AI가 낸 확인 결과(스크립트 30개, 가짜 AI 화면 확인 T-117·T-118·T-119·T-121)를 검토하고 결과와 고친 문서(PRD, SCREEN-SPEC, API-SPEC, TEST-PLAN, README)를 승인함. 진짜 AI 품질은 Bedrock 키가 생긴 뒤 확인 | 통과 |
 | P-40 | 2026-10-22 | AI가 낸 확인 결과(연결 확인, 시나리오 12개의 고치기 전후 비교, 진짜 날씨·AI 화면 1번, 스크립트 31개)를 검토하고 결과와 고친 API-SPEC을 승인함. 내 스타일 신발 칸 누락(12번 중 1번)은 남음 | 통과 |
 | P-42 | 2026-10-23 | AI가 낸 확인 결과(스크립트 34개, build·lint, 화면 위치 712 < 715, 진짜 AI 전문가 Sonnet 3.5 15.5초·친구·내 스타일 Nova Lite)를 검토하고 결과와 D-020, 고친 문서를 승인함 | 통과 |
+| P-45 | 2026-10-23 | AI가 낸 확인 결과(가장 가까운 시·도 7곳, 날씨 받기 5가지, 강릉·춘천 좌표 비교, 입혀 보기·점수·추천에 위치, 가짜 날씨, lint·build, 내장 브라우저 화면, `.env.example` git 확인)를 검토하고 승인함. 커밋 작성자는 kmj (사람이 정함). 실제 브라우저 권한 창 누르기는 실행하지 않음 | 통과 |
 
 ## 남은 문제와 다음 행동
 
@@ -591,3 +593,23 @@
   - 실행하지 않음: 화면 캡처로 모양 보기(앱 창이 내려가 있어 그리지 못함)
 - 남은 것: D-021 확정, `requirements.txt`의 vtracer를 뺄지(패키지 삭제라 사람이 정함)
 - 고친 문서: DECISIONS D-021(제안), PRD §4, SCREEN-SPEC §6.2·§6.3, API-SPEC §4, DATA-MODEL §3·표, ARCHITECTURE, TEST-PLAN T-122 ~ T-125, README (상태 줄에 "수정", 내용 승인 대기)
+
+## P-45 현재 위치 날씨와 `server/.env.example` (2026-10-23, 완료, 사람이 승인함)
+
+- 출처: `kmj` 브랜치(P-25에서 갈라져 P-26 ~ P-30을 따로 만듦)와 master를 비교하고, 그중 현재 위치(kmj 커밋 `02e7592`)와 `.env.example`(`fded2fa`)만 가져옴 (사람이 정함, 2026-10-23). kmj의 추천·평가 AI 두 단계, 점수 세 칸, 형식 오류 때 다시 묻기, rembg는 master 결정(D-015, D-020, P-28)과 달라 가져오지 않음
+- 정한 것 (사람이 정함, 2026-10-23): D-022. kmj 방식 그대로 (날씨가 처음 필요할 때 한 번 묻기, 5초, 좌표 소수 둘째 자리, 가장 가까운 시·도 + "(현재 위치)", 저장 안 함)
+- 만든 것
+  - 서버: `openweather.py`(`round_point`, `nearest_region`, 좌표로 예보 받기, 캐시를 좌표로 묶음), `weather.py`(좌표를 넘김), `routers/weather.py`(`LocationIn`, 지역 순서, 날씨 묶음에 `area`·`is_current_location`, `GET /api/weather`의 `lat`·`lon`), `scores.py`·`recommendations.py`·`diary.py`·`favorites.py`(본문의 `location`)
+  - 화면: `api.js`(`currentLocation`, 지역을 고르지 않은 요청에 위치를 붙임), `DressUpScreen.jsx`(지역 칸은 `area`), `DressUpPanels.jsx`("현재 위치(부산) 날씨예요.")
+  - 설정: `server/.env.example`(master에서 쓰는 값: AI_PROVIDER, AWS_BEARER_TOKEN_BEDROCK, AWS_REGION, BEDROCK_MODEL_ID, BEDROCK_MODEL_ID2, WEATHER_PROVIDER, OPENWEATHERMAP_API_KEY, DATA_DIR. 키는 비움. kmj의 IMAGING_PROVIDER는 master에 없어 뺌), `.gitignore`에 `!.env.example`
+- 확인 (개발 서버 8000, `data-dev`, 진짜 날씨·AI)
+  - 가장 가까운 시·도: 수원 → 경기, 서울시청 → 서울, 부산 → 부산, 서귀포 → 제주, 대전 → 대전, 강릉 → 강원, 전주 → 전북
+  - `GET /api/weather`: 좌표만 → `경기(현재 위치)`, `is_current_location` true. 지역과 좌표 → 지역(부산)이 이김. 둘 다 없음 → 서울, `is_default_region` true. `lat=95`, `lat`만 → `invalid_input` 400
+  - 좌표의 날씨를 받는지: 강릉 좌표 14°~18°, 강원(춘천 대표 좌표) 13°~21°로 다름
+  - 코디 일기·즐겨찾기 입혀 보기에 부산 좌표 → `부산(현재 위치)`. 잘못된 좌표(lat 200) → `invalid_input`. 점수 확인하기(진짜 AI 7.4초)와 추천받기(친구, Nova Lite 8.0초, 3벌)도 현재 위치 날씨로 받음. 가짜 날씨에서도 `부산(현재 위치)`
+  - `npm run lint` 오류 0 (경고 13개는 전과 같고 바꾼 줄에는 없음), `npm run build` 통과
+  - 화면 (앱 내장 브라우저): 위치를 받지 못하면 요청에 `lat`·`lon`이 없고 서울 날씨 (T-127). 같은 앱을 위치 값을 흉내 낸 틀 안에서 열어 처음 화면 날씨 카드 `부산(현재 위치)`, 새 옷 입기 날씨 패널 "부산"과 "현재 위치(부산) 날씨예요.", 대구로 바꾸면 `region=대구`로 받고 안내가 사라짐 (T-126). 추천 보기에서 날씨 패널 아래 끝 710 < 추천 판 715
+  - git: `server/.env.example`은 올라가고 `server/.env`는 계속 빠짐 (`git check-ignore`)
+- 실행하지 않음: 실제 브라우저 권한 창에서 허락·거절 누르기 (앱 내장 브라우저는 권한 창이 뜨지 않아 위치 값을 흉내 냄), 진짜 데이터(`data/`)와 매일 쓰는 앱(8080)
+- 진짜 AI 호출: 2번 (점수 1, 추천 1, 모두 Nova Lite)
+- 고친 문서: DECISIONS D-022(D-012, D-014의 현재 위치 줄도), PRD §5, SCREEN-SPEC §4·§5.1·§10, API-SPEC §2.4·§5.1·§10·§12, ARCHITECTURE, TEST-PLAN T-126·T-127, README
