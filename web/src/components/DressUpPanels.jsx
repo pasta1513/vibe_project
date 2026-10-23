@@ -195,31 +195,6 @@ export function SidePanel({
         ))}
       </div>
 
-      {/* 누가 추천해 줄지와 요청 글. 저장하지 않습니다. (P-39) */}
-      <div className="du-side__opts" role="radiogroup" aria-label="추천 페르소나">
-        {PERSONAS.map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={persona === value}
-            className={`du-tag${persona === value ? ' du-tag--on' : ''}`}
-            onClick={() => onPersona(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <input
-        className="du-side__request"
-        type="text"
-        aria-label="요청 글"
-        placeholder="원하는 상황 (선택) 예: 소개팅이라 깔끔하게"
-        maxLength={REQUEST_MAX}
-        value={requestText}
-        onChange={(e) => onRequestText(e.target.value)}
-      />
-
       <div className="du-side__hr" />
       <div className="du-side__sec">날짜</div>
       <div className="du-side__opts du-side__dates" role="radiogroup" aria-label="날짜">
@@ -249,6 +224,31 @@ export function SidePanel({
         {recommending ? '추천을 고르는 중…' : 'AI 코디 추천받기'}
         {!recommending && <span aria-hidden="true">→</span>}
       </button>
+
+      {/* 누가 추천해 줄지와 요청 글. 저장하지 않습니다. 버튼 아래에 둡니다 (P-39, P-42 옮김) */}
+      <div className="du-side__opts" role="radiogroup" aria-label="추천 페르소나">
+        {PERSONAS.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={persona === value}
+            className={`du-tag${persona === value ? ' du-tag--on' : ''}`}
+            onClick={() => onPersona(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <input
+        className="du-side__request"
+        type="text"
+        aria-label="요청 글"
+        placeholder="원하는 상황 (선택) 예: 소개팅이라 깔끔하게"
+        maxLength={REQUEST_MAX}
+        value={requestText}
+        onChange={(e) => onRequestText(e.target.value)}
+      />
     </aside>
   )
 }

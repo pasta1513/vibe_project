@@ -1067,3 +1067,16 @@
 .du--recommend .du-side__request {
   display: none;
 }
+
+/* 페르소나 칩과 요청 글 칸을 [AI 코디 추천받기] 아래로 옮김 (P-42) */
+.du-side__ai + .du-side__opts {
+  margin-top: 12px;
+}
+
+.du-side__request {
+  margin-bottom: 0;
+}
+
+.du--recommend .du-side__ai + .du-side__opts {
+  margin-top: 6px;
+}

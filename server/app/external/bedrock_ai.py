@@ -46,10 +46,13 @@ def model_id() -> str:
     return os.environ.get("BEDROCK_MODEL_ID", DEFAULT_MODEL_ID)
 
 
-def recommend_model_id() -> str:
-    """추천에만 쓰는 모델. `server/.env`의 BEDROCK_MODEL_ID2가 없으면 다른 일과 같은 모델. (P-41)
+def recommend_model_id(persona: str = "expert") -> str:
+    """추천에 쓰는 모델. 전문가만 `server/.env`의 BEDROCK_MODEL_ID2(Claude 3.5 Sonnet)를 쓰고,
+    친구와 내 스타일은 다른 일과 같은 모델(Nova Lite)입니다. BEDROCK_MODEL_ID2가 없으면 전문가도 같은 모델. (D-020, P-42)
     서울에서는 아시아·태평양 범위(apac.)만 씁니다. Sonnet 5.5는 global.만 있어 쓰지 않습니다. (사람이 정함, 2026-10-23)"""
-    return os.environ.get("BEDROCK_MODEL_ID2", "").strip() or model_id()
+    if persona == "expert":
+        return os.environ.get("BEDROCK_MODEL_ID2", "").strip() or model_id()
+    return model_id()
 
 
 def _is_claude(model: str) -> bool:
@@ -365,7 +368,7 @@ def recommend(closet, weather, tag, request=None, persona="expert", favorites=No
                                 "reason": {"type": "string", "description": "있으면 좋은 이유 한 문장"}},
                  "required": ["name", "reason"]}}},
          "required": ["outfits", "closet_gap", "need_shopping", "shopping"]},
-        timeout=TIMEOUTS["recommend"], max_tokens=2000, model=recommend_model_id(),
+        timeout=TIMEOUTS["recommend"], max_tokens=2000, model=recommend_model_id(persona),
     )
     results = []
     for item in answer.get("outfits") or []:
