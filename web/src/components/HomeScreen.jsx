@@ -5,6 +5,7 @@ import { isoDate } from '../labels.js'
 import '../styles/home.css'
 import ErrorLine from './ErrorLine.jsx'
 import Mannequin from './Mannequin.jsx'
+import { WeatherIcon } from './WeatherIcon.jsx'
 
 // 처음 화면 (SCREEN-SPEC §4). 사람이 준 그림(2026-10-22)을 옮겼습니다. (P-38)
 // 배경은 그 그림에서 가운데 캐릭터 자리를 메운 것이고, 말풍선 "오늘은 어떤 옷을 입을까?"는 그림에 있는 것을 그대로 씁니다.
@@ -13,46 +14,6 @@ import Mannequin from './Mannequin.jsx'
 // 지역은 늘 이름으로 보냅니다(저장한 내 지역, 없으면 '서울'). 지역 없이 부르면 api.getWeather가 현재 위치를 물어
 // 앱을 켜자마자 위치 권한 창이 뜨기 때문입니다. 서울 안내는 서버 표시(is_default_region)가 아니라 homeRegion이 비었는지로 정합니다.
 // 기온은 최저~최고, 한마디는 날씨마다 정해 둔 문장 (AI를 부르지 않음). > 는 설정의 지역 설정을 엽니다. (사람이 정함, 2026-10-22)
-
-// 날씨 그림: 맑음은 시안의 해, 나머지는 같은 굵기로 그림
-function WeatherIcon({ condition, className }) {
-  const sun = (
-    <>
-      <circle cx="42" cy="42" r="20" fill="#f6a623" />
-      <g stroke="#f6a623" strokeWidth="5" strokeLinecap="round">
-        <path d="M42 6v10M42 68v10M6 42h10M68 42h10M16.5 16.5l7 7M60.5 60.5l7 7M16.5 67.5l7-7M60.5 23.5l7-7" />
-      </g>
-    </>
-  )
-  const cloud = <path d="M22 58a14 14 0 0 1 2-28 18 18 0 0 1 34 4 12 12 0 0 1 4 24z" fill="#c9cdd6" />
-  const shapes = {
-    clear: sun,
-    cloudy: cloud,
-    rain: (
-      <>
-        {cloud}
-        <g stroke="#6aa6e8" strokeWidth="4" strokeLinecap="round">
-          <path d="M30 64l-4 10M44 64l-4 10M58 64l-4 10" />
-        </g>
-      </>
-    ),
-    snow: (
-      <>
-        {cloud}
-        <g fill="#6aa6e8">
-          <circle cx="30" cy="70" r="3.5" />
-          <circle cx="44" cy="74" r="3.5" />
-          <circle cx="58" cy="70" r="3.5" />
-        </g>
-      </>
-    ),
-  }
-  return (
-    <svg className={className} viewBox="0 0 84 84" aria-hidden="true">
-      {shapes[condition] ?? sun}
-    </svg>
-  )
-}
 
 const DEFAULT_REGION = '서울'
 

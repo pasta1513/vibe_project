@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api.js'
-import Button from './Button.jsx'
+import diaryBg from '../assets/diary/diary-bg.png'
+import '../styles/diary.css'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import DatePickerDialog from './DatePickerDialog.jsx'
 import DiaryCard from './DiaryCard.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import { outfitKey } from '../labels.js'
 
-// 코디 일기 (SCREEN-SPEC §7): 방 위에 일기장이 화면 전체로 펼쳐지고, 기록이 3열 카드로 놓입니다.
+// 코디 일기 (SCREEN-SPEC §7): 기록이 3열 카드로 놓입니다. 시안 style/html 09를 옮겼습니다. (P-38)
 function DiaryScreen({ onGoDressUp, onTryOn }) {
   const [entries, setEntries] = useState(null)
   const [loadError, setLoadError] = useState(null)
@@ -16,6 +17,8 @@ function DiaryScreen({ onGoDressUp, onTryOn }) {
   const [picking, setPicking] = useState(null) // 날짜 고르기 창을 띄운 기록
   const [opening, setOpening] = useState(false)
   const [pickError, setPickError] = useState(null)
+  const [month, setMonth] = useState('all') // 'all' 또는 'YYYY-MM'
+  const [order, setOrder] = useState('new') // 'new' 최신순, 'old' 오래된순
 
   const load = useCallback(async () => {
     const res = await api.getDiary()
@@ -67,32 +70,67 @@ function DiaryScreen({ onGoDressUp, onTryOn }) {
     onTryOn(res.data)
   }
 
+  // 달 고르기와 정렬은 받은 기록을 화면에서 거릅니다 (서버는 그대로, 사람이 정함 2026-10-22).
+  const months = entries ? [...new Set(entries.map((e) => e.date.slice(0, 7)))].sort().reverse() : []
+  const shown = entries
+    ? entries
+        .filter((e) => month === 'all' || e.date.startsWith(month))
+        .sort((a, b) => (order === 'new' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)))
+    : []
+
+  // 시안 09를 그대로 옮긴 화면입니다. (P-38)
   return (
-    <section className="diary" aria-label="코디 일기">
-      {loadError && <ErrorLine message={loadError} onRetry={load} />}
-      {actionError && <ErrorLine message={actionError} />}
-      {entries && entries.length === 0 && (
-        <div className="diary__empty">
-          <p>아직 남긴 코디가 없어요.</p>
-          <Button onClick={onGoDressUp}>새 옷 입기로 가기</Button>
+    <section className="dy" aria-label="코디 일기" style={{ '--src': `url(${diaryBg})` }}>
+      <div className="dy-main">
+        <h2 className="dy-main__title">
+          코디 일기 <span className="dy-main__cnt">{shown.length}</span>
+        </h2>
+        {entries && entries.length > 0 && (
+          <>
+            <select className="dy-sel" style={{ left: 945, width: 162 }} aria-label="달" value={month} onChange={(e) => setMonth(e.target.value)}>
+              <option value="all">전체 기간</option>
+              {months.map((m) => (
+                <option key={m} value={m}>
+                  {Number(m.slice(0, 4))}년 {Number(m.slice(5))}월
+                </option>
+              ))}
+            </select>
+            <select className="dy-sel" style={{ left: 1119, width: 130 }} aria-label="정렬" value={order} onChange={(e) => setOrder(e.target.value)}>
+              <option value="new">최신순</option>
+              <option value="old">오래된순</option>
+            </select>
+          </>
+        )}
+
+        <div className="dy-main__body">
+          {loadError && <ErrorLine message={loadError} onRetry={load} />}
+          {actionError && <ErrorLine message={actionError} />}
+          {entries && entries.length === 0 && (
+            <div className="dy-empty">
+              <p>아직 남긴 코디가 없어요.</p>
+              <button type="button" className="dy-empty__btn" onClick={onGoDressUp}>
+                새 옷 입기로 가기
+              </button>
+            </div>
+          )}
+          {shown.length > 0 && (
+            <div className="dy-cards">
+              {shown.map((entry) => (
+                <DiaryCard
+                  key={entry.id}
+                  entry={entry}
+                  onTryOn={(e) => {
+                    setPickError(null)
+                    setPicking(e)
+                  }}
+                  onDelete={setDeleting}
+                  onFavorite={changeFavorite}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
-      {entries && entries.length > 0 && (
-        <div className="diary__grid">
-          {entries.map((entry) => (
-            <DiaryCard
-              key={entry.id}
-              entry={entry}
-              onTryOn={(e) => {
-                setPickError(null)
-                setPicking(e)
-              }}
-              onDelete={setDeleting}
-              onFavorite={changeFavorite}
-            />
-          ))}
-        </div>
-      )}
+      </div>
 
       {deleting && (
         <ConfirmDialog

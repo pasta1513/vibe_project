@@ -1,0 +1,219 @@
+/* 즐겨찾기 (SCREEN-SPEC §8). 시안 style/html 10을 그대로 옮깁니다. 위치는 1536×1024 캔버스 좌표.
+   배경은 시안 PNG에서 그려진 카드와 고리를 지운 그림. (P-38) */
+
+.fv {
+  position: absolute;
+  inset: 0;
+  background-image: var(--src);
+  background-size: 1536px 1024px;
+  color: #2e2420;
+}
+
+.fv button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* 제목 패널 (시안 .title) */
+.fv-title {
+  position: absolute;
+  left: 173px;
+  top: 171px;
+  width: 1254px;
+  height: 158px;
+  border-radius: 22px;
+  background: #fdf3eb;
+  box-shadow: var(--shadow-panel);
+}
+
+.fv-title--empty {
+  left: 153px;
+  top: 173px;
+  width: 1294px;
+  height: 162px;
+}
+
+.fv-title svg {
+  position: absolute;
+  left: 46px;
+  top: 42px;
+}
+
+.fv-title h2 {
+  position: absolute;
+  left: 120px;
+  top: 38px;
+  margin: 0;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.fv-title p {
+  position: absolute;
+  left: 120px;
+  top: 92px;
+  margin: 0;
+  font-size: 19px;
+  color: #6c5a50;
+}
+
+/* 옷걸이: 봉 아래로 카드 5장이 보이고 나머지는 ◀ ▶로 넘깁니다 */
+.fv-track {
+  position: absolute;
+  left: 250px;
+  top: 356px;
+  width: 1050px;
+  height: 346px;
+  overflow: hidden;
+}
+
+.fv-list {
+  position: relative;
+  display: flex;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fv-slot {
+  position: relative;
+  flex: none;
+  width: 210px;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+.fv-slot--dragging {
+  z-index: 2;
+  opacity: 0.85;
+}
+
+.fv-slot--dragging .fv-card {
+  transform: translateY(-6px) rotate(-2deg);
+  box-shadow: 0 14px 26px rgba(150, 100, 70, 0.25);
+}
+
+.fv-hook {
+  position: absolute;
+  left: 80px;
+  top: 2px;
+  width: 40px;
+  height: 50px;
+}
+
+/* 카드 (시안 .card) */
+.fv-card {
+  position: absolute;
+  left: 0;
+  top: 50px;
+  width: 200px;
+  height: 281px;
+  border-radius: 12px;
+  background: #fdf6ee;
+  box-shadow: 0 4px 12px rgba(150, 100, 70, 0.12);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.fv-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(150, 100, 70, 0.18);
+}
+
+.fv-card:focus-visible {
+  outline: 3px solid var(--color-accent);
+}
+
+.fv-card__mannequin {
+  width: 100%;
+  height: 100%;
+  padding: 22px 16px 14px;
+}
+
+.fv-card__deleted {
+  position: absolute;
+  left: 8px;
+  top: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(255, 250, 245, 0.92);
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
+.fv-card__star {
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #fdf6ee;
+  color: #f6a623;
+  font-size: 30px;
+  line-height: 32px;
+  text-align: center;
+  transition: transform 0.15s;
+}
+
+.fv-card__star:hover {
+  transform: scale(1.12);
+}
+
+/* ◀ ▶ (시안 .arrow) */
+.fv-arrow {
+  position: absolute;
+  top: 531px;
+  z-index: 3;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #fffaf5;
+  box-shadow: 0 3px 10px rgba(120, 80, 50, 0.18);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.fv-arrow:hover {
+  background: #fff;
+  transform: scale(1.06);
+}
+
+.fv-arrow svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: #2e2420;
+  stroke-width: 2.6;
+}
+
+.fv-empty {
+  position: absolute;
+  left: 250px;
+  top: 560px;
+  width: 1050px;
+  margin: 0;
+  text-align: center;
+  font-size: 20px;
+  color: #8a6f5f;
+}
+
+.fv-errors {
+  position: absolute;
+  left: 250px;
+  top: 712px;
+  width: 1055px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

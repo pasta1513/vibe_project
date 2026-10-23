@@ -30,6 +30,8 @@ function App() {
   const [dressUpInit, setDressUpInit] = useState(null)
   // 입혀 보기를 할 때마다 새 옷 입기 화면을 처음부터 다시 그립니다.
   const [dressUpKey, setDressUpKey] = useState(0)
+  // 설정을 열 때 처음 보일 쪽. 처음 화면 날씨 카드의 > 는 'region' (사람이 정함, 2026-10-22)
+  const [settingsPage, setSettingsPage] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [toast, setToast] = useState(null)
@@ -78,7 +80,13 @@ function App() {
     setConfirmed(null)
     setDressUpInit(null)
     setDressUpKey((k) => k + 1)
+    setSettingsPage(null)
     setActiveMenu(key)
+  }
+
+  function openRegionSettings() {
+    selectMenu('settings')
+    setSettingsPage('region')
   }
 
   function openTryOn(data) {
@@ -107,6 +115,8 @@ function App() {
   const favoritesOpen = showMenu && activeMenu === 'favorites'
   // 처음 화면: 메뉴를 아직 고르지 않았을 때 (SCREEN-SPEC §4). 캔버스 전체에 그림을 깔고 마네킹과 날씨 카드가 보입니다.
   const homeOpen = showMenu && !activeMenu && !confirmed
+  // 시안을 옮긴 화면은 캔버스 전체에 그려지고, 아직 옮기지 않은 화면은 메뉴바 아래에 그려집니다.
+  const redesigned = homeOpen || settingsOpen || diaryOpen || favoritesOpen || Boolean(confirmed)
   const fullScreen = homeOpen || closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen
 
   // 앱 전체를 시안(style/html)의 1536×1024 캔버스로 그리고 창 크기에 맞춰 줄입니다. (P-38, 사람이 정함 2026-10-22)
@@ -115,7 +125,7 @@ function App() {
     <div className="app-frame">
       <div className="app-canvas" style={{ transform: `scale(${scale})` }}>
         {showMenu && <MenuBar active={activeMenu} onSelect={selectMenu} />}
-        <main className={`stage${homeOpen ? ' stage--full' : ''}${firstRun ? ' stage--dimmed' : ''}`}>
+        <main className={`stage${redesigned ? ' stage--full' : ''}${firstRun ? ' stage--dimmed' : ''}`}>
           {confirmed ? (
             <ConfirmedScreen confirmed={confirmed} mannequin={mannequin} />
           ) : (
@@ -124,7 +134,7 @@ function App() {
               {!fullScreen && <Wardrobe className="stage__wardrobe" />}
             </>
           )}
-          {homeOpen && <HomeScreen mannequin={mannequin} homeRegion={homeRegion} onOpenRegion={() => selectMenu('settings')} />}
+          {homeOpen && <HomeScreen mannequin={mannequin} homeRegion={homeRegion} onOpenRegion={openRegionSettings} />}
           {closetOpen && <ClosetScreen gender={mannequin.gender} showToast={setToast} />}
           {dressUpOpen && (
             <DressUpScreen
@@ -142,6 +152,7 @@ function App() {
           {settingsOpen && (
             <SettingsScreen
               mannequin={mannequin}
+              initialPage={settingsPage}
               onMannequinSaved={setMannequin}
               onRegionSaved={setHomeRegion}
               showToast={setToast}

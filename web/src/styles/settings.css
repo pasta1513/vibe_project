@@ -1,0 +1,506 @@
+/* 설정 (SCREEN-SPEC §9). 시안 style/html 11의 틀을 옮기고, 지역·키워드·태그는 11_1의 모양을 씁니다.
+   위치는 1536×1024 캔버스 좌표. 큰 패널이 시안 PNG에 그려진 내용을 덮습니다. (P-38) */
+
+.st {
+  position: absolute;
+  inset: 0;
+  background-image: var(--src);
+  background-size: 1536px 1024px;
+  color: #2e2420;
+}
+
+.st button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.st button:disabled {
+  cursor: default;
+}
+
+/* 큰 패널 (시안 .main) */
+.st-main {
+  position: absolute;
+  left: 141px;
+  top: 153px;
+  width: 1320px;
+  height: 705px;
+  border-radius: 24px;
+  background: #fcf5ed;
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+
+/* 왼쪽 메뉴 (시안 .side) */
+.st-side {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 265px;
+  height: 100%;
+  padding: 36px 14px 0 19px;
+  background: #fcf4eb;
+  border-right: 1.5px solid #f3e6da;
+}
+
+.st-side button {
+  width: 233px;
+  height: 60px;
+  margin-bottom: 2px;
+  padding-left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  font-size: 20px;
+  color: #3b2a22;
+  text-align: left;
+}
+
+.st-side button svg {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  fill: none;
+  stroke: #3b2a22;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.st-side button.selected {
+  background: #fee0d5;
+  color: #e8473f;
+  font-weight: 700;
+}
+
+.st-side button.selected svg {
+  stroke: #e8473f;
+}
+
+.st-side button:hover:not(.selected) {
+  background: #f8ebe0;
+}
+
+/* 제목 (시안 .content) */
+.st-title {
+  position: absolute;
+  left: 289px;
+  top: 32px;
+  margin: 0;
+  font-size: 31px;
+  font-weight: 800;
+}
+
+.st-sub {
+  position: absolute;
+  left: 289px;
+  top: 82px;
+  margin: 0;
+  font-size: 19px;
+  color: #6c5a50;
+}
+
+.st-hr {
+  position: absolute;
+  left: 289px;
+  top: 139px;
+  width: 1008px;
+  margin: 0;
+  border: 0;
+  border-top: 1.5px solid #ecdccd;
+}
+
+.st-hr--short {
+  width: 688px;
+}
+
+/* 마네킹 설정 (시안 11) */
+.st-group {
+  position: absolute;
+  top: 178px;
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.st-vline {
+  position: absolute;
+  top: 182px;
+  width: 1.5px;
+  height: 230px;
+  background: #f1e3d6;
+}
+
+.st-tiles {
+  position: absolute;
+  top: 229px;
+  display: flex;
+  gap: 6px;
+}
+
+.st-tile {
+  position: relative;
+  height: 117px;
+  padding: 0;
+  border-radius: 9px;
+  border: 1.5px solid #ecdfd2;
+  background: #fdf7f0;
+  transition: transform 0.15s;
+}
+
+.st-tile:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.st-tile.selected {
+  border: 2px solid #f0574b;
+  background: #fde2da;
+}
+
+.st-tile__mannequin {
+  width: 100%;
+  height: 100%;
+  padding: 8px 4px 4px;
+}
+
+.st-tile__label {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  top: 126px;
+  font-size: 15px;
+  color: #2e2420;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.st-tile.selected .st-tile__label {
+  color: #e8473f;
+  font-weight: 700;
+}
+
+.st-shape-error {
+  position: absolute;
+  left: 289px;
+  top: 440px;
+  width: 688px;
+}
+
+.st-preview {
+  position: absolute;
+  left: 998px;
+  top: 129px;
+  width: 299px;
+  height: 454px;
+  border-radius: 18px;
+  background: #faead8;
+  border: 1px solid #f3e1cf;
+  overflow: hidden;
+}
+
+.st-preview__mannequin {
+  width: 100%;
+  height: 100%;
+  padding: 28px 40px 20px;
+}
+
+.st-done {
+  position: absolute;
+  left: 998px;
+  top: 602px;
+  width: 299px;
+  height: 59px;
+  border: none;
+  border-radius: 22px;
+  background: #fe584b;
+  color: #fff;
+  font-size: 21px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(238, 80, 70, 0.25);
+  transition: filter 0.15s, transform 0.15s;
+}
+
+.st-done:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.st-done:disabled {
+  background: #f3d9d2;
+  color: #a08a80;
+  box-shadow: none;
+}
+
+/* 지역·키워드·태그 쪽 내용 칸 */
+.st-body {
+  position: absolute;
+  left: 289px;
+  top: 164px;
+  width: 1008px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.st-note {
+  margin: 0;
+  font-size: 14px;
+  color: #8a7466;
+}
+
+/* 지역 설정 (시안 11_1 .search) */
+.st-region__now {
+  margin: 0;
+  font-size: 17px;
+}
+
+.st-region__now b {
+  margin-left: 8px;
+  color: #e8473f;
+}
+
+.st-region {
+  display: flex;
+  gap: 12px;
+}
+
+.st-search {
+  width: 409px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1.5px solid #ece2db;
+  background: #fffdfb;
+}
+
+.st-search:focus-within {
+  border-color: var(--color-accent);
+}
+
+.st-search select {
+  flex: 1;
+  height: 100%;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 17px;
+  color: #2e2420;
+  outline: none;
+  cursor: pointer;
+}
+
+.st-save {
+  height: 46px;
+  padding: 0 30px;
+  border: none;
+  border-radius: 13px;
+  background: #fe5f55;
+  color: #fff;
+  font-size: 16px;
+  box-shadow: 0 3px 8px rgba(254, 95, 85, 0.25);
+}
+
+.st-save:disabled {
+  background: #f3d9d2;
+  color: #a08a80;
+  box-shadow: none;
+}
+
+/* 키워드 탭 (시안 11_1 .pill) */
+.st-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.st-tabs button {
+  height: 37px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 13px;
+  background: #f5eee8;
+  font-size: 15px;
+  color: #2e2420;
+  transition: background 0.15s;
+}
+
+.st-tabs button:hover:not(.selected) {
+  background: #f0e3d9;
+}
+
+.st-tabs button.selected {
+  background: #fe5f55;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(254, 95, 85, 0.25);
+}
+
+/* 단어 상자 (시안 11_1 .box) */
+.st-box {
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 14px;
+  background: #fcf6f2;
+  border: 1px solid #f4e9e2;
+  overflow-y: auto;
+}
+
+.st-cat h4 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* "#이름 ×" 둥근 단추 (시안 11_1 .tg) */
+.st-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.st-chip {
+  height: 37px;
+  padding: 0 10px 0 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  background: #f7efea;
+  font-size: 15px;
+  letter-spacing: -0.3px;
+}
+
+.st-chip--fixed {
+  padding: 0 14px 0 4px;
+}
+
+.st .st-chip__name {
+  padding: 4px 6px 4px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font-size: 15px;
+  color: #2e2420;
+}
+
+.st button.st-chip__name:hover:not(:disabled) {
+  background: #efe2d8;
+  cursor: text;
+}
+
+.st-chip__genders {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.st-chip__genders button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #efe4dc;
+  font-size: 12px;
+  color: #6c5a50;
+}
+
+.st-chip__genders button.on {
+  background: #fe5f55;
+  color: #fff;
+}
+
+.st-chip__x {
+  padding: 0 2px;
+  border: none;
+  background: none;
+  font-size: 17px;
+  line-height: 1;
+  color: #6c5a50;
+}
+
+.st-chip__x:hover:not(:disabled) {
+  color: #fe5f55;
+}
+
+.st-chip--editing {
+  padding: 0 6px;
+  background: #fffdfb;
+  box-shadow: inset 0 0 0 1.5px var(--color-accent);
+}
+
+.st-chip__form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.st-chip__form input {
+  width: 140px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 15px;
+  color: #2e2420;
+  outline: none;
+}
+
+.st-chip__ok,
+.st-chip__cancel {
+  height: 26px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.st-chip__ok {
+  background: #fe5f55;
+  color: #fff;
+}
+
+.st-chip__ok:disabled {
+  background: #f3d9d2;
+  color: #a08a80;
+}
+
+.st-chip__cancel {
+  background: #f5eee8;
+  color: #2e2420;
+}
+
+/* "＋ 키워드 추가하기" (시안 11_1 .tg.add). 펼치면 WordAdder의 입력 줄 */
+.st-chips__add {
+  display: flex;
+  align-items: center;
+}
+
+.st .st-chips__add .chip--add {
+  height: 37px;
+  padding: 0 22px;
+  border-radius: 12px;
+  border: 1.5px solid #ece2db;
+  background: #fffdfb;
+  font-size: 15px;
+  color: #6c5a50;
+}
+
+.st .st-chips__add .chip--add:hover {
+  border-color: var(--color-accent);
+}
+
+.st .st-chips__add .word-form {
+  flex-wrap: nowrap;
+}
