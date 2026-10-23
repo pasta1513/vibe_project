@@ -1867,6 +1867,100 @@ button {
   color: var(--reg-muted, #8a7466);
 }
 
+/* 앱 안에서 그리는 고르기 칸 (SelectBox, 2026-10-23). 기본 <select>의 펼침 목록이 화면 배율과 어긋나 크게 나와서 직접 그림 */
+.selbox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.selbox__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 30px;
+  padding: 2px 10px;
+  border: 1px solid #e6ddd2;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-heading);
+  text-align: left;
+  cursor: pointer;
+}
+
+.selbox__btn:hover,
+.selbox--open .selbox__btn {
+  border-color: var(--color-accent);
+}
+
+.selbox__btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.selbox__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selbox__chev {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s;
+}
+
+.selbox--open .selbox__chev {
+  transform: rotate(180deg);
+}
+
+.selbox__list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid #e6ddd2;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(80, 60, 40, 0.14);
+}
+
+.selbox__opt {
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--color-heading);
+  cursor: pointer;
+}
+
+.selbox__opt--active {
+  background: #f7f1ea;
+}
+
+.selbox__opt--on {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.selbox__text--placeholder {
+  color: var(--color-text-sub);
+}
+
 /* 어깨 · 소매 맞추기 (2026-10-23, moire 프로젝트 SleeveControls) */
 .fitter__sleeves {
   display: flex;

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import Button from './Button.jsx'
 import Mannequin from './Mannequin.jsx'
+import SelectBox from './SelectBox.jsx'
 import { DEFAULT_FIT, normalizeFit, normalizeLook, normalizeShoulderFit, supportsSleeves, TEMPLATE_BOX } from './garments.js'
 
 // 마네킹 모습 조절 (SCREEN-SPEC §6.2, §6.3, DESIGN §5.5, P-33).
@@ -116,13 +117,12 @@ function OutfitFitter({ mannequin, item, templates, onChange, layout }) {
   const templateSelect = (
     <label className="fitter__row">
       <span>모양</span>
-      <select value={code} onChange={(e) => onChange({ outfit_template: e.target.value, fit: look })}>
-        {templates.map((t) => (
-          <option key={t.code} value={t.code}>
-            {t.name}
-          </option>
-        ))}
-      </select>
+      <SelectBox
+        ariaLabel="모양"
+        options={templates.map((t) => ({ value: t.code, label: t.name }))}
+        value={code}
+        onChange={(next) => onChange({ outfit_template: next, fit: look })}
+      />
     </label>
   )
   const toggle = (

@@ -3,6 +3,7 @@ import { CATEGORIES, SLOT_LABEL, WEATHER_LABEL, formatDate, scoreStars } from '.
 import ErrorLine from './ErrorLine.jsx'
 import FavoriteStar from './FavoriteStar.jsx'
 import Mannequin, { GarmentIllustration } from './Mannequin.jsx'
+import SelectBox from './SelectBox.jsx'
 import { api } from '../api.js'
 
 // 새 옷 입기의 패널들 (SCREEN-SPEC §5). 시안 style/html의 08_1(따뜻한, 옷 고르기), 08_1(파스텔, 추천),
@@ -125,20 +126,19 @@ export function SidePanel({
 
   return (
     <aside className="du-side" aria-label="날씨와 스타일">
-      <label className="du-side__city">
-        <select aria-label="지역" value={region ?? ''} onChange={(e) => onRegion(e.target.value)}>
-          {!region && <option value="">지역</option>}
-          {regions.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
+      <div className="du-side__city">
+        <SelectBox
+          ariaLabel="지역"
+          placeholder="지역"
+          value={region ?? ''}
+          onChange={onRegion}
+          options={regions.map((name) => ({ value: name, label: name }))}
+        />
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 22s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z" fill="#ee6a5a" />
           <circle cx="12" cy="10" r="2.6" fill="#fff" />
         </svg>
-      </label>
+      </div>
       {w && w.is_default_region && <p className="du-side__notice">설정에서 내 지역을 저장해 주세요.</p>}
 
       <div className="du-side__weather" aria-live="polite">

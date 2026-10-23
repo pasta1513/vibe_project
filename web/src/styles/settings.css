@@ -283,16 +283,34 @@
   border-color: var(--color-accent);
 }
 
-.st-search select {
-  flex: 1;
+.st-search .selbox {
   height: 100%;
+}
+
+/* 내 지역 고르기 (앱 안에서 그리는 고르기 칸, 2026-10-23). 바깥 칸(.st-search) 안에 글자만 보임 */
+.st-search .selbox__btn {
+  height: 100%;
+  padding: 0;
   border: 0;
   background: none;
-  font-family: inherit;
   font-size: 17px;
   color: #2e2420;
+}
+
+.st-search .selbox__btn:focus-visible {
   outline: none;
-  cursor: pointer;
+}
+
+.st-search .selbox__list {
+  left: -46px;
+  right: -13px;
+  top: calc(100% + 6px);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.st-search .selbox__opt {
+  font-size: 16px;
 }
 
 .st-save {
