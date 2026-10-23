@@ -1,5 +1,6 @@
 """추천받기 (API-SPEC §5.2)."""
 
+import logging
 from datetime import date
 from typing import Literal, Optional
 
@@ -15,6 +16,7 @@ from ..rules import SLOTS, missing_for_outfit, outfit_key
 from .weather import daily_weather
 
 router = APIRouter(prefix="/api/recommendations")
+log = logging.getLogger("uvicorn.error")
 
 
 class RecommendIn(BaseModel):
@@ -109,7 +111,9 @@ def recommend(body: RecommendIn, session: Session = Depends(get_session)):
     try:
         answer = ai.recommend(closet, weather, tag.name, request=request_text,
                               persona=body.persona, favorites=favorites_info)
-    except ExternalError:
+    except ExternalError as exc:
+        # 왜 실패했는지 서버 터미널에 남깁니다. 오류 문장에는 키가 들어가지 않습니다. (P-41)
+        log.warning("추천 실패: %s", exc.args)
         raise ApiError("recommend_failed", "추천을 받지 못했어요.", 502)
 
     outfits = answer["outfits"]

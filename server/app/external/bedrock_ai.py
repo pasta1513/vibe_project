@@ -46,6 +46,16 @@ def model_id() -> str:
     return os.environ.get("BEDROCK_MODEL_ID", DEFAULT_MODEL_ID)
 
 
+def recommend_model_id() -> str:
+    """추천에만 쓰는 모델. `server/.env`의 BEDROCK_MODEL_ID2가 없으면 다른 일과 같은 모델. (P-41)
+    서울에서는 아시아·태평양 범위(apac.)만 씁니다. Sonnet 5.5는 global.만 있어 쓰지 않습니다. (사람이 정함, 2026-10-23)"""
+    return os.environ.get("BEDROCK_MODEL_ID2", "").strip() or model_id()
+
+
+def _is_claude(model: str) -> bool:
+    return "anthropic.claude" in model
+
+
 def converse_text(system: str, user_text: str, max_tokens: int = 512,
                   timeout: int = TIMEOUTS["ping"]) -> str:
     """글 한 덩어리를 보내고 글 답을 받습니다. 실패하면 ExternalError("ai_failed")."""
@@ -68,7 +78,7 @@ def ping() -> str:
 
 
 def converse_tool(system: str, user_text, tool_name: str, description: str,
-                  schema: dict, timeout: int, max_tokens: int = 300) -> dict:
+                  schema: dict, timeout: int, max_tokens: int = 300, model: str | None = None) -> dict:
     """"답하기" 도구 하나를 꼭 쓰게 해서 정해진 모양(JSON)의 답을 받습니다.
 
     Nova Lite는 Bedrock의 structured outputs를 지원하지 않아 도구 입력으로 받습니다. (D-013)
@@ -81,18 +91,27 @@ def converse_tool(system: str, user_text, tool_name: str, description: str,
     시간을 넘기면 botocore의 ReadTimeoutError(BotoCoreError)가 나서 ExternalError가 됩니다.
     """
     content = [{"text": user_text}] if isinstance(user_text, str) else user_text
+    model = model or model_id()
+    tool_choice = {"tool": {"name": tool_name}}
+    inference = {"maxTokens": max_tokens, "temperature": 0, "stopSequences": ["</tool>"]}
+    if _is_claude(model):
+        # 최근 Claude(Sonnet 5.5 등)는 도구 강제(toolChoice tool)와 temperature를 거절합니다(400).
+        # 옛 Claude(3.5 Sonnet)도 받는 방식으로 맞춰 "알아서 쓰기" + 지시문으로 도구를 쓰게 합니다.
+        # 출력 토큰은 넉넉히 둡니다 (3.5 Sonnet 한도 8192). 도구를 쓰지 않으면 아래에서 ai_invalid가 됩니다. (P-41)
+        tool_choice = {"auto": {}}
+        inference = {"maxTokens": max_tokens * 4}
+        system += f"\n반드시 {tool_name} 도구 하나로만 답합니다. 도구 밖에 글을 쓰지 않습니다."
     try:
         response = _get_client(timeout).converse(
-            modelId=model_id(),
+            modelId=model,
             system=[{"text": system}],
             messages=[{"role": "user", "content": content}],
             toolConfig={
                 "tools": [{"toolSpec": {"name": tool_name, "description": description,
                                         "inputSchema": {"json": schema}}}],
-                "toolChoice": {"tool": {"name": tool_name}},
+                "toolChoice": tool_choice,
             },
-            inferenceConfig={"maxTokens": max_tokens, "temperature": 0,
-                             "stopSequences": ["</tool>"]},
+            inferenceConfig=inference,
         )
     except (BotoCoreError, ClientError) as exc:
         raise ExternalError("ai_failed", str(exc)) from exc
@@ -346,7 +365,7 @@ def recommend(closet, weather, tag, request=None, persona="expert", favorites=No
                                 "reason": {"type": "string", "description": "있으면 좋은 이유 한 문장"}},
                  "required": ["name", "reason"]}}},
          "required": ["outfits", "closet_gap", "need_shopping", "shopping"]},
-        timeout=TIMEOUTS["recommend"], max_tokens=2000,
+        timeout=TIMEOUTS["recommend"], max_tokens=2000, model=recommend_model_id(),
     )
     results = []
     for item in answer.get("outfits") or []:
