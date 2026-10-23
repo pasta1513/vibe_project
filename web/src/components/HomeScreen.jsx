@@ -10,6 +10,7 @@ import Mannequin from './Mannequin.jsx'
 // 처음 화면 (SCREEN-SPEC §4). 사람이 준 그림(2026-10-22)을 옮겼습니다. (P-38)
 // 배경은 그 그림에서 가운데 캐릭터 자리를 메운 것이고, 말풍선 "오늘은 어떤 옷을 입을까?"는 그림에 있는 것을 그대로 씁니다.
 // 캐릭터 자리에는 지금 고른 모양의 마네킹이 기본 잠옷 차림으로 섭니다.
+// 오늘 날짜의 코디 일기가 있으면 그 옷을 입습니다. 일기를 받지 못하면 잠옷 그대로입니다. (P-46, 사람이 정함 2026-10-23)
 // 날씨 카드: 오늘, 저장한 지역(없으면 서울)의 날씨 (API-SPEC §4). 처음 화면을 열 때 한 번 받습니다.
 // 기온은 최저~최고, 한마디는 날씨마다 정해 둔 문장 (AI를 부르지 않음). > 는 설정의 지역 설정을 엽니다. (사람이 정함, 2026-10-22)
 
@@ -30,6 +31,7 @@ const MESSAGE = {
 function HomeScreen({ mannequin, onOpenRegion }) {
   const [weather, setWeather] = useState(null)
   const [error, setError] = useState(null)
+  const [today, setToday] = useState(null)
 
   const load = useCallback(async () => {
     setError(null)
@@ -42,10 +44,38 @@ function HomeScreen({ mannequin, onOpenRegion }) {
     load()
   }, [load])
 
+  useEffect(() => {
+    let alive = true
+    api.getDiary().then((res) => {
+      if (!alive || res.result !== 'ok') return
+      setToday(res.data.find((entry) => entry.date === isoDate(0)) ?? null)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  // 코디 일기 카드와 같이 입힘. 아우터가 없으면 "입지 않음"
+  let worn = null
+  if (today) {
+    worn = Object.fromEntries(Object.entries(today.outfit).map(([slot, item]) => [slot, item ?? null]))
+    if (!today.outfit.outer) worn.outer = 'none'
+  }
+
   return (
     <section className="hm" aria-label="처음 화면" style={{ '--src': `url(${homeBg})` }}>
       <p className="visually-hidden">오늘은 어떤 옷을 입을까?</p>
-      <Mannequin className="hm-mannequin" {...mannequin} title="지금 마네킹 모양, 기본 잠옷 차림" />
+      {worn ? (
+        <Mannequin
+          className="hm-mannequin"
+          {...mannequin}
+          outfit={worn}
+          fadedSlots={today.deleted_slots}
+          title="지금 마네킹 모양, 오늘 코디 차림"
+        />
+      ) : (
+        <Mannequin className="hm-mannequin" {...mannequin} title="지금 마네킹 모양, 기본 잠옷 차림" />
+      )}
 
       {/* 날씨 카드 */}
       <div className="hm-weather" aria-label="오늘 날씨">
