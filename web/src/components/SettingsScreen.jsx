@@ -181,7 +181,7 @@ function WordList({ words, adder, ...handlers }) {
   )
 }
 
-function SettingsScreen({ mannequin, onMannequinSaved, showToast }) {
+function SettingsScreen({ mannequin, onMannequinSaved, onRegionSaved, showToast }) {
   const [settings, setSettings] = useState(null)
   const [keywords, setKeywords] = useState(null)
   const [tags, setTags] = useState(null)
@@ -232,6 +232,7 @@ function SettingsScreen({ mannequin, onMannequinSaved, showToast }) {
     setSavingRegion(false)
     if (res.result === 'ok') {
       setSettings((prev) => ({ ...prev, home_region: res.data.home_region }))
+      onRegionSaved?.(res.data.home_region)
       showToast('저장되었습니다.')
     } else {
       setRegionError(res.error.message)

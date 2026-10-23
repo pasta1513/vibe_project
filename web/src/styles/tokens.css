@@ -77,7 +77,4 @@
   --radius-panel: 22px;
   --radius-pill: 999px;
   --border: 1px solid var(--color-border);
-
-  /* 메뉴바 높이: 지금 셸(index.css .menubar)이 쓰는 값. 새 셸로 바꾸는 단계에서 지웁니다. */
-  --menubar-height: 56px;
 }

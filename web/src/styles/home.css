@@ -1,0 +1,146 @@
+/* 처음 화면 (SCREEN-SPEC §4). 사람이 준 그림(2026-10-22)을 옮깁니다. 위치는 1536×1024 캔버스 좌표.
+   배경은 그 그림에서 가운데 캐릭터 자리를 메운 것. (P-38) */
+
+.hm {
+  position: absolute;
+  inset: 0;
+  background-image: var(--src);
+  background-size: 1536px 1024px;
+  color: #3b2a22;
+}
+
+/* 그림의 캐릭터 자리 (475~638, 250~755) */
+.hm-mannequin {
+  position: absolute;
+  left: 452px;
+  top: 262px;
+  width: 210px;
+  height: 490px;
+}
+
+/* 날씨 카드: 그림에 그려진 카드(1123~1432, 163~366)를 덮습니다 */
+.hm-weather {
+  position: absolute;
+  left: 1120px;
+  top: 160px;
+  width: 316px;
+  height: 210px;
+  border-radius: 22px;
+  background: #fffaf6;
+  box-shadow: var(--shadow-panel);
+}
+
+.hm-weather__city {
+  position: absolute;
+  left: 32px;
+  top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.hm-weather__more {
+  position: absolute;
+  right: 18px;
+  top: 22px;
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.hm-weather__more:hover {
+  background: #f6ebe0;
+}
+
+.hm-weather__more svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: #6c5a50;
+  stroke-width: 2;
+}
+
+.hm-weather__icon {
+  position: absolute;
+  left: 46px;
+  top: 66px;
+  width: 84px;
+  height: 84px;
+}
+
+.hm-weather__temp {
+  position: absolute;
+  left: 152px;
+  top: 70px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+
+.hm-weather__day {
+  position: absolute;
+  left: 152px;
+  top: 112px;
+  font-size: 19px;
+}
+
+.hm-weather__msg {
+  position: absolute;
+  left: 32px;
+  right: 20px;
+  top: 162px;
+  margin: 0;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.hm-weather__wait {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #8a7466;
+}
+
+.hm-weather__error {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 말풍선 문장은 배경에 그려져 있어, 화면 읽기 도구용으로만 둡니다. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* 서울 날씨 안내: 저장한 내 지역이 없을 때 날씨 카드 아래 (kmj 기존 문구) */
+.hm-weather__notice {
+  position: absolute;
+  left: 1120px;
+  top: 384px;
+  width: 316px;
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: #fffaf6;
+  box-shadow: var(--shadow-panel);
+  font-size: 15px;
+  color: #6c5a50;
+}

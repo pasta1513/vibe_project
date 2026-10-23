@@ -6,13 +6,14 @@ import DiaryScreen from './components/DiaryScreen.jsx'
 import DressUpScreen from './components/DressUpScreen.jsx'
 import FavoritesScreen from './components/FavoritesScreen.jsx'
 import ErrorLine from './components/ErrorLine.jsx'
-import Mannequin from './components/Mannequin.jsx'
 import MannequinPicker from './components/MannequinPicker.jsx'
+import HomeScreen from './components/HomeScreen.jsx'
 import MenuBar from './components/MenuBar.jsx'
 import Room from './components/Room.jsx'
 import SettingsScreen from './components/SettingsScreen.jsx'
 import Toast from './components/Toast.jsx'
 import Wardrobe from './components/Wardrobe.jsx'
+import { useFitScale } from './useFitScale.js'
 
 function App() {
   // loading: 설정을 받는 중, error: 받지 못함, ready: 받음
@@ -20,6 +21,8 @@ function App() {
   const [loadError, setLoadError] = useState(null)
   const [mannequin, setMannequin] = useState(null)
   const [regions, setRegions] = useState([])
+  // 저장한 내 지역(없으면 null). 처음 화면 날씨가 씁니다. 설정에서 저장하면 바로 바뀝니다.
+  const [homeRegion, setHomeRegion] = useState(null)
   const [activeMenu, setActiveMenu] = useState(null)
   // 확정한 뒤 화면 (SCREEN-SPEC §5.6). 메뉴를 누르면 사라집니다. 앱을 다시 켜면 처음 화면입니다.
   const [confirmed, setConfirmed] = useState(null)
@@ -31,12 +34,14 @@ function App() {
   const [saveError, setSaveError] = useState(null)
   const [toast, setToast] = useState(null)
   const clearToast = useCallback(() => setToast(null), [])
+  const scale = useFitScale()
 
   // 앱 열기 (API-SPEC §3)의 응답을 반영합니다.
   const applySettings = useCallback((res) => {
     if (res.result === 'ok') {
       setMannequin(res.data.mannequin)
       setRegions(res.data.regions)
+      setHomeRegion(res.data.home_region ?? null)
       setStatus('ready')
     } else {
       setLoadError(res.error.message)
@@ -100,49 +105,58 @@ function App() {
   const diaryOpen = showMenu && activeMenu === 'diary'
   // 즐겨찾기에서는 옷걸이가 화면 전체로 커지고 옷장과 마네킹은 숨깁니다. (SCREEN-SPEC §1.2, §8)
   const favoritesOpen = showMenu && activeMenu === 'favorites'
-  const fullScreen = closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen
+  // 처음 화면: 메뉴를 아직 고르지 않았을 때 (SCREEN-SPEC §4). 캔버스 전체에 그림을 깔고 마네킹과 날씨 카드가 보입니다.
+  const homeOpen = showMenu && !activeMenu && !confirmed
+  const fullScreen = homeOpen || closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen
 
+  // 앱 전체를 시안(style/html)의 1536×1024 캔버스로 그리고 창 크기에 맞춰 줄입니다. (P-38, 사람이 정함 2026-10-22)
+  // 아직 시안을 옮기지 않은 화면은 메뉴바 아래에, 처음 화면은 캔버스 전체에 그려집니다.
   return (
-    <div className="app">
-      {showMenu && <MenuBar active={activeMenu} onSelect={selectMenu} />}
-      <main className={`stage${firstRun ? ' stage--dimmed' : ''}`}>
-        {confirmed ? (
-          <ConfirmedScreen confirmed={confirmed} mannequin={mannequin} />
-        ) : (
-          <>
-            <Room className="stage__room" />
-            {!fullScreen && <Wardrobe className="stage__wardrobe" />}
-            {showMenu && !fullScreen && <Mannequin className="stage__mannequin" {...mannequin} />}
-          </>
-        )}
-        {closetOpen && <ClosetScreen gender={mannequin.gender} showToast={setToast} />}
-        {dressUpOpen && (
-          <DressUpScreen
-            key={dressUpKey}
-            initial={dressUpInit}
-            mannequin={mannequin}
-            regions={regions}
-            onNoClothes={goToCloset}
-            onConfirmed={handleConfirmed}
-            showToast={setToast}
-          />
-        )}
-        {diaryOpen && <DiaryScreen onGoDressUp={() => selectMenu('dressup')} onTryOn={openTryOn} />}
-        {favoritesOpen && <FavoritesScreen onTryOn={openTryOn} />}
-        {settingsOpen && (
-          <SettingsScreen mannequin={mannequin} onMannequinSaved={setMannequin} showToast={setToast} />
-        )}
-        {status === 'error' && (
-          <div className="stage__notice">
-            <ErrorLine message={loadError} onRetry={retryLoad} />
-          </div>
-        )}
-        {showMenu && activeMenu && !fullScreen && (
-          <p className="stage__placeholder">준비 중인 화면이에요.</p>
-        )}
-      </main>
+    <div className="app-frame">
+      <div className="app-canvas" style={{ transform: `scale(${scale})` }}>
+        {showMenu && <MenuBar active={activeMenu} onSelect={selectMenu} />}
+        <main className={`stage${homeOpen ? ' stage--full' : ''}${firstRun ? ' stage--dimmed' : ''}`}>
+          {confirmed ? (
+            <ConfirmedScreen confirmed={confirmed} mannequin={mannequin} />
+          ) : (
+            <>
+              <Room className="stage__room" />
+              {!fullScreen && <Wardrobe className="stage__wardrobe" />}
+            </>
+          )}
+          {homeOpen && <HomeScreen mannequin={mannequin} homeRegion={homeRegion} onOpenRegion={() => selectMenu('settings')} />}
+          {closetOpen && <ClosetScreen gender={mannequin.gender} showToast={setToast} />}
+          {dressUpOpen && (
+            <DressUpScreen
+              key={dressUpKey}
+              initial={dressUpInit}
+              mannequin={mannequin}
+              regions={regions}
+              onNoClothes={goToCloset}
+              onConfirmed={handleConfirmed}
+              showToast={setToast}
+            />
+          )}
+          {diaryOpen && <DiaryScreen onGoDressUp={() => selectMenu('dressup')} onTryOn={openTryOn} />}
+          {favoritesOpen && <FavoritesScreen onTryOn={openTryOn} />}
+          {settingsOpen && (
+            <SettingsScreen
+              mannequin={mannequin}
+              onMannequinSaved={setMannequin}
+              onRegionSaved={setHomeRegion}
+              showToast={setToast}
+            />
+          )}
+          {status === 'error' && (
+            <div className="stage__notice">
+              <ErrorLine message={loadError} onRetry={retryLoad} />
+            </div>
+          )}
+        </main>
+        <Toast message={toast} onDone={clearToast} />
+      </div>
+      {/* 첫 실행 화면은 자체 캔버스가 있어 앱 캔버스 밖에 둡니다. */}
       {firstRun && <MannequinPicker onStart={handleStart} saving={saving} error={saveError} />}
-      <Toast message={toast} onDone={clearToast} />
     </div>
   )
 }

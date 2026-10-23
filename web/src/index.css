@@ -19,8 +19,7 @@ body {
   font-weight: var(--weight-regular);
   line-height: 1.5;
   color: var(--color-text);
-  background: var(--color-wall);
-  min-width: 1024px;
+  background: #e9dccf;
 }
 
 button {
@@ -75,43 +74,160 @@ button {
   font-size: var(--text-sm);
 }
 
-/* 화면 틀 (SCREEN-SPEC §1) */
-.app {
+/* 화면 틀 (SCREEN-SPEC §1). 시안(style/html)처럼 앱 전체를 1536×1024 캔버스로 그리고,
+   창 크기에 맞춰 줄이거나 늘립니다 (App.jsx, useFitScale.js). 창이나 알림의 position: fixed도 캔버스 기준입니다. (P-38) */
+.app-frame {
+  position: fixed;
+  inset: 0;
   display: flex;
-  flex-direction: column;
-  height: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #e9dccf;
 }
 
+.app-canvas {
+  position: relative;
+  flex: none;
+  width: 1536px;
+  height: 1024px;
+  overflow: hidden;
+  transform-origin: center center;
+  background: var(--color-wall);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* 메뉴바 (시안 "포근한 옷장 앱 상세 화면"의 .header, .nav, .logo) */
 .menubar {
+  position: absolute;
+  left: 110px;
+  top: 23px;
+  z-index: 5;
   display: flex;
-  gap: var(--space-2);
-  height: var(--menubar-height);
-  padding: 0 var(--space-6);
-  align-items: stretch;
-  background: var(--color-surface);
-  border-bottom: var(--border);
+  align-items: center;
+  width: 1394px;
+  height: 92px;
+  padding: 0 50px;
+  border-radius: 22px;
+  background: #faf1ec;
+  box-shadow: var(--shadow-panel);
 }
 
-.menubar__item {
-  font-size: var(--text-md);
-  padding: 0 var(--space-4);
+.menubar__brand {
+  padding: 4px 8px;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: 12px;
   background: none;
-  color: var(--color-text);
+  font-family: inherit;
+  text-align: center;
   cursor: pointer;
 }
 
-.menubar__item--active {
-  color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
-  font-weight: var(--weight-bold);
+.menubar__brand:hover {
+  background: #f6ebe0;
 }
 
-.stage {
+.menubar__logo {
   position: relative;
-  flex: 1;
+  display: block;
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--color-heading);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.menubar__logo-i {
+  position: relative;
+}
+
+.menubar__logo-i::before {
+  content: '♥';
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: var(--color-accent);
+}
+
+.menubar__logo-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  color: var(--color-heading);
+}
+
+.menubar__nav {
+  position: absolute;
+  left: 351px;
+  top: 7px;
+  display: flex;
+  gap: 14px;
+}
+
+.menubar__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 112px;
+  height: 79px;
+  font-size: 15px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--color-heading);
+  cursor: pointer;
+}
+
+.menubar__icon {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: var(--color-heading);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.menubar__item:hover:not(.menubar__item--active) {
+  background: #f6ebe0;
+}
+
+.menubar__item--active {
+  background: #fedfd6;
+  color: #e8473f;
+}
+
+.menubar__item--active .menubar__icon {
+  stroke: #e8473f;
+}
+
+.menubar__item--active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 72px;
+  height: 3px;
+  border-radius: 2px;
+  background: #e8473f;
+}
+
+/* 화면 자리: 아직 시안을 옮기지 않은 화면은 메뉴바 아래, 시안을 옮긴 화면(옷장)은 캔버스 전체 */
+.stage {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 130px;
+  bottom: 0;
   overflow: hidden;
+}
+
+.stage--full {
+  top: 0;
 }
 
 .stage__room {
@@ -132,16 +248,7 @@ button {
   height: 40%;
 }
 
-.stage__mannequin {
-  position: absolute;
-  left: 50%;
-  bottom: 10%;
-  height: 72%;
-  transform: translateX(-50%);
-}
-
-.stage__notice,
-.stage__placeholder {
+.stage__notice {
   position: absolute;
   left: 50%;
   bottom: var(--space-4);
@@ -152,8 +259,13 @@ button {
   background: var(--color-surface);
 }
 
-.stage__placeholder {
-  color: var(--color-text-sub);
+/* 확정한 뒤 화면의 마네킹 자리 (아직 옮기지 않은 화면용) */
+.stage__mannequin {
+  position: absolute;
+  left: 50%;
+  bottom: 10%;
+  height: 72%;
+  transform: translateX(-50%);
 }
 
 /* 창 (DESIGN §4.3) */
@@ -164,6 +276,8 @@ button {
   align-items: center;
   justify-content: center;
   background: rgba(59, 42, 34, 0.25);
+  /* 메뉴바(z-index 5) 위에 떠서, 창이 열려 있는 동안 메뉴바도 어둡게 가리고 누르지 못하게 합니다. */
+  z-index: 6;
 }
 
 /* 창 (시안 .panel): 둥근 크림 패널과 부드러운 그림자 */
