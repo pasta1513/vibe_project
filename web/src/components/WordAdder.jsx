@@ -10,6 +10,7 @@ import ErrorLine from './ErrorLine.jsx'
 // category: 종류 단어일 때 속할 구분. 단어를 더하는 자리(구분 묶음, 등록 창에서 고른 구분)가 정합니다.
 // onAdded(word, genderFailed): AI가 성별을 정하지 못했으면 genderFailed가 true입니다.
 // showToast가 있으면 성별 실패 알림을 짧은 알림으로 띄웁니다. 없으면 부르는 쪽이 알립니다.
+// label: 닫혀 있을 때 버튼 글자 (설정은 시안대로 "＋ 키워드 추가하기", P-38)
 
 export const GENDER_FAILED = "성별을 정하지 못해 '둘 다'로 두었어요. 설정에서 고칠 수 있어요."
 
@@ -25,7 +26,7 @@ export function isBlankName(name) {
   return name.trim() === ''
 }
 
-function WordAdder({ kind, category, onAdded, showToast }) {
+function WordAdder({ kind, category, onAdded, showToast, label = '+ 더하기' }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
@@ -72,7 +73,7 @@ function WordAdder({ kind, category, onAdded, showToast }) {
   if (!open) {
     return (
       <button type="button" className="chip chip--add" onClick={() => setOpen(true)}>
-        + 더하기
+        {label}
       </button>
     )
   }

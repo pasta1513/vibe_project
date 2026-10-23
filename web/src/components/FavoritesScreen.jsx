@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
+import favoritesBg from '../assets/favorites/favorites-bg.png'
+import favoritesEmptyBg from '../assets/favorites/favorites-empty-bg.png'
 import { SLOT_LABEL } from '../labels.js'
-import Button from './Button.jsx'
-import ConfirmDialog from './ConfirmDialog.jsx'
+import '../styles/favorites.css'
 import DatePickerDialog from './DatePickerDialog.jsx'
 import ErrorLine from './ErrorLine.jsx'
+import HeartIcon from './HeartIcon.jsx'
 import Mannequin from './Mannequin.jsx'
 
-// 즐겨찾기 (SCREEN-SPEC §8): 옷걸이(행거)에 코디가 가로 한 줄로 걸려 있습니다.
-// 코디 모습과 지운 옷 표시만 보이고, 점수, 코멘트, 날씨, 태그, 날짜, 별은 보이지 않습니다.
+// 즐겨찾기 (SCREEN-SPEC §8). 시안 style/html 10을 옮겼습니다. (P-38)
+// 옷걸이 봉에 코디 카드가 가로 한 줄로 걸려 있습니다. 코디 모습, 지운 옷 표시, ♥만 보이고
+// 점수, 코멘트, 날씨, 태그, 날짜는 보이지 않습니다. 시안의 날짜와 정렬은 넣지 않았습니다 (사람이 정함, 2026-10-22).
+// 카드를 누르면 입혀 보기, ♥을 누르면 묻지 않고 빼기 (사람이 정함, 2026-10-22, 2026-10-23). 끌면 순서가 바뀝니다.
 
-// 코디 하나가 차지하는 폭 (카드 + 사이 간격). 끌 때 놓일 자리를 이 폭으로 계산합니다.
-const SLOT_WIDTH = 220
+// 코디 하나가 차지하는 폭 (카드 200 + 사이 간격 10). 끌 때 놓일 자리를 이 폭으로 계산합니다.
+const SLOT_WIDTH = 210
+// 한 번에 보이는 카드 수 (시안 10). ◀ ▶는 이만큼 넘깁니다.
+const PAGE = 5
 // 끌면서 끝에서 이만큼 안쪽에 들어오면 옷걸이가 저절로 넘어갑니다. (SCREEN-SPEC §8, 제안)
 const EDGE = 80
 const AUTO_SCROLL_STEP = 8
@@ -25,37 +31,56 @@ function moveTo(list, id, index) {
   return [...without.slice(0, at), item, ...without.slice(at)]
 }
 
-function FavoriteHanger({ fav, dragging, onPointerDown, onTryOn, onRemove }) {
+function FavoriteCard({ fav, dragging, onPointerDown, onOpen, onRemove }) {
   const worn = Object.fromEntries(
     Object.entries(fav.outfit).map(([slot, item]) => [slot, item ?? null]),
   )
   if (!fav.outfit.outer) worn.outer = 'none'
   return (
     <li
-      className={`hanger${dragging ? ' hanger--dragging' : ''}`}
+      className={`fv-slot${dragging ? ' fv-slot--dragging' : ''}`}
       onPointerDown={(event) => onPointerDown(event, fav.id)}
     >
-      {/* 옷걸이 고리 */}
-      <svg className="hanger__hook" viewBox="0 0 40 28" aria-hidden="true">
-        <path d="M20 26 V14 Q20 4 28 4 Q34 4 34 10" fill="none" stroke="var(--color-prop-dark)" strokeWidth="3" strokeLinecap="round" />
+      {/* 옷걸이 고리 (시안 그림의 고리를 앱이 카드마다 그립니다) */}
+      <svg className="fv-hook" viewBox="0 0 40 50" aria-hidden="true">
+        <path d="M14 14 a6 6 0 1 1 6 6 V32" fill="none" stroke="#4a3a33" strokeWidth="3.4" strokeLinecap="round" />
+        <path d="M5 49 Q20 28 35 49 Z" fill="#4a3a33" />
       </svg>
-      <article className="hanger__card" aria-label="즐겨찾기 코디">
-        {fav.deleted_slots.length > 0 && (
-          <span className="diary-card__deleted">
-            ⚠ {fav.deleted_slots.map((slot) => SLOT_LABEL[slot]).join(', ')}
-          </span>
-        )}
+      <article
+        className="fv-card"
+        aria-label="즐겨찾기 코디, 눌러서 입혀 보기"
+        role="button"
+        tabIndex={0}
+        onClick={() => onOpen(fav)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onOpen(fav)
+          }
+        }}
+      >
         <Mannequin
-          className="hanger__mannequin"
+          className="fv-card__mannequin"
           {...fav.mannequin}
           outfit={worn}
           fadedSlots={fav.deleted_slots}
           title="즐겨찾기 코디를 입은 마네킹"
         />
-        <div className="hanger__actions">
-          <Button onClick={() => onTryOn(fav)}>입혀 보기</Button>
-          <Button onClick={() => onRemove(fav)}>빼기</Button>
-        </div>
+        {/* 지운 옷 표시 (SCREEN-SPEC §2.4) */}
+        {fav.deleted_slots.length > 0 && (
+          <span className="fv-card__deleted">⚠ {fav.deleted_slots.map((slot) => SLOT_LABEL[slot]).join(', ')}</span>
+        )}
+        <button
+          type="button"
+          className="fv-card__heart fav-heart fav-heart--on"
+          aria-label="즐겨찾기에서 빼기"
+          onClick={(event) => {
+            event.stopPropagation()
+            onRemove(fav)
+          }}
+        >
+          <HeartIcon />
+        </button>
       </article>
     </li>
   )
@@ -65,7 +90,6 @@ function FavoritesScreen({ onTryOn }) {
   const [favorites, setFavorites] = useState(null)
   const [loadError, setLoadError] = useState(null)
   const [orderError, setOrderError] = useState(null)
-  const [removing, setRemoving] = useState(null)
   const [actionError, setActionError] = useState(null)
   const [picking, setPicking] = useState(null)
   const [opening, setOpening] = useState(false)
@@ -74,6 +98,7 @@ function FavoritesScreen({ onTryOn }) {
 
   const scroller = useRef(null)
   const drag = useRef(null) // { id, startX, started, before, pointerX }
+  const justDragged = useRef(false) // 끌기를 끝낸 바로 뒤의 누르기는 입혀 보기로 보지 않습니다.
   const favoritesRef = useRef(null)
   favoritesRef.current = favorites
 
@@ -91,9 +116,9 @@ function FavoritesScreen({ onTryOn }) {
     load()
   }, [load])
 
-  // ◀ ▶: 한 번에 4벌쯤 넘깁니다. 부드럽게 넘기기(smooth)는 브라우저에 따라 움직이지 않아 바로 넘깁니다.
+  // ◀ ▶: 한 번에 5벌씩 넘깁니다. 부드럽게 넘기기(smooth)는 브라우저에 따라 움직이지 않아 바로 넘깁니다.
   function page(direction) {
-    scroller.current?.scrollBy({ left: direction * SLOT_WIDTH * 4 })
+    scroller.current?.scrollBy({ left: direction * SLOT_WIDTH * PAGE })
   }
 
   // 끄는 동안 손가락(마우스)이 있는 자리에 맞춰 놓일 자리를 정합니다.
@@ -101,7 +126,10 @@ function FavoritesScreen({ onTryOn }) {
     const d = drag.current
     const box = scroller.current
     if (!d || !d.started || !box) return
-    const x = d.pointerX - box.getBoundingClientRect().left + box.scrollLeft
+    // 앱 틀이 화면 크기에 맞춰 줄어 있으므로, 화면 픽셀을 틀 안의 픽셀로 바꿉니다. (P-38)
+    const rect = box.getBoundingClientRect()
+    const scale = rect.width / box.offsetWidth || 1
+    const x = (d.pointerX - rect.left) / scale + box.scrollLeft
     const index = Math.floor(x / SLOT_WIDTH)
     setFavorites((prev) => {
       const now = prev.findIndex((f) => f.id === d.id)
@@ -159,6 +187,10 @@ function FavoritesScreen({ onTryOn }) {
     drag.current = null
     setDraggingId(null)
     if (!d || !d.started) return
+    justDragged.current = true
+    setTimeout(() => {
+      justDragged.current = false
+    }, 0)
     const after = favoritesRef.current
     const changed = after.some((f, i) => f.id !== d.before[i].id)
     if (!changed) return
@@ -171,9 +203,7 @@ function FavoritesScreen({ onTryOn }) {
     }
   }
 
-  async function confirmRemove() {
-    const fav = removing
-    setRemoving(null)
+  async function remove(fav) {
     setActionError(null)
     const res = await api.removeFavorite(fav.id)
     if (res.result === 'ok') {
@@ -198,52 +228,61 @@ function FavoritesScreen({ onTryOn }) {
     onTryOn(res.data)
   }
 
+  function openTryOn(fav) {
+    if (justDragged.current) return
+    setPickError(null)
+    setPicking(fav)
+  }
+
+  // 시안 10을 그대로 옮긴 화면입니다. (P-38)
+  // 즐겨찾기가 없으면 사람이 준 빈 옷걸이 그림(빈 옷걸이 7개)을 배경으로 씁니다. 제목 패널은 그 그림의 패널 자리에 맞춥니다. (사람이 정함, 2026-10-22)
+  const empty = favorites !== null && favorites.length === 0
   return (
-    <section className="favorites" aria-label="즐겨찾기">
-      {loadError && <ErrorLine message={loadError} onRetry={load} />}
-      {orderError && <ErrorLine message={orderError} />}
-      {actionError && <ErrorLine message={actionError} />}
-      {favorites && favorites.length === 0 && (
-        <p className="favorites__empty">아직 즐겨찾기가 없어요.</p>
-      )}
+    <section className="fv" aria-label="즐겨찾기" style={{ '--src': `url(${empty ? favoritesEmptyBg : favoritesBg})` }}>
+      <div className={`fv-title${empty ? ' fv-title--empty' : ''}`}>
+        <svg width="52" height="48" viewBox="0 0 24 22" aria-hidden="true">
+          <path d="M12 20s-9-5.5-9-12a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-9 12-9 12z" fill="none" stroke="#e8473f" strokeWidth="2.2" />
+        </svg>
+        <h2>내가 좋아하는 코디</h2>
+        <p>마음에 드는 코디를 저장하고, 언제든 다시 입혀볼 수 있어요.</p>
+      </div>
+
+      {empty && <p className="fv-empty">아직 즐겨찾기가 없어요.</p>}
       {favorites && favorites.length > 0 && (
-        <div className="favorites__rack">
-          <button type="button" className="favorites__arrow" aria-label="앞으로 넘기기" onClick={() => page(-1)}>
-            ◀
-          </button>
-          <div className="favorites__track" ref={scroller}>
-            <div className="favorites__rail" style={{ width: favorites.length * SLOT_WIDTH }} />
-            <ul className="favorites__list">
+        <>
+          <div className="fv-track" ref={scroller}>
+            <ul className="fv-list" style={{ width: favorites.length * SLOT_WIDTH }}>
               {favorites.map((fav) => (
-                <FavoriteHanger
+                <FavoriteCard
                   key={fav.id}
                   fav={fav}
                   dragging={draggingId === fav.id}
                   onPointerDown={handlePointerDown}
-                  onTryOn={(f) => {
-                    setPickError(null)
-                    setPicking(f)
-                  }}
-                  onRemove={setRemoving}
+                  onOpen={openTryOn}
+                  onRemove={remove}
                 />
               ))}
             </ul>
           </div>
-          <button type="button" className="favorites__arrow" aria-label="뒤로 넘기기" onClick={() => page(1)}>
-            ▶
+          <button type="button" className="fv-arrow" style={{ left: 200 }} aria-label="앞으로 넘기기" onClick={() => page(-1)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
           </button>
-        </div>
+          <button type="button" className="fv-arrow" style={{ left: 1310 }} aria-label="뒤로 넘기기" onClick={() => page(1)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
       )}
 
-      {removing && (
-        <ConfirmDialog
-          message="정말 지울까요?"
-          confirmLabel="지우기"
-          danger
-          onCancel={() => setRemoving(null)}
-          onConfirm={confirmRemove}
-        />
-      )}
+      <div className="fv-errors">
+        {loadError && <ErrorLine message={loadError} onRetry={load} />}
+        {orderError && <ErrorLine message={orderError} />}
+        {actionError && <ErrorLine message={actionError} />}
+      </div>
+
       {picking && (
         <DatePickerDialog
           busy={opening}

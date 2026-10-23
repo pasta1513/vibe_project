@@ -6,13 +6,14 @@ import DiaryScreen from './components/DiaryScreen.jsx'
 import DressUpScreen from './components/DressUpScreen.jsx'
 import FavoritesScreen from './components/FavoritesScreen.jsx'
 import ErrorLine from './components/ErrorLine.jsx'
-import Mannequin from './components/Mannequin.jsx'
 import MannequinPicker from './components/MannequinPicker.jsx'
 import MenuBar from './components/MenuBar.jsx'
+import HomeScreen from './components/HomeScreen.jsx'
 import Room from './components/Room.jsx'
 import SettingsScreen from './components/SettingsScreen.jsx'
 import Toast from './components/Toast.jsx'
 import Wardrobe from './components/Wardrobe.jsx'
+import { useFitScale } from './useFitScale.js'
 
 function App() {
   // loading: 설정을 받는 중, error: 받지 못함, ready: 받음
@@ -29,10 +30,13 @@ function App() {
   const [dressUpInit, setDressUpInit] = useState(null)
   // 입혀 보기를 할 때마다 새 옷 입기 화면을 처음부터 다시 그립니다.
   const [dressUpKey, setDressUpKey] = useState(0)
+  // 설정을 열 때 처음 보일 쪽. 처음 화면 날씨 카드의 > 는 'region' (사람이 정함, 2026-10-22)
+  const [settingsPage, setSettingsPage] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [toast, setToast] = useState(null)
   const clearToast = useCallback(() => setToast(null), [])
+  const scale = useFitScale()
 
   // 앱 열기 (API-SPEC §3)의 응답을 반영합니다.
   const applySettings = useCallback((res) => {
@@ -76,7 +80,13 @@ function App() {
     setConfirmed(null)
     setDressUpInit(null)
     setDressUpKey((k) => k + 1)
+    setSettingsPage(null)
     setActiveMenu(key)
+  }
+
+  function openRegionSettings() {
+    selectMenu('settings')
+    setSettingsPage('region')
   }
 
   function openTryOn(data) {
@@ -103,49 +113,65 @@ function App() {
   const diaryOpen = showMenu && activeMenu === 'diary'
   // 즐겨찾기에서는 옷걸이가 화면 전체로 커지고 옷장과 마네킹은 숨깁니다. (SCREEN-SPEC §1.2, §8)
   const favoritesOpen = showMenu && activeMenu === 'favorites'
-  const fullScreen = closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen
+  // 처음 화면: 메뉴를 아직 고르지 않았을 때. 시안 07의 방에 마네킹과 날씨 카드가 보입니다. (SCREEN-SPEC §4)
+  const homeOpen = showMenu && !activeMenu && !confirmed
+  const fullScreen = homeOpen || closetOpen || settingsOpen || dressUpOpen || diaryOpen || favoritesOpen
 
+  // 앱 전체를 시안(style/html)의 1536×1024 캔버스로 그리고 창 크기에 맞춰 줄입니다. (P-38, 사람이 정함 2026-10-22)
+  // 모든 화면이 시안처럼 캔버스 전체를 쓰고 메뉴바가 위에 뜹니다. 방(Room, Wardrobe)은 불러오는 중이거나 실패했을 때만 보입니다.
   return (
-    <div className="app">
-      {showMenu && <MenuBar active={activeMenu} onSelect={selectMenu} />}
-      <main className={`stage${firstRun ? ' stage--dimmed' : ''}`}>
-        {confirmed ? (
-          <ConfirmedScreen confirmed={confirmed} mannequin={mannequin} />
-        ) : (
-          <>
-            <Room className="stage__room" />
-            {!fullScreen && <Wardrobe className="stage__wardrobe" />}
-            {showMenu && !fullScreen && <Mannequin className="stage__mannequin" {...mannequin} />}
-          </>
-        )}
-        {closetOpen && <ClosetScreen mannequin={mannequin} outfitTable={outfitTable} showToast={setToast} />}
-        {dressUpOpen && (
-          <DressUpScreen
-            key={dressUpKey}
-            initial={dressUpInit}
-            mannequin={mannequin}
-            regions={regions}
-            onNoClothes={goToCloset}
-            onConfirmed={handleConfirmed}
-            showToast={setToast}
-          />
-        )}
-        {diaryOpen && <DiaryScreen onGoDressUp={() => selectMenu('dressup')} onTryOn={openTryOn} />}
-        {favoritesOpen && <FavoritesScreen onTryOn={openTryOn} />}
-        {settingsOpen && (
-          <SettingsScreen mannequin={mannequin} onMannequinSaved={setMannequin} showToast={setToast} />
-        )}
-        {status === 'error' && (
-          <div className="stage__notice">
-            <ErrorLine message={loadError} onRetry={retryLoad} />
-          </div>
-        )}
-        {showMenu && activeMenu && !fullScreen && (
-          <p className="stage__placeholder">준비 중인 화면이에요.</p>
-        )}
-      </main>
+    <div className="app-frame">
+      <div className="app-canvas" style={{ transform: `scale(${scale})` }}>
+        {showMenu && <MenuBar active={activeMenu} onSelect={selectMenu} />}
+        <main className={`stage${fullScreen || confirmed ? ' stage--full' : ''}${firstRun ? ' stage--dimmed' : ''}`}>
+          {confirmed ? (
+            <ConfirmedScreen
+              confirmed={confirmed}
+              mannequin={mannequin}
+              onGoDiary={() => selectMenu('diary')}
+              onGoDressUp={() => selectMenu('dressup')}
+              showToast={setToast}
+            />
+          ) : (
+            <>
+              <Room className="stage__room" />
+              {/* 불러오는 중이거나 실패했을 때만 보이는 방 */}
+              {!fullScreen && <Wardrobe className="stage__wardrobe" />}
+            </>
+          )}
+          {homeOpen && <HomeScreen mannequin={mannequin} onOpenRegion={openRegionSettings} />}
+          {closetOpen && <ClosetScreen mannequin={mannequin} outfitTable={outfitTable} showToast={setToast} />}
+          {dressUpOpen && (
+            <DressUpScreen
+              key={dressUpKey}
+              initial={dressUpInit}
+              mannequin={mannequin}
+              regions={regions}
+              onNoClothes={goToCloset}
+              onConfirmed={handleConfirmed}
+              showToast={setToast}
+            />
+          )}
+          {diaryOpen && <DiaryScreen onGoDressUp={() => selectMenu('dressup')} onTryOn={openTryOn} />}
+          {favoritesOpen && <FavoritesScreen onTryOn={openTryOn} />}
+          {settingsOpen && (
+            <SettingsScreen
+              mannequin={mannequin}
+              initialPage={settingsPage}
+              onMannequinSaved={setMannequin}
+              showToast={setToast}
+            />
+          )}
+          {status === 'error' && (
+            <div className="stage__notice">
+              <ErrorLine message={loadError} onRetry={retryLoad} />
+            </div>
+          )}
+        </main>
+        <Toast message={toast} onDone={clearToast} />
+      </div>
+      {/* 첫 실행 화면은 자체 캔버스가 있어 앱 캔버스 밖에 둡니다. */}
       {firstRun && <MannequinPicker onStart={handleStart} saving={saving} error={saveError} />}
-      <Toast message={toast} onDone={clearToast} />
     </div>
   )
 }

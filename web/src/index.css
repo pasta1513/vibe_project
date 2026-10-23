@@ -19,23 +19,34 @@ body {
   font-weight: var(--weight-regular);
   line-height: 1.5;
   color: var(--color-text);
-  background: var(--color-wall);
-  min-width: 1024px;
+  background: #e9dccf;
 }
 
 button {
   font: inherit;
 }
 
-/* 버튼 (DESIGN §4.2). 그림자는 쓰지 않습니다. */
+/* 버튼 (DESIGN §4.2, 시안 .btn). 보통 버튼은 시안의 연한 베이지(.btn-ghost)입니다. */
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 40px;
   font-size: var(--text-md);
-  padding: var(--space-2) var(--space-4);
+  font-weight: var(--weight-bold);
+  padding: var(--space-2) var(--space-6);
   border-radius: var(--radius-button);
-  border: var(--border);
-  background: var(--color-surface);
+  border: 1px solid transparent;
+  background: var(--color-ghost);
   color: var(--color-text);
   cursor: pointer;
+  transition: transform 0.15s, filter 0.15s, background 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
 }
 
 .btn:disabled {
@@ -45,13 +56,12 @@ button {
 
 .btn--primary {
   background: var(--color-accent);
-  border-color: var(--color-accent);
   color: var(--color-on-accent);
+  box-shadow: var(--shadow-primary);
 }
 
 .btn--danger {
   background: var(--color-danger);
-  border-color: var(--color-danger);
   color: var(--color-on-accent);
 }
 
@@ -64,43 +74,160 @@ button {
   font-size: var(--text-sm);
 }
 
-/* 화면 틀 (SCREEN-SPEC §1) */
-.app {
+/* 화면 틀 (SCREEN-SPEC §1). 시안(style/html)처럼 앱 전체를 1536×1024 캔버스로 그리고,
+   창 크기에 맞춰 줄이거나 늘립니다 (App.jsx, useFitScale.js). 창이나 알림의 position: fixed도 캔버스 기준입니다. (P-38) */
+.app-frame {
+  position: fixed;
+  inset: 0;
   display: flex;
-  flex-direction: column;
-  height: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #e9dccf;
 }
 
+.app-canvas {
+  position: relative;
+  flex: none;
+  width: 1536px;
+  height: 1024px;
+  overflow: hidden;
+  transform-origin: center center;
+  background: var(--color-wall);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* 메뉴바 (시안 "포근한 옷장 앱 상세 화면"의 .header, .nav, .logo) */
 .menubar {
+  position: absolute;
+  left: 110px;
+  top: 23px;
+  z-index: 5;
   display: flex;
-  gap: var(--space-2);
-  height: var(--menubar-height);
-  padding: 0 var(--space-6);
-  align-items: stretch;
-  background: var(--color-surface);
-  border-bottom: var(--border);
+  align-items: center;
+  width: 1394px;
+  height: 92px;
+  padding: 0 50px;
+  border-radius: 22px;
+  background: #faf1ec;
+  box-shadow: var(--shadow-panel);
 }
 
-.menubar__item {
-  font-size: var(--text-md);
-  padding: 0 var(--space-4);
+.menubar__brand {
+  padding: 4px 8px;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: 12px;
   background: none;
-  color: var(--color-text);
+  font-family: inherit;
+  text-align: center;
   cursor: pointer;
 }
 
-.menubar__item--active {
-  color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
-  font-weight: var(--weight-bold);
+.menubar__brand:hover {
+  background: #f6ebe0;
 }
 
-.stage {
+.menubar__logo {
   position: relative;
-  flex: 1;
+  display: block;
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--color-heading);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.menubar__logo-i {
+  position: relative;
+}
+
+.menubar__logo-i::before {
+  content: '♥';
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: var(--color-accent);
+}
+
+.menubar__logo-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  color: var(--color-heading);
+}
+
+.menubar__nav {
+  position: absolute;
+  left: 351px;
+  top: 7px;
+  display: flex;
+  gap: 14px;
+}
+
+.menubar__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 112px;
+  height: 79px;
+  font-size: 15px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--color-heading);
+  cursor: pointer;
+}
+
+.menubar__icon {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: var(--color-heading);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.menubar__item:hover:not(.menubar__item--active) {
+  background: #f6ebe0;
+}
+
+.menubar__item--active {
+  background: #fedfd6;
+  color: #e8473f;
+}
+
+.menubar__item--active .menubar__icon {
+  stroke: #e8473f;
+}
+
+.menubar__item--active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 72px;
+  height: 3px;
+  border-radius: 2px;
+  background: #e8473f;
+}
+
+/* 화면 자리: 아직 시안을 옮기지 않은 화면은 메뉴바 아래, 시안을 옮긴 화면(옷장)은 캔버스 전체 */
+.stage {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 130px;
+  bottom: 0;
   overflow: hidden;
+}
+
+.stage--full {
+  top: 0;
 }
 
 .stage__room {
@@ -121,16 +248,7 @@ button {
   height: 40%;
 }
 
-.stage__mannequin {
-  position: absolute;
-  left: 50%;
-  bottom: 10%;
-  height: 72%;
-  transform: translateX(-50%);
-}
-
-.stage__notice,
-.stage__placeholder {
+.stage__notice {
   position: absolute;
   left: 50%;
   bottom: var(--space-4);
@@ -141,10 +259,6 @@ button {
   background: var(--color-surface);
 }
 
-.stage__placeholder {
-  color: var(--color-text-sub);
-}
-
 /* 창 (DESIGN §4.3) */
 .dialog-backdrop {
   position: fixed;
@@ -152,23 +266,25 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(241, 239, 232, 0.5);
+  background: rgba(59, 42, 34, 0.25);
 }
 
+/* 창 (시안 .panel): 둥근 크림 패널과 부드러운 그림자 */
 .dialog {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-6);
   border-radius: var(--radius-dialog);
-  border: var(--border);
-  background: var(--color-surface);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-panel);
 }
 
 .dialog__title {
   margin: 0;
   font-size: var(--text-lg);
   font-weight: var(--weight-bold);
+  color: var(--color-heading);
 }
 
 .dialog__actions {
@@ -177,49 +293,26 @@ button {
   gap: var(--space-2);
 }
 
-/* 마네킹 고르기 (SCREEN-SPEC §3) */
-.picker__body {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-}
-
-.picker__rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.picker__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.picker__label {
-  width: 48px;
-  font-size: var(--text-md);
-  color: var(--color-text-sub);
-}
-
-.picker__preview {
-  width: 160px;
-  height: 320px;
-}
-
+/* 칩 (시안 .chip, .tags .opt): 알약 모양 베이지, 고르면 연한 코랄 + 코랄 테두리 */
 .chip {
   font-size: var(--text-sm);
   padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-button);
-  border: var(--border);
-  background: var(--color-surface);
-  color: var(--color-text);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--color-chip);
+  color: var(--color-heading);
   cursor: pointer;
+  transition: background 0.15s;
+}
+
+.chip:hover:not(:disabled):not(.chip--selected) {
+  background: var(--color-chip-hover);
 }
 
 .chip--selected {
-  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
   color: var(--color-accent);
+  box-shadow: inset 0 0 0 2px var(--color-accent-line);
   font-weight: var(--weight-bold);
 }
 
@@ -245,6 +338,7 @@ button {
   background: var(--color-toast-bg);
   color: var(--color-toast-text);
   font-size: var(--text-sm);
+  box-shadow: var(--shadow-panel);
   z-index: 30;
 }
 
@@ -263,116 +357,1159 @@ button {
   font-size: var(--text-md);
 }
 
-.dialog__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.dialog__close {
-  border: none;
-  background: none;
-  font-size: var(--text-lg);
-  color: var(--color-text-sub);
-  cursor: pointer;
-}
-
 .dialog__actions .error-line {
   margin-right: auto;
 }
 
-/* 옷장 (SCREEN-SPEC §6.1) */
-.closet {
+/* 옷장 (SCREEN-SPEC §6.1). 시안 "포근한 옷장 앱 상세 화면"의 .back(옷장 패널), .cat, .bcard를 그대로 옮김.
+   시안은 상세 창 뒤에 어둡게 깔린 모습이라, 밝은 모습은 같은 위치·크기에 시안의 밝은 색을 씀. (P-38) */
+.closet-screen {
   position: absolute;
-  inset: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-6);
-  border: 12px solid var(--color-prop);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  overflow-y: auto;
+  inset: 0;
+  background-image: var(--src);
+  background-size: 1536px 1024px;
 }
 
-.closet__toolbar {
-  display: flex;
-  justify-content: flex-end;
+.cl {
+  position: absolute;
+  left: 102px;
+  top: 163px;
+  /* 시안은 1359px. 배경 PNG에 그려진 원래 상세 창의 오른쪽 끝(1478px)까지 가리려고 넓힘 */
+  width: 1380px;
+  height: 728px;
+  border-radius: 26px;
+  background: var(--color-panel);
+  box-shadow: var(--shadow-panel);
+  color: var(--color-heading);
+  overflow: hidden;
 }
 
-.closet__empty,
-.closet__section-empty {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
+.cl__hanger {
+  position: absolute;
+  left: 26px;
+  top: 34px;
+  width: 46px;
+  height: 40px;
+  fill: none;
+  stroke: var(--color-heading);
+  stroke-width: 1.8;
+}
+
+.cl__title {
+  position: absolute;
+  left: 82px;
+  top: 30px;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.cl__count {
+  position: absolute;
+  left: 82px;
+  top: 68px;
+  margin: 0;
+  font-size: 15px;
   color: var(--color-text-sub);
 }
 
-.closet__empty {
-  flex-direction: column;
-  justify-content: center;
-  flex: 1;
-  font-size: var(--text-md);
+.cl__sep {
+  position: absolute;
+  left: 260px;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: #f0e4d8;
 }
 
-.closet__empty p,
-.closet__section-empty p {
-  margin: 0;
-}
-
-.closet__sections {
+/* 왼쪽 구분 목록 (시안 .cat) */
+.cl__cats {
+  position: absolute;
+  left: 24px;
+  top: 115px;
+  width: 225px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
 }
 
-.closet__heading {
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-md);
+.cl__cat {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 58px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--color-heading);
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cl__cat:hover:not(.cl__cat--on) {
+  background: #f6ebe0;
+}
+
+.cl__cat svg {
+  width: 32px;
+  height: 32px;
+  fill: none;
+  stroke: var(--color-heading);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cl__cat-n {
+  margin-left: auto;
+  padding-right: 10px;
+  font-size: 14px;
+  color: var(--color-text-sub);
+}
+
+.cl__cat--on {
+  height: 54px;
+  margin-bottom: 4px;
+  background: #fde3dc;
+  color: #e8473f;
   font-weight: var(--weight-bold);
 }
 
-.closet__grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
+.cl__cat--on svg {
+  stroke: #e8473f;
 }
 
-.closet__item {
-  width: 96px;
-  height: 96px;
-  padding: var(--space-2);
-  border: var(--border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
+.cl__cat--on .cl__cat-n {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border-radius: 13px;
+  background: #f08b7e;
+  color: #fff;
+  font-size: 13px;
+}
+
+/* 오른쪽 옷 카드 (시안 .bcard, 07_2의 "+ 옷 추가하기") */
+.cl__grid-area {
+  position: absolute;
+  left: 281px;
+  top: 30px;
+  right: 24px;
+  bottom: 0;
+  padding: 78px 0 24px;
+  overflow-y: auto;
+}
+
+.cl__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 137px);
+  grid-auto-rows: 187px;
+  /* 시안의 카드 간격: 가로 156px마다(사이 19px), 세로 212px마다(사이 25px) */
+  gap: 25px 19px;
+}
+
+.cl__add,
+.cl__card {
+  position: relative;
+  width: 137px;
+  height: 187px;
+  padding: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.cl__add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px dashed #e6d7c8;
+  background: #fffaf5;
+  color: var(--color-heading);
+  font-size: 15px;
+}
+
+.cl__add-plus {
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.cl__card {
+  border: 2.5px solid transparent;
+  background: #fcf8f5;
+  box-shadow: var(--shadow-item);
+  overflow: hidden;
+}
+
+.cl__add:hover,
+.cl__card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-item-hover);
+}
+
+.cl__card--sel {
+  border-color: #f1a596;
+  background: #fdf1ec;
+}
+
+.cl__card img {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 117px;
+  height: 130px;
+  object-fit: contain;
+}
+
+.cl__tags {
+  position: absolute;
+  left: 12px;
+  right: 8px;
+  bottom: 12px;
+  display: flex;
+  gap: 10px;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--color-text-sub);
+  white-space: nowrap;
+}
+
+.cl__tags b {
+  font-weight: 400;
+}
+
+.cl__empty {
+  grid-column: 2 / -1;
+  align-self: center;
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--color-text-sub);
+}
+
+/* 옷 상세 (SCREEN-SPEC §6.3). 시안의 .modal을 그대로 옮김. 뒤 옷장은 시안처럼 어둡게 (P-38) */
+.detail-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+/* 상세 창이 열리면 시안처럼 옷장 패널만 어둡게 (메뉴바와 방은 밝게) */
+.cl--dim::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(70, 50, 40, 0.24);
+}
+
+.detail {
+  position: absolute;
+  left: 529px;
+  top: 196px;
+  width: 949px;
+  height: 616px;
+  border-radius: 28px;
+  background: #fbf6f0;
+  box-shadow: 0 16px 40px rgba(60, 40, 30, 0.25);
+  color: #1e1a18;
+}
+
+.detail button {
+  font-family: inherit;
   cursor: pointer;
 }
 
-.closet__item img {
+.detail__pic {
+  position: absolute;
+  left: 28px;
+  top: 26px;
+  width: 458px;
+  height: 466px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #f6eee6;
+  overflow: hidden;
+}
+
+.detail__pic > img {
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  object-fit: contain;
+}
+
+.detail__mannequin {
+  width: 100%;
+  height: 100%;
+  padding: 16px 16px 64px;
+}
+
+.detail__pic .fitter {
+  width: 100%;
+  height: 100%;
+  padding: 12px 12px 60px;
+  overflow-y: auto;
+}
+
+.detail__look {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.detail__look-btn {
+  height: 40px;
+  padding: 0 18px;
+  border: 1.5px solid #e6d7c8;
+  border-radius: 20px;
+  background: #fffaf5;
+  color: #2e2420;
+  font-size: 15px;
+}
+
+.detail__look-btn--save {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* 보기 토글 (시안 .toggle) */
+.detail__toggle {
+  position: absolute;
+  left: 57px;
+  top: 503px;
+  width: 402px;
+  height: 54px;
+  display: flex;
+  border-radius: 27px;
+  background: #f3e9df;
+}
+
+.detail__toggle-opt {
+  flex: 1;
+  border: none;
+  border-radius: 27px;
+  background: none;
+  font-size: 17px;
+  font-weight: 500;
+  color: #2e2420;
+}
+
+.detail__toggle-opt--on {
+  background: #fde0d9;
+  color: #ef4a3a;
+  font-weight: 700;
+}
+
+.detail__close {
+  position: absolute;
+  left: 894px;
+  top: 20px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: none;
+}
+
+.detail__close:hover {
+  background: #f3e9df;
+}
+
+.detail__close svg {
+  width: 30px;
+  height: 30px;
+  stroke: #1e1a18;
+  stroke-width: 2.6;
+}
+
+.detail__title {
+  position: absolute;
+  left: 526px;
+  top: 64px;
+  margin: 0;
+  font-size: 29px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.detail__edit-icon {
+  position: absolute;
+  left: 891px;
+  top: 76px;
+  width: 36px;
+  height: 36px;
+  padding: 4px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+}
+
+.detail__edit-icon:hover {
+  background: #f3e9df;
+}
+
+.detail__edit-icon svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: #4a3a32;
+  stroke-width: 1.8;
+}
+
+/* 키워드 (시안 .mtags) */
+.detail__tags {
+  position: absolute;
+  left: 520px;
+  top: 136px;
+  width: 420px;
+  max-height: 110px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 12px;
+  overflow: hidden;
+}
+
+.detail__tags span,
+.detail__tag-add {
+  min-width: 94px;
+  height: 41px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 21px;
+  background: #f4ece4;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e1a18;
+}
+
+.detail__tag-add {
+  gap: 10px;
+  border: 1.5px solid #ece2d9;
+  background: #fbf6f0;
+  font-weight: 400;
+  color: #6c5a50;
+}
+
+.detail__tag-add b {
+  font-size: 22px;
+  font-weight: 300;
+}
+
+.detail__tag-add:hover {
+  background: #f8ddd5;
+}
+
+.detail__hr {
+  position: absolute;
+  left: 520px;
+  top: 262px;
+  width: 392px;
+  border-top: 1.5px solid #efe8e2;
+}
+
+/* 정보 줄 (시안 .info) */
+.detail__info {
+  position: absolute;
+  left: 524px;
+  width: 390px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+}
+
+.detail__info svg {
+  width: 32px;
+  height: 32px;
+  margin-right: 18px;
+  fill: none;
+  stroke: #2e2420;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.detail__info-v {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 19px;
+}
+
+.detail__dot {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid #e9ddd2;
+}
+
+/* 키워드 수정: 선택 키워드 줄 */
+.detail__editor {
+  position: absolute;
+  left: 520px;
+  top: 118px;
+  width: 410px;
+  height: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow-y: auto;
+}
+
+.detail__editor .keyword-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.detail__error {
+  position: absolute;
+  left: 520px;
+  top: 486px;
+  width: 410px;
+}
+
+/* 아래 버튼 (시안 .mbtn) */
+.detail__btn {
+  position: absolute;
+  top: 522px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 29px;
+  background: #fcf7f2;
+  font-size: 19px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.detail__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.detail__btn svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.detail__btn--k {
+  left: 519px;
+  width: 233px;
+  border: 2px solid #a19a97;
+  color: #1e1a18;
+}
+
+.detail__btn--k svg {
+  stroke: #1e1a18;
+}
+
+.detail__btn--k:hover:not(:disabled) {
+  background: #f3ece5;
+}
+
+.detail__btn--d {
+  left: 761px;
+  width: 162px;
+  border: 2px solid #f0574b;
+  color: #ef4a3a;
+}
+
+.detail__btn--d svg {
+  stroke: #ef4a3a;
+}
+
+.detail__btn--d:hover:not(:disabled) {
+  background: #fde6e1;
+}
+
+/* 키워드 수정 중의 [저장]: 시안의 [삭제하기] 자리에 코랄 버튼 */
+.detail__btn--save {
+  left: 761px;
+  width: 162px;
+  border: 2px solid var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* 옷 등록 (SCREEN-SPEC §6.2). 시안 07_4를 그대로 옮김. 위치는 시안 캔버스 좌표에서 본문 패널(349, 136)을 뺀 값 (P-38) */
+.reg {
+  position: absolute;
+  inset: 0;
+  background-image: var(--src);
+  background-size: 1536px 1024px;
+  color: var(--color-heading);
+  --reg-green: #56653f;
+  --reg-muted: #8a7466;
+}
+
+.reg button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.reg button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* 왼쪽 메뉴 (시안 .side, .side-menu) */
+.reg__side {
+  position: absolute;
+  left: 108px;
+  top: 136px;
+  width: 233px;
+  height: 660px;
+  padding: 18px 13px;
+  border-radius: 20px;
+  background: var(--color-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+.reg__side-item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 206px;
+  height: 55px;
+  margin-bottom: 6px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  font-size: 18px;
+  color: var(--color-heading);
+}
+
+.reg__side-item svg {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  fill: none;
+  stroke: var(--color-heading);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reg__side-item:hover:not(.reg__side-item--on) {
+  background: #f6ebe0;
+}
+
+.reg__side-item--on {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.reg__side-item--on svg {
+  stroke: var(--color-accent);
+}
+
+/* 본문 패널 (시안 .main) */
+.reg__main {
+  position: absolute;
+  left: 349px;
+  top: 136px;
+  width: 1128px;
+  height: 863px;
+  border-radius: 20px;
+  background: #fbf8f4;
+  box-shadow: var(--shadow-panel);
+}
+
+.reg__main > * {
+  position: absolute;
+}
+
+.reg__back {
+  left: 16px;
+  top: 12px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: none;
+}
+
+.reg__back:hover {
+  background: #f6ebe0;
+}
+
+.reg__back svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: var(--color-heading);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reg__title {
+  left: 68px;
+  top: 12px;
+  margin: 0;
+  font-size: 25px;
+  font-weight: 800;
+}
+
+.reg__subtitle {
+  left: 68px;
+  top: 54px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--reg-muted);
+}
+
+/* 칸 (시안 .sec, .sec-t) */
+.reg__sec {
+  border: 1px solid #f0e8de;
+  border-radius: 12px;
+  background: #fdfaf7;
+}
+
+.reg__sec-t {
+  font-size: 13px;
+  color: var(--reg-muted);
+}
+
+.reg__req {
+  color: var(--color-accent);
+}
+
+/* 01 · 사진 올리기 칸 */
+.reg__drop {
+  left: 36px;
+  top: 135px;
+  width: 265px;
+  height: 233px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0;
+  border: 1.5px dashed #e6ddd2;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--color-heading);
+  overflow: hidden;
+}
+
+.reg__drop svg {
+  width: 36px;
+  height: 32px;
+  margin-bottom: 4px;
+  fill: none;
+  stroke: var(--color-heading);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reg__drop b {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.reg__drop span {
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.reg__drop--filled {
+  justify-content: flex-start;
+  padding: 10px 10px 56px;
+}
+
+.reg__drop--filled img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-/* 옷 등록 창과 옷 상세 (SCREEN-SPEC §6.2, §6.3) */
-.register {
-  width: min(900px, calc(100vw - 2 * var(--space-6)));
-  max-height: calc(100vh - 2 * var(--space-6));
+.reg__wbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #e6ddd2;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  color: var(--color-heading);
+  transition: background 0.15s;
+}
+
+.reg__wbtn:hover:not(:disabled) {
+  background: #f7f1ea;
+}
+
+.reg__example {
+  left: 312px;
+  top: 134px;
+  width: 321px;
+  height: 233px;
+  border-radius: 10px;
+  background: #f3efea;
+}
+
+.reg__example span {
+  position: absolute;
+  left: 13px;
+  top: 9px;
+  font-size: 12px;
+  color: var(--reg-muted);
+}
+
+/* 시안 PNG에서 잘라 쓴 업로드 예시 그림 (시안 .crop) */
+.reg__crop {
+  position: absolute;
+  left: 11px;
+  top: 35px;
+  width: 299px;
+  height: 177px;
+  background-image: var(--src);
+  background-size: 1536px 1024px;
+  background-position: -672px -305px;
+}
+
+.reg__error {
+  font-size: 13px;
+}
+
+/* 04 · 키워드 */
+.reg__keywords {
+  left: 35px;
+  top: 434px;
+  width: 604px;
+  height: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 8px;
   overflow-y: auto;
 }
 
-.register__body {
-  display: flex;
-  gap: var(--space-6);
+.reg__keywords .keyword-row {
+  align-items: flex-start;
 }
 
-.register__photo {
+.reg__keywords .keyword-row__label {
+  width: 72px;
+  padding-top: 8px;
+  font-size: 14px;
+  color: var(--color-heading);
+}
+
+.reg__keywords .chip {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+/* 아래 버튼 (시안 .cbtn) */
+.reg__cbtn {
+  top: 811px;
+  height: 44px;
+  border-radius: 22px;
+  font-size: 14px;
+  transition: filter 0.15s, transform 0.15s;
+}
+
+.reg__cbtn:hover:not(:disabled) {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.reg__cbtn--cancel {
+  left: 263px;
+  width: 178px;
+  border: 1px solid #e6ddd2;
+  background: #f1ece6;
+  color: var(--color-heading);
+}
+
+.reg__cbtn--save {
+  left: 453px;
+  width: 449px;
+  border: none;
+  background: #f36a63;
+  color: #fff;
+  font-size: 15px;
+  box-shadow: 0 4px 10px rgba(238, 106, 90, 0.25);
+}
+
+/* 02 · 2D 이미지 (투명한 곳은 체크무늬) */
+.reg__image {
+  left: 683px;
+  top: 70px;
+  width: 405px;
+  height: 251px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #eee8e2 25%, transparent 25%), linear-gradient(-45deg, #eee8e2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eee8e2 75%), linear-gradient(-45deg, transparent 75%, #eee8e2 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  overflow: hidden;
+}
+
+.reg__image img {
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  object-fit: contain;
+}
+
+.reg__seg {
+  position: static;
+}
+
+/* 시안 .seg .opt: 알약 모양, 고르면 시안의 초록 */
+.reg__seg-opt,
+.fitter__seg-opt {
+  position: absolute;
+  height: 36px;
+  border-radius: 18px;
+  border: 1px solid #e6ddd2;
+  background: #fff;
+  font-size: 13px;
+  color: var(--color-heading);
+}
+
+.reg__seg-opt:hover:not(.reg__seg-opt--on):not(:disabled),
+.fitter__seg-opt:hover:not(.fitter__seg-opt--on):not(:disabled) {
+  background: #f7f1ea;
+}
+
+.reg__seg-opt--on,
+.fitter__seg-opt--on {
+  background: var(--reg-green, #56653f);
+  border-color: var(--reg-green, #56653f);
+  color: #fff;
+}
+
+/* 02 · 배경 고치기: 오른쪽 칸 전체 (DESIGN §5.6). 도구와 슬라이더는 시안 모양 */
+.reg__editor {
+  left: 680px;
+  top: 64px;
+  width: 412px;
+  height: 720px;
+  overflow-y: auto;
+}
+
+.reg__editor .bg-editor {
+  gap: 12px;
+}
+
+.reg__editor .bg-editor__stage {
+  width: 100%;
+  height: 300px;
+  border-radius: 6px;
+}
+
+.reg__editor .bg-editor__tool {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid #e6ddd2;
+  border-radius: 18px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.reg__editor .bg-editor__tool--on {
+  background: var(--reg-green);
+  border-color: var(--reg-green);
+  color: #fff;
+}
+
+/* 시안의 슬라이더: 초록 채움과 동그란 손잡이 */
+.reg input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(var(--reg-green), var(--reg-green)) 0 / var(--p, 50%) 100% no-repeat, #e8e4df;
+  outline: 0;
+}
+
+.reg input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--reg-green);
+  border: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.reg input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--reg-green);
+  border: 0;
+}
+
+/* 03 · 미리보기 (시안 .seg, 마네킹 칸, "옷 전체 조절") */
+.reg__preview {
+  left: 683px;
+  top: 479px;
+  width: 410px;
+  height: 312px;
+}
+
+.reg__preview-empty {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+}
+
+.reg__preview-mannequin {
+  flex: none;
+  width: 163px;
+  height: 263px;
+  margin-top: 44px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #eef0f3;
+}
+
+.fitter--panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.fitter--panel .fitter__seg-opt:first-child {
+  left: 0;
+  top: 0;
+  width: 75px;
+  height: 34px;
+}
+
+.fitter--panel .fitter__seg-opt:last-child {
+  left: 81px;
+  top: 0;
+  width: 78px;
+  height: 34px;
+}
+
+.fitter--panel .fitter__stage {
+  position: absolute;
+  left: 0;
+  top: 44px;
+  width: 163px;
+  height: 263px;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  background: #eef0f3;
+  cursor: grab;
+}
+
+.fitter__controls {
+  position: absolute;
+  left: 181px;
+  top: 52px;
+  width: 229px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  width: 240px;
-  flex-shrink: 0;
+  gap: 6px;
 }
+
+.fitter__heading {
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fitter--panel .fitter__row {
+  gap: 6px;
+  font-size: 11px;
+}
+
+.fitter--panel .fitter__row > span:first-child {
+  width: 59px;
+  font-size: 11px;
+}
+
+.fitter--panel .fitter__row select {
+  min-height: 28px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.fitter--panel .fitter__value {
+  width: 36px;
+  font-size: 10px;
+  text-align: right;
+}
+
+.fitter__reset {
+  align-self: center;
+  width: 159px;
+  height: 36px;
+  margin-top: 6px;
+  border: 1px solid #e6ddd2;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13px;
+  color: var(--color-heading);
+}
+
+.fitter__reset:hover {
+  background: #f7f1ea;
+}
+
+.fitter__note {
+  position: absolute;
+  left: 181px;
+  top: 0;
+  width: 229px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--reg-muted, #8a7466);
+}
+
+/* 옷 등록 창과 옷 상세 (SCREEN-SPEC §6.2, §6.3) */
 
 .photo-box {
   width: 240px;
@@ -495,20 +1632,6 @@ button {
   gap: 4px;
 }
 
-.photo-box--empty {
-  border: 2px dashed var(--color-dashed);
-  font-size: var(--text-md);
-  color: var(--color-text-sub);
-  cursor: pointer;
-}
-
-.register__keywords {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  flex: 1;
-}
-
 .keyword-row {
   display: flex;
   align-items: flex-start;
@@ -528,13 +1651,6 @@ button {
   gap: var(--space-2);
 }
 
-.locked-words {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding-top: var(--space-2);
-}
-
 .lock-icon {
   width: 14px;
   height: 14px;
@@ -548,11 +1664,6 @@ button {
   color: var(--color-text-sub);
 }
 
-.chip--small {
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--text-xs);
-}
-
 .word-form {
   display: inline-flex;
   flex-wrap: wrap;
@@ -560,148 +1671,38 @@ button {
   gap: var(--space-2);
 }
 
+/* 입력칸 (시안 07_2 옷 정보 수정의 입력칸): 흰 바탕, 연한 베이지 테두리 */
 .text-input {
   font: inherit;
-  padding: var(--space-2) var(--space-3);
+  min-height: 40px;
+  padding: var(--space-2) var(--space-4);
   border: var(--border);
   border-radius: var(--radius-button);
   background: var(--color-surface);
   color: var(--color-text);
 }
 
+/* 선택칸 (시안 07_2의 선택칸). 조건 띠처럼 따로 정한 곳은 그 규칙이 이깁니다. */
+select {
+  font: inherit;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-button);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.text-input:focus,
+select:focus-visible {
+  outline: 2px solid var(--color-accent-line);
+  outline-offset: 1px;
+}
+
 .text-input::placeholder {
   color: var(--color-text-sub);
   opacity: 0.7;
-}
-
-/* 설정 (SCREEN-SPEC §9): 옷장처럼 화면 전체를 씁니다. */
-.settings {
-  position: absolute;
-  inset: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  padding: var(--space-6);
-  border: var(--border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  overflow-y: auto;
-}
-
-.settings__row {
-  display: flex;
-  gap: var(--space-6);
-  padding-bottom: var(--space-6);
-  border-bottom: var(--border);
-}
-
-.settings__row:last-of-type {
-  border-bottom: none;
-}
-
-.settings__label {
-  width: 96px;
-  flex-shrink: 0;
-  margin: 0;
-  padding-top: var(--space-2);
-  font-size: var(--text-md);
-  font-weight: var(--weight-bold);
-}
-
-.settings__content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  flex: 1;
-  min-width: 0;
-}
-
-.settings__mannequin {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-8);
-}
-
-.settings__preview {
-  width: 100px;
-  height: 200px;
-}
-
-.settings__region {
-  flex-direction: row;
-  align-items: center;
-}
-
-.settings__group-title {
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  color: var(--color-text-sub);
-}
-
-.tabs {
-  display: flex;
-  gap: var(--space-1);
-  border-bottom: var(--border);
-}
-
-.tab {
-  padding: var(--space-2) var(--space-4);
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: none;
-  color: var(--color-text-sub);
-  cursor: pointer;
-}
-
-.tab--active {
-  border-bottom-color: var(--color-accent);
-  color: var(--color-accent);
-  font-weight: var(--weight-bold);
-}
-
-.word-list {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.word {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
-  border: var(--border);
-  border-radius: var(--radius-button);
-}
-
-.word--add,
-.word--editing {
-  padding: 0;
-  border: none;
-}
-
-.word__genders {
-  display: inline-flex;
-  gap: 2px;
-  margin-left: var(--space-1);
-}
-
-.icon-btn {
-  padding: var(--space-1);
-  border: none;
-  background: none;
-  color: var(--color-text-sub);
-  cursor: pointer;
-}
-
-.icon-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
 }
 
 /* 지울 수 없음 안내의 옷과 기록 목록 */
@@ -727,294 +1728,40 @@ button {
   object-fit: contain;
 }
 
-/* 새 옷 입기 (SCREEN-SPEC §5): 왼쪽에 커진 옷장, 오른쪽에 조건 띠와 마네킹 */
-.dressup {
-  position: absolute;
-  inset: var(--space-6);
-  display: flex;
-  gap: var(--space-6);
-}
+/* 추천 보기 (SCREEN-SPEC §5.3) */
 
-.dressup__closet {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  width: 42%;
-  padding: var(--space-4);
-  border: 12px solid var(--color-prop);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  overflow-y: auto;
-  transition: width 0.2s;
-}
-
-/* 점수 확인 단계: 옷 고르는 부분은 작게 줄어듭니다. (SCREEN-SPEC §5.4) */
-.dressup--compact .dressup__closet {
-  width: 96px;
-  align-items: center;
-}
-
-.closet__item--worn {
-  border: 2px solid var(--color-accent);
-}
-
-.closet__item--none {
-  font-size: var(--text-sm);
-  color: var(--color-text-sub);
-}
-
-.dressup__main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  flex: 1;
-  min-width: 0;
-}
-
-.dressup__body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-8);
-  flex: 1;
-  min-height: 0;
-}
-
-.dressup__mannequin {
-  height: 100%;
-  max-height: 520px;
-  width: auto;
-  aspect-ratio: 1 / 2;
-}
-
-.dressup__actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-}
-
-/* 조건 띠 (SCREEN-SPEC §5.1) */
-.condition {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.condition__bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-4);
-  border: var(--border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-}
-
-.condition__select {
-  font: inherit;
-  padding: var(--space-1) var(--space-2);
-  border: none;
-  border-radius: var(--radius-button);
-  background: none;
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.condition__select:disabled {
-  cursor: default;
-  appearance: none;
-  color: var(--color-text);
-}
-
-.condition__divider {
-  width: 1px;
-  height: 20px;
-  background: var(--color-border);
-}
-
-.condition__weather {
-  min-width: 120px;
-}
-
-.condition__notice {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-text-sub);
-}
-
-/* 점수 카드 (SCREEN-SPEC §5.4) */
-.score-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  width: 260px;
-  padding: var(--space-6);
-  border: var(--border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-}
-
-.score-card__date {
-  margin: 0;
-  font-size: var(--text-md);
-  font-weight: var(--weight-bold);
-}
-
-.score-card__summary {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--color-text);
-  text-align: left;
-  cursor: pointer;
-}
-
-.score-card__details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0;
-  padding-left: var(--space-3);
-  list-style: none;
-  font-size: var(--text-sm);
-  color: var(--color-text-sub);
-}
-
-.score-card__slot {
-  font-weight: var(--weight-bold);
-  color: var(--color-text);
-}
-
-.score-card__actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-/* 별 (DESIGN §4.5) */
-.stars {
+/* 즐겨찾기 하트 ♡/♥ (SCREEN-SPEC §2.8, 시안 .heart): 추천 카드, 코디 일기 카드, 즐겨찾기 카드 (사람이 정함, 2026-10-23) */
+.fav-heart {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  font-size: var(--text-lg);
-}
-
-.stars__filled {
-  color: var(--color-star);
-}
-
-.stars__empty {
-  color: var(--color-star-empty);
-}
-
-.stars__number {
-  margin-left: var(--space-1);
-  font-weight: var(--weight-bold);
-  color: var(--color-text);
-}
-
-/* 추천 보기 (SCREEN-SPEC §5.3) */
-.rec-list {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-}
-
-.rec-list__cards {
-  display: flex;
   justify-content: center;
-  gap: var(--space-4);
-}
-
-.rec-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  width: 220px;
-  padding: var(--space-4);
-  border: var(--border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-}
-
-.rec-card__star {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
+  width: 30px;
+  height: 30px;
+  padding: 2px;
   border: none;
   background: none;
-  font-size: var(--text-lg);
-  color: var(--color-star-empty);
+  cursor: pointer;
 }
 
-.rec-card__star--on {
-  color: var(--color-star);
+.fav-heart:disabled {
+  cursor: default;
 }
 
-.rec-card__mannequin {
-  width: 110px;
-  height: 220px;
+.fav-heart svg {
+  width: 26px;
+  height: 26px;
 }
 
-.rec-card .stars {
-  font-size: var(--text-md);
+.fav-heart path {
+  fill: none;
+  stroke: var(--color-heading);
+  stroke-width: 1.8;
+  transition: fill 0.15s;
 }
 
-.rec-card__actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.rec-list__notice {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-6);
-  border: var(--border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-}
-
-.rec-list__notice p {
-  margin: 0;
-  font-size: var(--text-md);
-}
-
-.rec-card__actions .btn {
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-sm);
-  white-space: nowrap;
-}
-
-/* 확정한 뒤 화면 (SCREEN-SPEC §5.6): 마네킹 위에 작게 날짜와 날씨 */
-.confirmed__caption {
-  position: absolute;
-  top: var(--space-6);
-  left: 50%;
-  transform: translateX(-50%);
-  margin: 0;
-  padding: var(--space-1) var(--space-4);
-  border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.85);
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  white-space: nowrap;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
+.fav-heart--on path {
+  fill: #ef4b4b;
+  stroke: #ef4b4b;
 }
 
 /* 다시 고르라는 알림: 조건 띠 바로 아래, 짧은 알림과 같은 모양 (SCREEN-SPEC §2.6, DESIGN §4.3) */
@@ -1035,240 +1782,3 @@ button {
   gap: var(--space-2);
 }
 
-/* 코디 일기 (SCREEN-SPEC §7): 방 위에 펼쳐진 일기장 */
-.diary {
-  position: absolute;
-  inset: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-8);
-  border: 12px solid var(--color-diary-border);
-  border-radius: var(--radius-card);
-  background: #fffaf0;
-  overflow-y: auto;
-}
-
-.diary__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-4);
-  flex: 1;
-  font-size: var(--text-md);
-  color: var(--color-text-sub);
-}
-
-.diary__empty p {
-  margin: 0;
-}
-
-.diary__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-8) var(--space-6);
-}
-
-/* 코디 일기 카드 (DESIGN §4.4): 종이색, 연한 황토 테두리, 오늘은 2px 코랄, 모서리 8px */
-.diary-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-  padding: var(--space-4);
-  border: 1px solid var(--color-diary-border);
-  border-radius: var(--radius-button);
-  background: var(--color-diary-paper);
-  color: var(--color-diary-text);
-}
-
-.diary-card--today {
-  border: 2px solid var(--color-accent);
-}
-
-.diary-card__deleted {
-  position: absolute;
-  top: var(--space-2);
-  left: var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--color-danger);
-}
-
-.diary-card__mannequin {
-  width: 100px;
-  height: 200px;
-}
-
-/* 날짜와 한 줄 이유·코멘트는 감자꽃, 점수와 태그는 Pretendard (DESIGN §3.1, §4.4) */
-.diary-card__date {
-  margin: 0;
-  font-family: 'Gamja Flower', var(--font-base);
-  font-size: var(--text-xl);
-  font-weight: 400;
-}
-
-.diary-card__weather,
-.diary-card__tag-score {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-}
-
-.diary-card .stars {
-  font-size: var(--text-md);
-}
-
-.diary-card__note {
-  width: 100%;
-}
-
-.diary-card__note .score-card__summary {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: 'Gamja Flower', var(--font-base);
-  font-size: var(--text-lg);
-  color: var(--color-diary-text);
-  text-align: center;
-}
-
-.diary-card__actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.diary-card__actions .btn {
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--text-sm);
-}
-
-.rec-card__star {
-  cursor: pointer;
-}
-
-.rec-card__star:disabled {
-  cursor: default;
-}
-
-/* 즐겨찾기 (SCREEN-SPEC §8): 옷걸이(행거)에 코디가 가로 한 줄로 걸림 */
-.favorites {
-  position: absolute;
-  inset: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--space-3);
-}
-
-.favorites__empty {
-  align-self: center;
-  margin: 0;
-  padding: var(--space-6);
-  border: var(--border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  font-size: var(--text-md);
-  color: var(--color-text-sub);
-}
-
-.favorites__rack {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-}
-
-.favorites__arrow {
-  align-self: center;
-  padding: var(--space-3);
-  border: var(--border);
-  border-radius: var(--radius-button);
-  background: var(--color-surface);
-  color: var(--color-text-sub);
-  cursor: pointer;
-}
-
-.favorites__track {
-  position: relative;
-  flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-top: var(--space-2);
-  scrollbar-width: none;
-}
-
-/* 옷걸이 봉 */
-.favorites__rail {
-  position: absolute;
-  top: var(--space-2);
-  left: 0;
-  min-width: 100%;
-  height: 8px;
-  border-radius: var(--radius-pill);
-  background: var(--color-prop-dark);
-}
-
-.favorites__list {
-  display: flex;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* 코디 하나의 폭은 FavoritesScreen의 SLOT_WIDTH(220px)와 같아야 합니다. */
-.hanger {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 0 0 220px;
-  padding: 0 10px;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-}
-
-.hanger--dragging {
-  cursor: grabbing;
-  opacity: 0.6;
-}
-
-.hanger__hook {
-  width: 40px;
-  height: 28px;
-}
-
-.hanger__card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-4) var(--space-3);
-  border: var(--border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-}
-
-.hanger__mannequin {
-  width: 110px;
-  height: 220px;
-  pointer-events: none;
-}
-
-.hanger__actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.hanger__actions .btn {
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--text-sm);
-  white-space: nowrap;
-}
