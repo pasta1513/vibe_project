@@ -1157,7 +1157,7 @@ button {
 .reg__drop {
   left: 36px;
   top: 135px;
-  width: 265px;
+  width: 240px;
   height: 233px;
   display: flex;
   flex-direction: column;
@@ -1221,8 +1221,17 @@ button {
   background: #f7f1ea;
 }
 
+.reg__wbtn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
 .reg__example {
-  left: 312px;
+  left: 290px;
   top: 134px;
   width: 321px;
   height: 233px;
@@ -1254,12 +1263,12 @@ button {
   font-size: 13px;
 }
 
-/* 04 · 키워드 */
+/* 02 · 키워드 (칸 안에서 스크롤) */
 .reg__keywords {
   left: 35px;
   top: 434px;
-  width: 604px;
-  height: 360px;
+  width: 580px;
+  height: 350px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1315,40 +1324,10 @@ button {
   box-shadow: 0 4px 10px rgba(238, 106, 90, 0.25);
 }
 
-/* 02 · 2D 이미지 (투명한 곳은 체크무늬) */
-.reg__image {
-  left: 683px;
-  top: 70px;
-  width: 405px;
-  height: 251px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  background-color: #fff;
-  background-image: linear-gradient(45deg, #eee8e2 25%, transparent 25%), linear-gradient(-45deg, #eee8e2 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #eee8e2 75%), linear-gradient(-45deg, transparent 75%, #eee8e2 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
-  overflow: hidden;
-}
-
-.reg__image img {
-  width: 100%;
-  height: 100%;
-  padding: 8px;
-  object-fit: contain;
-}
-
-.reg__seg {
-  position: static;
-}
-
 /* 시안 .seg .opt: 알약 모양, 고르면 시안의 초록 */
-.reg__seg-opt,
 .fitter__seg-opt {
-  position: absolute;
-  height: 36px;
+  height: 34px;
+  padding: 0 14px;
   border-radius: 18px;
   border: 1px solid #e6ddd2;
   background: #fff;
@@ -1356,51 +1335,204 @@ button {
   color: var(--color-heading);
 }
 
-.reg__seg-opt:hover:not(.reg__seg-opt--on):not(:disabled),
 .fitter__seg-opt:hover:not(.fitter__seg-opt--on):not(:disabled) {
   background: #f7f1ea;
 }
 
-.reg__seg-opt--on,
 .fitter__seg-opt--on {
   background: var(--reg-green, #56653f);
   border-color: var(--reg-green, #56653f);
   color: #fff;
 }
 
-/* 02 · 배경 고치기: 오른쪽 칸 전체 (DESIGN §5.6). 도구와 슬라이더는 시안 모양 */
-.reg__editor {
-  left: 680px;
-  top: 64px;
-  width: 412px;
-  height: 720px;
+/* 오른쪽 탭 세 개 (2026-10-23, 사람이 준 시안). 고른 탭은 연한 코랄 바탕, 코랄 글자와 밑줄 */
+.reg__tabs {
+  left: 638px;
+  top: 17px;
+  width: 473px;
+  height: 56px;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #f0e8de;
+  border-radius: 12px;
+  background: #fdfaf7;
+}
+
+.reg__tab {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #efe7dd;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  color: var(--color-heading);
+  transition: background 0.15s;
+}
+
+.reg__tab svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reg__tab:hover:not(:disabled):not(.reg__tab--on) {
+  background: #f7f1ea;
+}
+
+.reg__tab--on {
+  border-color: #fbd9d2;
+  background: #fde9e5;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.reg__tab--on::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-accent);
+}
+
+.reg__panel {
+  left: 656px;
+  top: 95px;
+  width: 437px;
+  height: 690px;
   overflow-y: auto;
 }
 
-.reg__editor .bg-editor {
+.reg__panel [hidden] {
+  display: none !important;
+}
+
+.reg__panel-t {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.reg__panel-d {
+  margin: 6px 0 14px;
+  font-size: 13px;
+  color: var(--reg-muted);
+}
+
+.reg__panel-empty {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/* 배경 고치기 탭: 왼쪽 그림, 오른쪽 도구 버튼 세로 (DESIGN §5.6) */
+.reg__panel .bg-editor--panel {
+  width: 100%;
   gap: 12px;
 }
 
-.reg__editor .bg-editor__stage {
-  width: 100%;
+.bg-editor__main {
+  display: flex;
+  gap: 12px;
+}
+
+.reg__panel .bg-editor--panel .bg-editor__stage {
+  flex: 1;
+  width: auto;
   height: 300px;
-  border-radius: 6px;
+  padding: 6px;
+  border-radius: 8px;
 }
 
-.reg__editor .bg-editor__tool {
-  min-height: 36px;
-  padding: 0 16px;
+.bg-editor__side,
+.bg-editor__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bg-editor__side {
+  width: 150px;
+}
+
+.bg-editor__sbtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 14px;
   border: 1px solid #e6ddd2;
-  border-radius: 18px;
+  border-radius: 10px;
   background: #fff;
-  font-size: 13px;
-  font-weight: 400;
+  font-size: 14px;
+  color: var(--color-heading);
+  transition: background 0.15s;
 }
 
-.reg__editor .bg-editor__tool--on {
-  background: var(--reg-green);
-  border-color: var(--reg-green);
-  color: #fff;
+.bg-editor__sbtn svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bg-editor__sbtn:hover:not(:disabled):not(.bg-editor__sbtn--on) {
+  background: #f7f1ea;
+}
+
+.bg-editor__sbtn--on {
+  border-color: #fbd9d2;
+  background: #fde9e5;
+  color: var(--color-accent);
+}
+
+.bg-editor__range {
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+.bg-editor__range > span:first-child {
+  width: 84px;
+}
+
+.bg-editor__redo {
+  height: 42px;
+  border: 1px solid #e6ddd2;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  color: var(--color-heading);
+}
+
+.bg-editor__redo:hover {
+  background: #f7f1ea;
+}
+
+.bg-editor__note {
+  margin: -4px 0 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--reg-muted);
+}
+
+.reg__panel .bg-editor__row {
+  justify-content: flex-end;
 }
 
 /* 02 · 2D 이미지와 무늬 (P-39): 오른쪽 칸 전체. 2D 이미지와 무늬를 나란히, 그 아래 마네킹과 조절 */
@@ -1448,17 +1580,80 @@ button {
   text-align: center;
 }
 
-.pt__mannequin {
-  height: 200px;
+.pt__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 등록 화면 [2D 이미지] 탭: 이름이 위에 붙은 카드 두 장, 그 아래 조절을 칸으로 묶음 */
+.pt--panel {
+  gap: 12px;
+}
+
+.pt__card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #f0e8de;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.pt__card figcaption {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pt__card-pic {
+  position: relative;
+  height: 250px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: #faf6f1;
+  background: #f6f2ee;
+  overflow: hidden;
 }
 
-.pt__mannequin svg {
+.pt__card-pic--check {
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #eee8e2 25%, transparent 25%), linear-gradient(-45deg, #eee8e2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eee8e2 75%), linear-gradient(-45deg, transparent 75%, #eee8e2 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+}
+
+.pt__card-pic > img,
+.pt__card-pic > svg {
+  width: 100%;
   height: 100%;
+  padding: 8px;
+  object-fit: contain;
+}
+
+.pt__card-pic .sub-text {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  margin: 0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  text-align: center;
+}
+
+.pt--panel .pt__controls {
+  padding: 14px 16px;
+  border: 1px solid #f0e8de;
+  border-radius: 10px;
+  background: #fff;
 }
 
 .pt__row {
@@ -1561,69 +1756,48 @@ button {
   border: 0;
 }
 
-/* 03 · 미리보기 (시안 .seg, 마네킹 칸, "옷 전체 조절") */
-.reg__preview {
-  left: 683px;
-  top: 479px;
-  width: 410px;
-  height: 312px;
-}
-
-.reg__preview-empty {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  height: 100%;
-}
-
+/* 미리보기 마네킹 (사진을 올리기 전, 구분과 종류를 고르기 전) */
 .reg__preview-mannequin {
   flex: none;
-  width: 163px;
-  height: 263px;
-  margin-top: 44px;
+  width: 180px;
+  height: 290px;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #eef0f3;
 }
 
-.fitter--panel {
-  position: relative;
+/* [캐릭터에 맞추기] 탭: 위에 [옷 전체 | 내부 무늬], 왼쪽 마네킹과 로고 안내, 오른쪽 조절 (2026-10-23) */
+.fitter.fitter--panel {
   width: 100%;
-  height: 100%;
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px 18px;
+  align-items: start;
 }
 
-.fitter--panel .fitter__seg-opt:first-child {
-  left: 0;
-  top: 0;
-  width: 75px;
-  height: 34px;
-}
-
-.fitter--panel .fitter__seg-opt:last-child {
-  left: 81px;
-  top: 0;
-  width: 78px;
-  height: 34px;
+.fitter__seg {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
 }
 
 .fitter--panel .fitter__stage {
-  position: absolute;
-  left: 0;
-  top: 44px;
-  width: 163px;
-  height: 263px;
+  grid-column: 1;
+  grid-row: 2;
+  width: 200px;
+  height: 320px;
   padding: 8px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #eef0f3;
   cursor: grab;
 }
 
 .fitter__controls {
-  position: absolute;
-  left: 181px;
-  top: 52px;
-  width: 229px;
+  grid-column: 2;
+  grid-row: 2 / span 2;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1636,24 +1810,32 @@ button {
 }
 
 .fitter--panel .fitter__row {
-  gap: 6px;
-  font-size: 11px;
+  gap: 8px;
+  font-size: 13px;
 }
 
 .fitter--panel .fitter__row > span:first-child {
-  width: 59px;
-  font-size: 11px;
+  width: 64px;
+  font-size: 13px;
+}
+
+.fitter--panel .fitter__row input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  width: auto;
 }
 
 .fitter--panel .fitter__row select {
+  flex: 1;
+  min-width: 0;
   min-height: 28px;
   padding: 2px 8px;
   font-size: 12px;
 }
 
 .fitter--panel .fitter__value {
-  width: 36px;
-  font-size: 10px;
+  width: 40px;
+  font-size: 12px;
   text-align: right;
 }
 
@@ -1674,10 +1856,8 @@ button {
 }
 
 .fitter__note {
-  position: absolute;
-  left: 181px;
-  top: 0;
-  width: 229px;
+  grid-column: 1;
+  grid-row: 3;
   margin: 0;
   font-size: 11px;
   line-height: 1.4;

@@ -11,8 +11,17 @@ import Mannequin, { GarmentIllustration } from './Mannequin.jsx'
 // settings: { mode, colors, solid } 지금 적용된 값
 // save(svg, settings): 서버에 저장하는 요청 (대표 색상만이면 svg는 null). 응답을 돌려줌
 // item: 2D 일러스트와 칸 안 마네킹에 입힐 옷 정보 (구분과 종류를 고르지 않았으면 null)
-// onPreview(url): 주면 칸 안에 마네킹을 그리지 않고, 바뀐 무늬 주소(대표 색상만이면 null)를 알려 줍니다 (옷 상세는 왼쪽 큰 마네킹에 그림)
+// onPreview(url): 주면 바뀐 무늬 주소(대표 색상만이면 null)를 알려 줍니다 (옷 상세는 왼쪽 큰 마네킹에 그림)
+// layout: 'panel'이면 등록 화면 [2D 이미지] 탭의 시안 배치 (2D 변환 이미지와 마네킹 미리보기를 나란히, 2026-10-23).
+//         없으면 옷 상세의 배치 (2D 일러스트와 캐릭터용 무늬를 나란히)
 // onApplied(data, settings): data는 저장 응답, onCancel()
+
+// 등록 화면 [2D 이미지] 탭에서 표현 아래에 보이는 설명 (자동 감지는 시안 문장, 나머지는 제안)
+const MODE_NOTES = {
+  auto: '옷의 무늬를 분석해 자연스럽게 표현해요.',
+  detail: '사진의 색과 디테일을 최대한 살려요.',
+  stripes: '줄무늬를 줄마다 한 색으로 깔끔하게 정리해요.',
+}
 
 const MODES = [
   ['auto', '자동 감지'],
@@ -20,7 +29,7 @@ const MODES = [
   ['stripes', '줄무늬 정리'],
 ]
 
-function PatternPanel({ imageUrl, mainColor, settings, save, item, mannequin, onPreview, onApplied, onCancel }) {
+function PatternPanel({ imageUrl, mainColor, settings, save, item, mannequin, onPreview, onApplied, onCancel, layout }) {
   const [mode, setMode] = useState(settings.mode)
   const [colors, setColors] = useState(settings.colors)
   const [solid, setSolid] = useState(settings.solid)
@@ -62,92 +71,104 @@ function PatternPanel({ imageUrl, mainColor, settings, save, item, mannequin, on
   }
 
   const noCloth = image && !result
+  const illustration = item ? (
+    <GarmentIllustration
+      className="garment-illust pt__illust"
+      item={{ ...item, pattern_url: previewUrl }}
+      mannequin={mannequin}
+      title="옷만 그린 2D 일러스트"
+    />
+  ) : (
+    <img src={imageUrl} alt="배경을 지운 2D 이미지" />
+  )
+  const panel = layout === 'panel'
   return (
-    <div className="pt">
-      <div className="pt__boxes">
-        {/* 구분과 종류를 골랐으면 옷만 그린 2D 일러스트(바꾸는 중인 무늬), 아니면 배경을 지운 2D 이미지 (사람이 정함, 2026-10-23) */}
-        <figure className="pt__box">
-          {item ? (
-            <GarmentIllustration
-              className="garment-illust pt__illust"
-              item={{ ...item, pattern_url: previewUrl }}
-              mannequin={mannequin}
-              title="옷만 그린 2D 일러스트"
-            />
-          ) : (
-            <img src={imageUrl} alt="배경을 지운 2D 이미지" />
-          )}
-          <figcaption>{item ? '2D 일러스트' : '2D 이미지'}</figcaption>
-        </figure>
-        <figure className="pt__box" style={solid ? { background: mainColor } : undefined}>
-          {previewUrl && <img src={previewUrl} alt="캐릭터용 무늬" />}
-          <figcaption>{solid ? '대표 색상' : '캐릭터용 무늬'}</figcaption>
-        </figure>
+    <div className={`pt${panel ? ' pt--panel' : ''}`}>
+      {panel ? (
+        // 등록 화면 [2D 이미지] 탭 (시안): 2D 변환 이미지와 마네킹 미리보기를 나란히
+        <div className="pt__boxes">
+          <figure className="pt__card">
+            <figcaption>2D 변환 이미지</figcaption>
+            <div className="pt__card-pic pt__card-pic--check">{illustration}</div>
+          </figure>
+          <figure className="pt__card">
+            <figcaption>미리보기 (캐릭터 착용)</figcaption>
+            <div className="pt__card-pic">
+              <Mannequin
+                {...mannequin}
+                outfit={item ? { [item.category]: { ...item, pattern_url: previewUrl } } : undefined}
+                title={item ? '무늬를 입힌 마네킹' : '잠옷을 입은 마네킹'}
+              />
+              {!item && <p className="sub-text">구분과 종류를 고르면 입혀 보여 줘요.</p>}
+            </div>
+          </figure>
+        </div>
+      ) : (
+        <div className="pt__boxes">
+          {/* 구분과 종류를 골랐으면 옷만 그린 2D 일러스트(바꾸는 중인 무늬), 아니면 배경을 지운 2D 이미지 (사람이 정함, 2026-10-23) */}
+          <figure className="pt__box">
+            {illustration}
+            <figcaption>{item ? '2D 일러스트' : '2D 이미지'}</figcaption>
+          </figure>
+          <figure className="pt__box" style={solid ? { background: mainColor } : undefined}>
+            {previewUrl && <img src={previewUrl} alt="캐릭터용 무늬" />}
+            <figcaption>{solid ? '대표 색상' : '캐릭터용 무늬'}</figcaption>
+          </figure>
+        </div>
+      )}
+
+      <div className="pt__controls">
+        <div className="pt__row">
+          <span className="pt__label">무늬 표현</span>
+          <div className="pt__seg" role="radiogroup" aria-label="무늬 표현">
+            {MODES.map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={mode === value}
+                className={mode === value ? 'on' : ''}
+                disabled={solid}
+                onClick={() => setMode(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {panel && !solid && <p className="pt__note">{MODE_NOTES[mode]}</p>}
+        {mode === 'auto' && result && !solid && (
+          <p className="pt__note">{result.mode === 'stripes' ? '줄무늬로 보고 줄마다 한 색으로 정리했어요.' : '줄무늬가 아니라서 디테일을 살렸어요.'}</p>
+        )}
+
+        <label className="fitter__row pt__range">
+          <span>벡터 색상 수</span>
+          <input
+            type="range"
+            min={3}
+            max={10}
+            step={1}
+            value={colors}
+            disabled={solid}
+            style={{ '--p': `${((colors - 3) / 7) * 100}%` }}
+            onChange={(e) => setColors(Number(e.target.value))}
+          />
+          <span className="fitter__value">{colors}색</span>
+        </label>
+
+        {result && !solid && (
+          <div className="pt__palette" aria-label="뽑은 색">
+            {result.palette.map((c, i) => (
+              <span key={i} style={{ background: c }} title={c} />
+            ))}
+          </div>
+        )}
+
+        <label className="pt__check">
+          <input type="checkbox" checked={solid} onChange={(e) => setSolid(e.target.checked)} />
+          대표 색상만 (무늬 없이 한 색으로)
+        </label>
       </div>
-
-      {!onPreview && (
-        <div className="pt__mannequin">
-          {item ? (
-            <Mannequin
-              {...mannequin}
-              outfit={{ [item.category]: { ...item, pattern_url: previewUrl } }}
-              title="무늬를 입힌 마네킹"
-            />
-          ) : (
-            <p className="sub-text">구분과 종류를 고르면 마네킹에도 입혀 보여 줘요.</p>
-          )}
-        </div>
-      )}
-
-      <div className="pt__row">
-        <span className="pt__label">무늬 표현</span>
-        <div className="pt__seg" role="radiogroup" aria-label="무늬 표현">
-          {MODES.map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={mode === value}
-              className={mode === value ? 'on' : ''}
-              disabled={solid}
-              onClick={() => setMode(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      {mode === 'auto' && result && !solid && (
-        <p className="pt__note">{result.mode === 'stripes' ? '줄무늬로 보고 줄마다 한 색으로 정리했어요.' : '줄무늬가 아니라서 디테일을 살렸어요.'}</p>
-      )}
-
-      <label className="fitter__row pt__range">
-        <span>벡터 색상 수</span>
-        <input
-          type="range"
-          min={3}
-          max={10}
-          step={1}
-          value={colors}
-          disabled={solid}
-          style={{ '--p': `${((colors - 3) / 7) * 100}%` }}
-          onChange={(e) => setColors(Number(e.target.value))}
-        />
-        <span className="fitter__value">{colors}색</span>
-      </label>
-
-      {result && !solid && (
-        <div className="pt__palette" aria-label="뽑은 색">
-          {result.palette.map((c, i) => (
-            <span key={i} style={{ background: c }} title={c} />
-          ))}
-        </div>
-      )}
-
-      <label className="pt__check">
-        <input type="checkbox" checked={solid} onChange={(e) => setSolid(e.target.checked)} />
-        대표 색상만 (무늬 없이 한 색으로)
-      </label>
 
       {loadError && <ErrorLine message={loadError} />}
       {noCloth && <p className="sub-text">옷 부분이 비어 있어요. [배경 고치기]로 옷을 되살리거나 대표 색상만 써 주세요.</p>}

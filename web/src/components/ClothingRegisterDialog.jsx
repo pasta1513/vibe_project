@@ -14,12 +14,20 @@ import PatternPanel from './PatternPanel.jsx'
 import WordAdder, { GENDER_FAILED } from './WordAdder.jsx'
 
 // 옷 등록 (SCREEN-SPEC §6.2). 시안 style/html 07_4를 그대로 옮긴 넓은 등록 화면입니다. 옷장 목록 자리에 뜹니다. (P-38)
-// 01 사진 업로드, 02 원본 사진·2D 이미지와 무늬·배경 고치기, 03 미리보기와 모습 조절, 04 키워드(시안의 칸 대신 키워드 버튼 줄).
+// (2026-10-23 바꿈) 왼쪽에 01 사진 업로드와 02 옷 정보 입력(키워드 버튼 줄), 오른쪽에 탭 세 개
+// [배경 고치기] [2D 이미지] [캐릭터에 맞추기]. 사람이 준 시안 그림 3장을 따르고, 앱에 없는 기능(가이드 보기,
+// 어깨·소매 맞추기, 무늬 가로·세로 크기 따로)은 넣지 않습니다 (사람이 정함).
 // 시안의 옷 이름·브랜드·태그·설명 칸과 왼쪽 메뉴의 관리 항목은 앱에 기능이 없어 넣지 않았습니다 (사람이 정함, 2026-10-22).
 // [+ 더하기]로 더한 단어는 이 창의 목록에 바로 붙고 켜진 채로 보입니다. 구분 줄에는 [+ 더하기]가 없습니다.
 const EMPTY_PICK = { category: null, color: [], type: [], material: [], season: [], pattern: [] }
 // 무늬 표현과 벡터 색상 수의 처음 값 (moire-closet과 같음, P-39)
 const DEFAULT_PATTERN = { mode: 'auto', colors: 7, solid: false }
+// 오른쪽 탭: 키, 이름, 설명(시안 문장), 아이콘 path
+const TABS = [
+  ['edit', '배경 고치기', '옷 사진의 배경을 제거하고 깔끔하게 다듬어주세요.', 'M4 20 14 10M13 4v3M18 9h-3M16 6l-2 2M18 14v3M16.5 15.5h3M7 4v3M5.5 5.5h3'],
+  ['pattern', '2D 이미지', '옷 이미지를 2D 일러스트 스타일로 변환하고 무늬를 정리해보세요.', 'M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM4 16l5-5 4 4 2-2 5 5M15 9.5a1.5 1.5 0 1 0 0-.01'],
+  ['fit', '캐릭터에 맞추기', '미리보기를 드래그해 위치를 옮기거나 슬라이더로 조절하세요.', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1c0-4 3.5-6 8-6s8 2 8 6v1'],
+]
 
 // 서버(outfits.py)와 같은 규칙으로 의상 틀을 고릅니다: 표에서 위에 있는 틀, 맞는 단어가 없으면 구분의 기본 틀 (D-016)
 function pickTemplate(table, category, typeNames) {
@@ -36,9 +44,13 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
   const [lastFile, setLastFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null) // { message, retry }
-  // 02 칸에 보이는 것: 'original' 원래 사진(처음), 'pattern' 2D 이미지와 무늬 (P-39), 'edit' 배경 고치기 (P-34).
-  // 무늬와 배경 고치기는 오른쪽 칸 전체를 씁니다. 그 밖에는 03 칸에 마네킹 미리보기와 모습 조절이 보입니다 (D-016, P-33).
-  const [view, setView] = useState('original')
+  // 오른쪽 탭: 'edit' 배경 고치기 (P-34, 사진을 올리면 처음), 'pattern' 2D 이미지와 무늬 (P-39),
+  // 'fit' 캐릭터에 맞추기 (D-016, P-33). 한 번 연 탭은 숨기기만 해서, 탭을 바꿔도 적용하기 전의 편집이 남습니다.
+  const [view, setView] = useState('edit')
+  const [opened, setOpened] = useState({ edit: true })
+  // [취소]를 누르면 탭 내용을 처음(지금 적용된 상태)부터 다시 그립니다.
+  const [editKey, setEditKey] = useState(0)
+  const [patternKey, setPatternKey] = useState(0)
   // 적용된 무늬 표현, 벡터 색상 수, 대표 색상만 (P-39). 등록할 때 함께 보냅니다.
   const [patternSettings, setPatternSettings] = useState(DEFAULT_PATTERN)
   // [모습 조절]로 바꾼 틀과 피팅값. 조절하지 않았으면 null이고, 등록할 때 보내지 않습니다. 구분을 바꾸면 버립니다.
@@ -86,7 +98,8 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
     }
     const data = res.data
     setUpload(data)
-    setView('original')
+    setView('edit')
+    setOpened({ edit: true })
     setCustom(null)
     setPatternSettings(DEFAULT_PATTERN)
     makePattern(data, DEFAULT_PATTERN).then((url) =>
@@ -188,6 +201,11 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
         }
       : null
 
+  function openTab(key) {
+    setView(key)
+    setOpened((prev) => ({ ...prev, [key]: true }))
+  }
+
   const types = sortTypesByGender(
     keywords.type.filter((t) => t.category === pick.category),
     gender,
@@ -227,7 +245,7 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
         <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={handleFileChange} />
 
         {/* 01 · 사진 업로드 */}
-        <div className="reg__sec" style={{ left: 17, top: 91, width: 636, height: 290 }} />
+        <div className="reg__sec" style={{ left: 17, top: 91, width: 612, height: 290 }} />
         <span className="reg__sec-t" style={{ left: 35, top: 108 }}>
           01 · 사진 업로드 <span className="reg__req">*</span>
         </span>
@@ -259,10 +277,14 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
           <button
             type="button"
             className="reg__wbtn"
-            style={{ left: 76, top: 316, width: 186, height: 41 }}
+            style={{ left: 63, top: 316, width: 186, height: 41 }}
             disabled={uploading}
             onClick={() => fileInput.current.click()}
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 8h4l2-3h6l2 3h4v12H3z" />
+              <circle cx="12" cy="13.5" r="3.5" />
+            </svg>
             {uploading ? '사진을 정리하는 중…' : '사진 다시 올리기'}
           </button>
         )}
@@ -279,10 +301,10 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
           </div>
         )}
 
-        {/* 04 · 옷 정보 입력: 시안의 칸 대신 키워드 버튼 줄 (사람이 정함, 2026-10-22) */}
-        <div className="reg__sec" style={{ left: 17, top: 391, width: 636, height: 414 }} />
+        {/* 02 · 옷 정보 입력: 시안의 칸 대신 키워드 버튼 줄 (사람이 정함, 2026-10-22) */}
+        <div className="reg__sec" style={{ left: 17, top: 391, width: 612, height: 405 }} />
         <span className="reg__sec-t" style={{ left: 35, top: 408 }}>
-          04 · 옷 정보 입력
+          02 · 옷 정보 입력
         </span>
         <div className="reg__keywords">
           {!upload ? (
@@ -350,112 +372,96 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
           {registering ? '등록하는 중…' : '옷장에 저장하기'}
         </button>
 
-        {/* 02 · 2D 이미지와 배경 고치기 (P-34). 고치는 동안은 오른쪽 칸 전체를 씁니다. */}
-        <div
-          className="reg__sec"
-          style={{ left: 662, top: 17, width: 446, height: view === 'original' ? 405 : 779 }}
-        />
-        <span className="reg__sec-t" style={{ left: 681, top: 38 }}>
-          02 · {view === 'edit' ? '배경 고치기' : view === 'pattern' ? '2D 이미지와 무늬' : '원본 사진'}
-        </span>
-        {upload && view === 'pattern' ? (
-          <div className="reg__editor">
-            <PatternPanel
-              imageUrl={upload.image_url}
-              mainColor={upload.main_color}
-              settings={patternSettings}
-              save={(svg) => api.savePattern(upload.upload_id, svg)}
-              item={previewItem}
-              mannequin={mannequin}
-              onApplied={({ pattern_url }, settings) => {
-                setUpload({ ...upload, pattern_url })
-                setPatternSettings(settings)
-                setView('original')
-              }}
-              onCancel={() => setView('original')}
-            />
-          </div>
-        ) : upload && view === 'edit' ? (
-          <div className="reg__editor">
-            <BackgroundEditor
-              upload={upload}
-              onApplied={(data) => {
-                // 고친 2D 이미지와 다시 만든 대표 색으로 바꾸고, 지금 무늬 설정으로 무늬를 다시 만듭니다. 원래 사진은 그대로입니다.
-                const next = { ...upload, ...data }
-                setUpload(next)
-                setView('original')
-                makePattern(next, patternSettings).then((url) =>
-                  setUpload((prev) => (prev?.upload_id === next.upload_id ? { ...prev, pattern_url: url } : prev)),
-                )
-              }}
-              onCancel={() => setView('original')}
-            />
-          </div>
-        ) : (
-          <>
-            <div className="reg__image">
-              {upload ? (
-                <img src={upload.photo_url} alt="원래 사진" />
-              ) : (
-                <span className="sub-text">사진을 올리면 여기에 보여요.</span>
-              )}
+        {/* 오른쪽 탭 세 개 (2026-10-23, 시안). 사진을 올리기 전에는 눌리지 않습니다. */}
+        <div className="reg__tabs" role="tablist" aria-label="사진 다듬기">
+          {TABS.map(([key, label, , icon]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              id={`reg-tab-${key}`}
+              aria-selected={Boolean(upload) && view === key}
+              aria-controls={`reg-panel-${key}`}
+              disabled={!upload}
+              className={`reg__tab${upload && view === key ? ' reg__tab--on' : ''}`}
+              onClick={() => openTab(key)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d={icon} />
+              </svg>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="reg__sec" style={{ left: 638, top: 81, width: 473, height: 715 }} />
+        <div className="reg__panel">
+          {!upload ? (
+            <div className="reg__panel-empty">
+              <Mannequin className="reg__preview-mannequin" {...mannequin} title="미리보기 마네킹" />
+              <p className="sub-text">사진을 올리면 배경을 고치고, 2D 이미지와 캐릭터에 입힌 모습을 볼 수 있어요.</p>
             </div>
-            <div className="reg__seg" role="radiogroup" aria-label="보기">
-              {[
-                ['original', '원본 사진', 82],
-                ['pattern', '2D 이미지', 95],
-              ].map(([key, label, width], i) => (
-                <button
-                  key={key}
-                  type="button"
-                  role="radio"
-                  aria-checked={view === key}
-                  disabled={!upload}
-                  className={`reg__seg-opt${view === key ? ' reg__seg-opt--on' : ''}`}
-                  style={{ left: 683 + [0, 92][i], top: 331, width }}
-                  onClick={() => setView(key)}
-                >
-                  {label}
-                </button>
-              ))}
-              <button
-                type="button"
-                className="reg__seg-opt"
-                style={{ left: 880, top: 331, width: 100 }}
-                disabled={!upload}
-                onClick={() => setView('edit')}
+          ) : (
+            TABS.map(([key, label, description]) => (
+              <section
+                key={key}
+                id={`reg-panel-${key}`}
+                role="tabpanel"
+                aria-labelledby={`reg-tab-${key}`}
+                hidden={view !== key}
               >
-                배경 고치기
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* 03 · 미리보기와 모습 조절 (D-016, P-33) */}
-        {view === 'original' && (
-          <>
-            <div className="reg__sec" style={{ left: 662, top: 431, width: 446, height: 365 }} />
-            <span className="reg__sec-t" style={{ left: 681, top: 449 }}>
-              03 · 미리보기
-            </span>
-            <div className="reg__preview">
-              {previewItem ? (
-                <OutfitFitter
-                  layout="panel"
-                  mannequin={mannequin}
-                  item={previewItem}
-                  templates={outfitTable.templates.filter((t) => t.category === pick.category)}
-                  onChange={setCustom}
-                />
-              ) : (
-                <div className="reg__preview-empty">
-                  <Mannequin className="reg__preview-mannequin" {...mannequin} title="미리보기 마네킹" />
-                  <p className="sub-text">구분과 종류를 고르면 옷을 입혀 보여 줘요.</p>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+                <h3 className="reg__panel-t">{key === 'pattern' ? '2D 이미지 변환' : label}</h3>
+                <p className="reg__panel-d">{description}</p>
+                {opened[key] && key === 'edit' && (
+                  <BackgroundEditor
+                    key={`${upload.image_url}-${editKey}`}
+                    upload={upload}
+                    onApplied={(data) => {
+                      // 고친 2D 이미지와 다시 만든 대표 색으로 바꾸고, 지금 무늬 설정으로 무늬를 다시 만듭니다. 원래 사진은 그대로입니다.
+                      const next = { ...upload, ...data }
+                      setUpload(next)
+                      makePattern(next, patternSettings).then((url) =>
+                        setUpload((prev) => (prev?.upload_id === next.upload_id ? { ...prev, pattern_url: url } : prev)),
+                      )
+                    }}
+                    onCancel={() => setEditKey((k) => k + 1)}
+                  />
+                )}
+                {opened[key] && key === 'pattern' && (
+                  <PatternPanel
+                    key={`${upload.upload_id}-${patternKey}`}
+                    layout="panel"
+                    imageUrl={upload.image_url}
+                    mainColor={upload.main_color}
+                    settings={patternSettings}
+                    save={(svg) => api.savePattern(upload.upload_id, svg)}
+                    item={previewItem}
+                    mannequin={mannequin}
+                    onApplied={({ pattern_url }, settings) => {
+                      setUpload({ ...upload, pattern_url })
+                      setPatternSettings(settings)
+                    }}
+                    onCancel={() => setPatternKey((k) => k + 1)}
+                  />
+                )}
+                {opened[key] && key === 'fit' &&
+                  (previewItem ? (
+                    <OutfitFitter
+                      layout="panel"
+                      mannequin={mannequin}
+                      item={previewItem}
+                      templates={outfitTable.templates.filter((t) => t.category === pick.category)}
+                      onChange={setCustom}
+                    />
+                  ) : (
+                    <div className="reg__panel-empty">
+                      <Mannequin className="reg__preview-mannequin" {...mannequin} title="미리보기 마네킹" />
+                      <p className="sub-text">구분과 종류를 고르면 옷을 입혀 보여 줘요.</p>
+                    </div>
+                  ))}
+              </section>
+            ))
+          )}
+        </div>
       </section>
 
       {alert && <AlertDialog message={alert} onClose={() => setAlert(null)} />}

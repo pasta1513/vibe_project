@@ -8,8 +8,8 @@ import Mannequin from './Mannequin.jsx'
 // item: 옷 한 벌 정보 { category, image_url, main_color, pattern_url, outfit_template, fit }
 // templates: 이 옷의 구분에 속한 틀 목록 [{ code, name }]
 // onChange({ outfit_template, fit }): 조절할 때마다 부름. 저장은 부르는 쪽이 합니다.
-// layout: 'panel'이면 시안 07_4의 "03 · 미리보기" 배치 ([옷 전체 | 내부 무늬] 토글, 왼쪽 마네킹, 오른쪽 조절,
-//         [선택한 조절 초기화]). 없으면 지금까지의 세로 배치 (옷 상세). (P-38)
+// layout: 'panel'이면 등록 화면 [캐릭터에 맞추기] 탭의 시안 배치 ([옷 전체 | 내부 무늬] 토글, 왼쪽 마네킹과
+//         그 아래 로고 안내, 오른쪽 조절, [선택한 조절 초기화]). 없으면 지금까지의 세로 배치 (옷 상세). (P-38, 2026-10-23 바꿈)
 
 // 피팅값의 기본값과 범위 (DATA-MODEL §3). 서버도 같은 범위를 검사합니다.
 export const DEFAULT_FIT = { x: 0, y: 0, sx: 1, sy: 1, rotate: 0, px: 0, py: 0, ps: 1 }
@@ -25,6 +25,8 @@ const PATTERN_SLIDERS = [
   { key: 'py', label: '무늬 세로 위치', min: -0.5, max: 0.5, step: 0.01, show: (v) => `${Math.round(v * 100)}%` },
   { key: 'ps', label: '무늬 크기', min: 0.5, max: 2, step: 0.05, show: (v) => `${Math.round(v * 100)}%` },
 ]
+// 등록 화면 [캐릭터에 맞추기] 탭에서 쓰는 시안의 이름 (2026-10-23)
+const PANEL_LABELS = { x: '좌우 위치', y: '상하 위치', px: '좌우 위치', py: '상하 위치', ps: '크기' }
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
 const round2 = (v) => Math.round(v * 100) / 100
 
@@ -110,7 +112,7 @@ function OutfitFitter({ mannequin, item, templates, onChange, layout }) {
   if (layout === 'panel') {
     // 시안 07_4: 토글로 고른 쪽(옷 전체 또는 내부 무늬)의 조절만 보이고, 초기화도 그쪽만 합니다.
     const pattern = target === 'pattern'
-    const shown = pattern ? PATTERN_SLIDERS : SLIDERS
+    const shown = (pattern ? PATTERN_SLIDERS : SLIDERS).map((s) => ({ ...s, label: PANEL_LABELS[s.key] ?? s.label }))
     const resetKeys = shown.map((s) => s.key)
     return (
       <div className="fitter fitter--panel">
@@ -134,7 +136,7 @@ function OutfitFitter({ mannequin, item, templates, onChange, layout }) {
         </div>
         {stage}
         <div className="fitter__controls">
-          <b className="fitter__heading">{pattern ? '내부 무늬 조절' : '옷 전체 조절'}</b>
+          <b className="fitter__heading">{pattern ? '옷 안쪽 무늬 조절' : '옷 전체 조절'}</b>
           {!pattern && templateSelect}
           {shown.map((s) => (
             <Slider key={s.key} s={s} value={fit[s.key]} onChange={(v) => update({ [s.key]: v })} />
