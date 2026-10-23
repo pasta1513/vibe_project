@@ -398,12 +398,17 @@
   font-size: 24px;
   font-weight: 700;
   box-shadow: var(--shadow-panel);
-  transition: transform 0.15s, background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
+/* 배경 그림(pick-bg.png)에 같은 버튼이 그려져 있어, 버튼을 움직이거나 비치게 하면 뒤 그림이 보입니다. */
 .du-score:hover:not(:disabled) {
-  transform: translateY(-2px);
   background: #fff;
+}
+
+.du .du-score:disabled {
+  opacity: 1;
+  color: color-mix(in srgb, var(--du-coral) 55%, #fffaf5);
 }
 
 .du-review {

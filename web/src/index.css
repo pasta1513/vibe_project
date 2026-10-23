@@ -1770,9 +1770,9 @@ button {
 .fitter.fitter--panel {
   width: 100%;
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 200px 1fr;
   grid-template-rows: auto auto 1fr;
-  gap: 12px 14px;
+  gap: 12px 18px;
   align-items: start;
 }
 
@@ -1785,8 +1785,7 @@ button {
 .fitter--panel .fitter__stage {
   grid-column: 1;
   grid-row: 2;
-  overflow: hidden; /* 크게 조절한 옷이 옆 조절 글자를 덮지 않게 */
-  width: 180px;
+  width: 200px;
   height: 320px;
   padding: 8px;
   border: none;
@@ -1811,14 +1810,12 @@ button {
 }
 
 .fitter--panel .fitter__row {
-  gap: 6px;
+  gap: 8px;
   font-size: 13px;
 }
 
-/* 이름 칸은 "좌우 위치" 글자 폭만큼(기본 84px보다 좁게), 슬라이더가 남는 폭을 씀 */
 .fitter--panel .fitter__row > span:first-child {
-  flex: 0 0 56px;
-  width: 56px;
+  width: 64px;
   font-size: 13px;
 }
 
@@ -1959,77 +1956,6 @@ button {
 
 .selbox__text--placeholder {
   color: var(--color-text-sub);
-}
-
-/* 어깨 · 소매 맞추기 (2026-10-23, moire 프로젝트 SleeveControls) */
-.fitter__sleeves {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  margin: 4px 0 0;
-  padding: 12px 14px;
-  border: 1px solid #f0e8de;
-  border-radius: 10px;
-  background: #fff;
-  font-size: 13px;
-}
-
-.fitter--panel .fitter__sleeves {
-  grid-column: 1 / -1;
-}
-
-.fitter__sleeves legend {
-  padding: 0 4px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.fitter__fine {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--reg-muted, #8a7466);
-}
-
-.fitter__sleeves .fitter__reset {
-  align-self: flex-start;
-  width: auto;
-  margin: 0;
-  padding: 0 14px;
-}
-
-.fitter__sides {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 16px;
-}
-
-.fitter__sides > div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.fitter__side-t {
-  font-size: 13px;
-}
-
-.fitter__sleeves .fitter__row > span:first-child {
-  width: 56px;
-}
-
-/* 왼쪽·오른쪽 소매: 이름(각도·길이·폭)은 두 글자 폭만, 슬라이더가 바로 옆부터 남는 폭을 모두 씀 */
-.fitter__sides .fitter__row > span:first-child {
-  flex: 0 0 24px;
-  width: 24px;
-}
-
-.fitter__sleeve-btns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 /* 옷 등록 창과 옷 상세 (SCREEN-SPEC §6.2, §6.3) */
