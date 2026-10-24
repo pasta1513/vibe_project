@@ -19,6 +19,7 @@ const BODY_RATIO = { slim: 0.85, medium: 1, chubby: 1.2 }
 
 const SKIN = '#FDE6D8'
 const SKIN_LINE = '#EFA48A'
+const COVER_LIMB = 0.4 // 옷을 입은 칸에서 팔다리 살색이 차지하는 폭 비율
 const PAJAMA = '#BCDCFA'
 const PAJAMA_DOT = '#FFFFFF'
 const PAJAMA_LINE = '#6FA6E6'
@@ -152,6 +153,8 @@ function Mannequin({
   const legW = 22 * w
   const legX = hip - legW / 2 - 1
   const pantW = legW + 6
+  // 옷을 입은 칸의 팔다리 살색은 옷 그림 가장자리 밖으로 테두리처럼 비치지 않게 가늘게, 바깥쪽 가장자리를 줄여 몸 안쪽에 둡니다.
+  const covered = (s, center, width) => (s > 0 ? center - width / 2 : -center - width / 2 + width * (1 - COVER_LIMB))
 
   const shiftY = SOLE_TARGET_Y - soleY
 
@@ -222,13 +225,13 @@ function Mannequin({
         {[-1, 1].map((s) => (
           <g key={`leg${s}`}>
             <rect
-              x={s * legX - (coversBottom ? legW : pantW) / 2}
+              x={coversBottom ? covered(s, legX, legW) : s * legX - pantW / 2}
               y={hipY + 4}
-              width={coversBottom ? legW : pantW}
+              width={coversBottom ? legW * COVER_LIMB : pantW}
               height={ankleY - hipY}
-              rx={coversBottom ? legW / 2 : 4}
+              rx={coversBottom ? (legW * COVER_LIMB) / 2 : 4}
               fill={coversBottom ? SKIN : pajamaFill}
-              stroke={coversBottom ? SKIN_LINE : PAJAMA_LINE}
+              stroke={coversBottom ? 'none' : PAJAMA_LINE}
               strokeWidth="1.5"
             />
             {/* 바짓단 */}
@@ -282,13 +285,13 @@ function Mannequin({
         {[-1, 1].map((s) => (
           <g key={`arm${s}`}>
             <rect
-              x={s * armX - armW / 2}
+              x={coversTop ? covered(s, armX, armW) : s * armX - armW / 2}
               y={armTop}
-              width={armW}
+              width={coversTop ? armW * COVER_LIMB : armW}
               height={wristY - armTop}
-              rx={armW / 2}
+              rx={(coversTop ? armW * COVER_LIMB : armW) / 2}
               fill={coversTop ? SKIN : pajamaFill}
-              stroke={coversTop ? SKIN_LINE : PAJAMA_LINE}
+              stroke={coversTop ? 'none' : PAJAMA_LINE}
               strokeWidth="1.5"
             />
             {/* 소맷단 */}
