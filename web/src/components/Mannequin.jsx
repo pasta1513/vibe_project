@@ -12,6 +12,7 @@ import headMale from '../assets/mannequin/head-male.png'
 //   비어 있으면 null, 아우터 "입지 않음"은 'none'. 원피스는 상의와 하의 칸을 함께 차지합니다. (PRD §6 마네킹)
 // showEmpty: 빈 칸에 점선과 "하의를 골라 주세요"를 겹쳐 보입니다. (SCREEN-SPEC §2.5, DESIGN §4.1)
 // fadedSlots: 지운 옷이 든 칸. 그 옷을 흐리게 보입니다. (SCREEN-SPEC §2.4)
+//   뒷모습(back)에서 틀 정보가 없는 옷은 앞면 그림을 쓰지 않고 구분의 기본 틀을 중립색으로 그립니다. (resolveSlot)
 //   잠옷은 그대로 보이고, 칸을 채운 것으로 보지 않습니다.
 
 const HEIGHT_RATIO = { short: 0.92, medium: 1, tall: 1.08 }
@@ -19,6 +20,12 @@ const BODY_RATIO = { slim: 0.85, medium: 1, chubby: 1.2 }
 
 const SKIN = '#FDE6D8'
 const SKIN_LINE = '#EFA48A'
+// 옷을 입은 칸이 2D 이미지(PNG)로 그려질 때만, 팔다리 살색이 이미지 가장자리 밖으로 테두리처럼 비치지 않게
+// 폭을 이 비율로 줄입니다. (안쪽 가장자리는 두고 바깥쪽을 줄임, 외곽선 없음) 틀(SVG)로 그린 옷에는 쓰지 않습니다.
+const COVER_LIMB = 0.4
+// 뒷모습에서 틀 정보가 없는 옷(PNG만 있는 옷)을 그릴 때: 그 구분의 기본 틀(서버 outfits.DEFAULTS와 같은 표)과 중립색(서버 FALLBACK_COLOR)
+const DEFAULT_TEMPLATE = { top: 'top_long', bottom: 'bottom_pants', dress: 'dress', outer: 'outer_short', shoes: 'shoes' }
+const NEUTRAL_COLOR = '#9E9E9A'
 const PAJAMA = '#BCDCFA'
 const PAJAMA_DOT = '#FFFFFF'
 const PAJAMA_LINE = '#6FA6E6'
@@ -252,22 +259,45 @@ function usePattern(url) {
   return url ? pattern : null
 }
 
-// 칸 하나의 옷. 의상 틀이 있으면 틀을 대표 색으로 칠하고, 무늬가 있으면 틀 모양 안에만 겹칩니다(clipPath).
-// 틀이 없으면 2D 이미지를 칸 상자에 얹습니다.
-// item: 옷 한 벌 정보 { image_url, outfit_template, main_color, pattern_url } 또는 2D 이미지 주소(문자열)
-function ClothingShape({ item, box, dims, faded, back }) {
-  const clipId = `outfit-clip-${useId().replace(/:/g, '')}`
-  const info = typeof item === 'object' ? item : null
-  const pattern = usePattern(info?.pattern_url)
+// 칸 하나를 어떻게 그릴지 정합니다. (뒷모습 규칙, 사람이 정함: 앞면 사진을 뒤집거나 그대로 써서 가짜 뒷면을 만들지 않습니다.)
+//   'shape'   틀 정보(main_color와 알려진 outfit_template)가 있어 틀로 그립니다. 앞모습·뒷모습 모두.
+//   'png'     앞모습에서 틀 정보가 없으면 2D 이미지를 그대로 얹습니다.
+//   'neutral' 뒷모습에서 틀 정보가 없는 옷: 옷이 가진 outfit_template, 없으면 구분의 기본 틀을 중립색으로 그립니다.
+//   'none'    뒷모습에서 틀을 찾지 못해 그리지 않습니다. (그 칸은 가림 판단에서도 빠져 잠옷이 보입니다.)
+function resolveSlot(item, slot, dims, back) {
+  const info = typeof item === 'object' && item ? item : null
   const paths = info?.main_color ? outfitPaths(info.outfit_template, dims, back) : null
-  if (!paths) {
+  if (paths) return { kind: 'shape', template: info.outfit_template, paths }
+  if (!back) return { kind: 'png' }
+  for (const template of [info?.outfit_template, DEFAULT_TEMPLATE[slot]]) {
+    const fallback = template ? outfitPaths(template, dims, true) : null
+    if (fallback) return { kind: 'neutral', template, paths: fallback }
+  }
+  return { kind: 'none' }
+}
+
+// 칸 하나의 옷. 의상 틀이 있으면 틀을 대표 색으로 칠하고, 무늬가 있으면 틀 모양 안에만 겹칩니다(clipPath).
+// 틀이 없으면 2D 이미지를 칸 상자에 얹습니다. (뒷모습은 resolveSlot 규칙)
+// item: 옷 한 벌 정보 { image_url, outfit_template, main_color, pattern_url } 또는 2D 이미지 주소(문자열)
+// slot: 이 옷이 놓인 칸(top, bottom, dress, outer, shoes). 뒷모습에서 기본 틀을 고를 때 씁니다.
+function ClothingShape({ item, slot, box, dims, faded, back }) {
+  const clipId = `outfit-clip-${useId().replace(/:/g, '')}`
+  const info = typeof item === 'object' && item ? item : null
+  const pattern = usePattern(info?.pattern_url)
+  const resolved = resolveSlot(item, slot, dims, back)
+  if (resolved.kind === 'none') return null
+  if (resolved.kind === 'png') {
     return <ClothingImage box={box} url={info ? info.image_url : item} faded={faded} />
   }
-  const area = outfitBox(info.outfit_template, dims)
-  const shapes = paths.map((d, i) => <path key={i} d={d} />)
+  const neutral = resolved.kind === 'neutral'
+  const color = neutral ? (info?.main_color ?? NEUTRAL_COLOR) : info.main_color
+  const area = outfitBox(resolved.template, dims)
+  const shapes = resolved.paths.map((d, i) => <path key={i} d={d} />)
   // 피팅값 (P-33, DESIGN §5.5): 옷은 틀 상자 가운데를 중심으로 옮기고 늘이고 기울입니다.
   // 무늬는 틀 모양 안에서만 따로 옮기고 늘입니다. 값은 틀 상자 크기에 대한 비율이라 18가지 모양에 같은 느낌입니다.
-  const fit = { x: 0, y: 0, sx: 1, sy: 1, rotate: 0, px: 0, py: 0, ps: 1, ...(info.fit ?? {}) }
+  // 중립 틀(뒷모습 대체)은 피팅값과 무늬 없이 틀 그대로 그립니다.
+  const fit = { x: 0, y: 0, sx: 1, sy: 1, rotate: 0, px: 0, py: 0, ps: 1, ...(neutral ? {} : info.fit ?? {}) }
+  const shownPattern = neutral ? null : pattern
   const cx = area.x + area.w / 2
   const cy = area.y + area.h / 2
   const outfitTransform =
@@ -275,23 +305,23 @@ function ClothingShape({ item, box, dims, faded, back }) {
     `scale(${fit.sx} ${fit.sy}) translate(${-cx} ${-cy})`
   const patternTransform =
     `translate(${cx + fit.px * area.w} ${cy + fit.py * area.h}) scale(${fit.ps}) translate(${-cx} ${-cy}) ` +
-    `translate(${area.x} ${area.y})` + (pattern ? ` scale(${area.w / pattern.w} ${area.h / pattern.h})` : '')
+    `translate(${area.x} ${area.y})` + (shownPattern ? ` scale(${area.w / shownPattern.w} ${area.h / shownPattern.h})` : '')
   return (
     <g opacity={faded ? 0.4 : 1} transform={outfitTransform} data-fit-box={`${area.w} ${area.h}`}>
       <defs>
         <clipPath id={clipId}>{shapes}</clipPath>
       </defs>
-      <g fill={info.main_color}>{shapes}</g>
-      {pattern && (
+      <g fill={color}>{shapes}</g>
+      {shownPattern && (
         <g clipPath={`url(#${clipId})`}>
           <g transform={patternTransform}>
-            {pattern.paths.map((p, i) => (
+            {shownPattern.paths.map((p, i) => (
               <path key={i} d={p.d} fill={p.fill ?? undefined} transform={p.transform ?? undefined} />
             ))}
           </g>
         </g>
       )}
-      <g fill="none" stroke={darker(info.main_color)} strokeWidth={1.5} strokeLinejoin="round">
+      <g fill="none" stroke={darker(color)} strokeWidth={1.5} strokeLinejoin="round">
         {shapes}
       </g>
     </g>
@@ -464,11 +494,30 @@ function Mannequin({
   const worn = outfit ?? {}
   const hasDress = Boolean(worn.dress)
   // 옷을 입은 칸의 잠옷은 그리지 않고 팔다리를 살색으로 둡니다. 반팔이나 치마 아래로 잠옷이 보이지 않게 합니다.
-  const coversTop = hasDress || Boolean(worn.top)
-  const coversBottom = hasDress || Boolean(worn.bottom)
+  // 지운 옷의 칸은 채운 것으로 보지 않으므로 그 자리의 잠옷은 계속 보입니다. (흐린 옷 그림은 그대로 그립니다.)
+  // 뒷모습에서 그릴 수 없는 칸(resolveSlot 'none')도 채운 것으로 보지 않습니다. 아우터와 신발은 잠옷을 가리지 않습니다.
+  const slotKind = (slot) => (worn[slot] ? resolveSlot(worn[slot], slot, dims, back).kind : 'none')
+  const slotValid = (slot) => slotKind(slot) !== 'none' && !fadedSlots.includes(slot)
+  const topValid = slotValid('top')
+  const bottomValid = slotValid('bottom')
+  const dressValid = slotValid('dress')
+  const coversTop = dressValid || topValid
+  const coversBottom = dressValid || bottomValid
+  // 팔·다리를 덮은 옷이 2D 이미지(PNG)로 그려질 때만 살색 후광을 줄입니다. 틀로 그린 옷은 그대로 둡니다.
+  const armsPng = coversTop && slotKind(dressValid ? 'dress' : 'top') === 'png'
+  const legsPng = coversBottom && slotKind(dressValid ? 'dress' : 'bottom') === 'png'
+  // 후광을 줄인 팔다리 살색의 x. 마네킹 안쪽 가장자리는 두고 바깥쪽을 줄입니다.
+  const inner = (s, center, width) => (s > 0 ? center - width / 2 : -center - width / 2 + width * (1 - COVER_LIMB))
   const pajamaFill = `url(#${patternId})`
   const slotShape = (slot) => (
-    <ClothingShape item={worn[slot]} box={boxes[slot]} dims={dims} faded={fadedSlots.includes(slot)} back={back} />
+    <ClothingShape
+      item={worn[slot]}
+      slot={slot}
+      box={boxes[slot]}
+      dims={dims}
+      faded={fadedSlots.includes(slot)}
+      back={back}
+    />
   )
   const emptySlots = showEmpty
     ? ['shoes', 'bottom', 'top', 'outer'].filter((slot) => {
@@ -513,13 +562,13 @@ function Mannequin({
         {[-1, 1].map((s) => (
           <g key={`leg${s}`}>
             <rect
-              x={s * legX - (coversBottom ? legW : pantW) / 2}
+              x={legsPng ? inner(s, legX, legW) : s * legX - (coversBottom ? legW : pantW) / 2}
               y={hipY + 4}
-              width={coversBottom ? legW : pantW}
+              width={legsPng ? legW * COVER_LIMB : coversBottom ? legW : pantW}
               height={ankleY - hipY}
-              rx={coversBottom ? legW / 2 : 4}
+              rx={legsPng ? (legW * COVER_LIMB) / 2 : coversBottom ? legW / 2 : 4}
               fill={coversBottom ? SKIN : pajamaFill}
-              stroke={coversBottom ? SKIN_LINE : PAJAMA_LINE}
+              stroke={legsPng ? 'none' : coversBottom ? SKIN_LINE : PAJAMA_LINE}
               strokeWidth="1.5"
             />
             {/* 바짓단 */}
@@ -573,13 +622,13 @@ function Mannequin({
         {[-1, 1].map((s) => (
           <g key={`arm${s}`}>
             <rect
-              x={s * armX - armW / 2}
+              x={armsPng ? inner(s, armX, armW) : s * armX - armW / 2}
               y={armTop}
-              width={armW}
+              width={armsPng ? armW * COVER_LIMB : armW}
               height={wristY - armTop}
-              rx={armW / 2}
+              rx={(armsPng ? armW * COVER_LIMB : armW) / 2}
               fill={coversTop ? SKIN : pajamaFill}
-              stroke={coversTop ? SKIN_LINE : PAJAMA_LINE}
+              stroke={armsPng ? 'none' : coversTop ? SKIN_LINE : PAJAMA_LINE}
               strokeWidth="1.5"
             />
             {/* 소맷단 */}
