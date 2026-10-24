@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import { useForegroundBounds } from '../foregroundBounds.js'
 import headFemale from '../assets/mannequin/head-female.png'
 import headMale from '../assets/mannequin/head-male.png'
 
@@ -329,17 +330,35 @@ function ClothingShape({ item, slot, box, dims, faded, back }) {
 }
 
 // 옷의 2D 이미지를 칸 상자에 비율을 지켜 얹습니다. (DESIGN §5.1)
+// 서버는 옷 둘레로 자르지 않은 이미지를 저장하므로, 옷이 있는 부분(투명하지 않은 부분)을 구해 그 범위를 칸에 맞춥니다.
+// (foregroundBounds.js. 범위를 구하지 못하면 이미지 전체를 그대로 얹습니다.)
 function ClothingImage({ box, url, faded }) {
+  const bounds = useForegroundBounds(url)
+  if (!bounds) {
+    return (
+      <image
+        href={url}
+        opacity={faded ? 0.4 : 1}
+        x={box.x}
+        y={box.y}
+        width={box.w}
+        height={box.h}
+        preserveAspectRatio="xMidYMid meet"
+      />
+    )
+  }
   return (
-    <image
-      href={url}
-      opacity={faded ? 0.4 : 1}
+    <svg
       x={box.x}
       y={box.y}
       width={box.w}
       height={box.h}
+      viewBox={`${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}`}
       preserveAspectRatio="xMidYMid meet"
-    />
+      opacity={faded ? 0.4 : 1}
+    >
+      <image href={url} x={0} y={0} width={bounds.nw} height={bounds.nh} />
+    </svg>
   )
 }
 

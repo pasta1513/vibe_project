@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from PIL import Image
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
+from starlette.concurrency import run_in_threadpool
 
 from .. import photos
 from ..db import get_session
@@ -41,7 +42,8 @@ async def upload_photo(file: UploadFile = File(...),
     image = photos.TEMP_DIR / f"{upload_id}-image.png"
     original.write_bytes(content)
     try:
-        imaging.make_2d_image(original, image)
+        # 배경 지우기는 CPU로 몇 초 걸릴 수 있어서, 다른 요청이 막히지 않게 따로 돌립니다.
+        await run_in_threadpool(imaging.make_2d_image, original, image)
     except ExternalError:
         photos.discard_upload(upload_id)
         raise ApiError("imaging_failed", "2D 이미지를 만들지 못했어요.", 502)
