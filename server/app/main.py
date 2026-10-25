@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from .db import PROJECT_DIR, init_db
+from .external import imaging
 from .photos import clear_temp
 from .responses import install_error_handlers
 from .routers import (clothes, diary, favorites, keywords, photos, recommendations, scores, settings,
@@ -16,6 +17,8 @@ async def lifespan(app: FastAPI):
     init_db()
     # 등록을 마치지 않고 남은 임시 사진을 버립니다. (DATA-MODEL §8)
     clear_temp()
+    # rembg 모델을 따로 미리 올립니다. 켜는 일을 기다리게 하지 않습니다. (U4)
+    imaging.warm_up_in_background()
     yield
 
 

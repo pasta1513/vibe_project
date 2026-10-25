@@ -66,6 +66,33 @@ def provider() -> str:
     return value if value in ("rembg", "floodfill", "fake") else "rembg"
 
 
+def warm_up_in_background() -> None:
+    """서버를 켤 때 rembg 모델을 미리 올립니다. 켜는 일과 /api/health를 막지 않게 따로 돌립니다. (U4)
+
+    IMAGING_PROVIDER가 rembg이고 모델 파일이 있을 때만 합니다. 실패해도 기록만 남기고,
+    사진을 올릴 때 이전처럼 Flood Fill로 넘어갑니다. 미리 올리는 중에 사진이 올라오면 같은 모델 올리기를 기다렸다가 씁니다(_session_lock).
+    """
+    if provider() != "rembg":
+        return
+    if not (MODEL_DIR / f"{MODEL_NAME}.onnx").exists():
+        log.info("2D 이미지화: 모델 파일이 없어 미리 올리지 않습니다 (%s)", MODEL_DIR)
+        return
+    threading.Thread(target=_warm_up, name="rembg-warm-up", daemon=True).start()
+
+
+def _warm_up() -> None:
+    started = time.monotonic()
+    try:
+        import numpy  # noqa: F401  첫 사진에서 불러오느라 느려지지 않게 함께 불러 둡니다.
+        from rembg import remove
+        from scipy import ndimage  # noqa: F401
+
+        remove(Image.new("RGB", (64, 64), (255, 255, 255)), session=_get_session())
+        log.info("2D 이미지화: rembg 모델을 미리 올렸습니다 (%.1f초)", time.monotonic() - started)
+    except Exception as exc:  # noqa: BLE001  못 올려도 사진을 올릴 때 Flood Fill로 넘어갑니다.
+        log.warning("2D 이미지화: rembg 모델을 미리 올리지 못했습니다 (%s: %s)", type(exc).__name__, exc)
+
+
 def make_2d_image(photo_path: Path, image_path: Path) -> None:
     """원래 사진으로 2D 이미지(투명 PNG)를 만들어 image_path에 저장합니다. 크기는 working_size()와 같습니다."""
     if should_fake_fail("imaging"):
