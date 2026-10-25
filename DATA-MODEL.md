@@ -22,6 +22,7 @@
 (D-003, ARCHITECTURE §2.3)
 
 - 저장 폴더는 `server/.env`의 `DATA_DIR`로 바꿀 수 있고, 없으면 `data/`입니다. 표 구조는 Alembic이 서버를 켤 때 최신으로 바꿉니다. (D-017, P-35)
+- (2026-10-25 더함, D-028) checkpoint 계보의 옛 `dev.db`는 `create_all`로 만들어져 Alembic을 그대로 돌릴 수 없습니다. `server/scripts/import_checkpoint_data.py`가 새 저장 폴더에 빈 표를 만든 뒤 행을 옮깁니다. 옷의 `outfit_template`, `main_color`, `pattern_path`, `pattern_mode`, `pattern_colors`, `fit`은 비어 있어도 되므로 옮긴 옷은 이 칸이 비어 사진(2D 이미지)으로 보입니다.
 - 개발 중에 쓴 시험 데이터(`dev.db`와 사진)는 옷 4벌과 마네킹 설정을 옮긴 뒤 휴지통으로 보냈습니다. (D-017, P-37)
 
 ### 1.2 정보끼리의 관계

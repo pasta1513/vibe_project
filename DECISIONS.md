@@ -458,7 +458,7 @@ AI, 2D 이미지화 도구, 날씨 서비스 없이 화면과 서버를 먼저 �
 - [PLAN.md](PLAN.md) P-30
 
 ### 유효 상태
-확정 (사람이 정함, 2026-10-22)
+확정 (사람이 정함, 2026-10-22). (2026-10-25 바꿈) 2D 이미지화의 주 경로는 rembg로 바뀌고 Flood Fill은 보조 경로가 됨 (D-023). pillow는 12.3.0으로 고정
 
 ## D-016. 마네킹에는 옷 종류별 SVG 틀에 사진의 색·무늬를 넣은 의상을 얹는다
 
@@ -634,7 +634,7 @@ PRD §3, §4, §6, §8, DESIGN §5.5, DATA-MODEL §3, ARCHITECTURE 흐름 1, API
 - [PLAN.md](PLAN.md) P-41, P-42
 
 ### 유효 상태
-확정 (사람이 정함, 2026-10-23)
+확정 (사람이 정함, 2026-10-23). (2026-10-25 보완) 전문가 모델은 그대로이고, 추천은 점수를 만들지 않으며 평가는 기본 모델이 따로 함 (D-026). 기다리는 시간은 D-027로 다시 정함 (서버 추천 15초, 화면 45초). `BEDROCK_MODEL_ID2`를 설정하면 전문가를 다시 재야 함
 
 ## D-021. 무늬 그림은 화면에서 만들고 서버는 검사·저장만 한다 (제안)
 
@@ -693,4 +693,223 @@ PRD §3, §4, §6, §8, DESIGN §5.5, DATA-MODEL §3, ARCHITECTURE 흐름 1, API
 - [PLAN.md](PLAN.md) P-45
 
 ### 유효 상태
-확정 (사람이 정함, 2026-10-23)
+확정 (사람이 정함, 2026-10-23). (2026-10-25 바꿈) 처음 화면은 앱을 켤 때 위치를 묻지 않고 저장한 지역(없으면 서울)을 정해서 받음. 현재 위치는 새 옷 입기에서만 씀 (D-025)
+
+## D-023. 2D 이미지화는 rembg(isnet)가 주 경로이고 Flood Fill은 보조 경로다 (Unified)
+
+### 결정 내용
+(통합 작업 U3·U4, 2026-10-25. D-015의 Flood Fill 방식을 바탕으로 checkpoint의 rembg 경로를 합침)
+- **주 경로는 rembg의 `isnet-general-use` 모델**이다. 내 PC 서버에서 돌고 외부 서비스는 쓰지 않는다. `IMAGING_PROVIDER`(`server/.env`)가 `rembg`(기본)이면 이 경로를 쓴다. (`server/app/external/imaging.py`)
+- **Flood Fill(D-015)은 보조 경로**다. 아래일 때만 넘어간다: 모델 파일이 없음, rembg 패키지를 못 씀, rembg가 실패함, 옷을 못 찾음(정리한 뒤 옷이 전체의 1% 미만). `IMAGING_PROVIDER=floodfill`이면 늘 Flood Fill만 쓴다. `fake`는 배경을 지우지 않고 작업 크기로만 줄인다(확인용). 어느 방법으로 처리했는지는 서버 기록(`uvicorn.error`)에 남는다.
+- rembg 결과는 투명도 128을 기준으로 있음/없음을 나누고, 가장 큰 조각의 10% 미만인 작은 조각은 지운다 (checkpoint 계보 D-017의 정리 값과 같음).
+- **모델 파일은 `<DATA_DIR>/models/isnet-general-use.onnx`에 직접 둔다.** 자동으로 받지 않는다. 없으면 Flood Fill로 계속한다.
+- **옷 둘레로 자르지 않는다(crop 없음).** 저장하는 PNG의 크기는 늘 `working_size()`(방향을 바로잡고 긴 변 1024 이하로 줄인 크기)다. 배경 고치기(`PUT /api/uploads/{id}/image`)가 이 크기를 검사하고 화면 편집기가 원래 사진을 이 크기에 맞춰 겹치기 때문이다. 저장 파일, DB, API 응답은 바뀌지 않는다.
+- **옷이 작게 보이지 않도록 보여 줄 때만 확대한다(presentation).** `ForegroundImage.jsx`와 `foregroundBounds.js`(`useForegroundBounds`)가 PNG에서 투명하지 않은 범위를 구해 그림 상자에 맞춘다. 마네킹의 PNG 칸, 옷장 카드, 옷 상세, 확정 화면, 새 옷 입기 패널, 등록 창의 미리보기에 쓴다. 배경 고치기(BackgroundEditor)와 올린 사진·편집 캔버스에는 쓰지 않는다(좌표를 그대로 써야 함). (사람이 정함, 통합 결정 2)
+- 사진을 올리는 요청은 `run_in_threadpool`로 돌려 추론 중에도 다른 요청이 막히지 않게 한다 (`server/app/routers/uploads.py`). 서버를 켤 때 `IMAGING_PROVIDER=rembg`이고 모델 파일이 있으면 **백그라운드 스레드로 모델을 미리 올린다**(warm-up, 서버 시작과 `/api/health`를 막지 않음, 실패하면 기록만 남기고 올릴 때 Flood Fill로 넘어감). (`imaging.warm_up_in_background`, `server/app/main.py` lifespan)
+- 패키지: `rembg[cpu]==2.0.85`와 그 의존(`onnxruntime`, `numpy` 등)을 `server/requirements.txt`에 더했다. **`pillow`는 D-015의 13.0.0이 아니라 12.3.0으로 고정**한다. rembg 2.0.85가 12.1 이상 13 미만만 받아 13.0.0과 함께 설치할 수 없기 때문이다.
+- 촬영 안내: 등록 창 사진 올리기 칸에 "옷 한 벌만, 벽이나 바닥처럼 단순한 배경에서 찍으면 배경이 깔끔하게 지워져요."를 보인다 (checkpoint의 문구 그대로).
+
+### 결정 이유
+- rembg는 복잡한 배경에 강하다 (D-015가 비교 후보로 적었던 이유 그대로. 그때는 패키지와 모델 크기 때문에 미뤘고, 통합에서는 checkpoint 계보가 이미 쓰던 경로를 합침).
+- 사진이 PC 밖으로 나가지 않는다. 모델이 없는 PC에서도 Flood Fill로 계속 동작한다.
+- crop을 하지 않아야 이미 만든 편집기(좌표 고정)와 서버 검사를 바꾸지 않는다. 확대는 보여 줄 때만 하면 저장 구조를 건드리지 않는다.
+
+### 비교한 다른 후보
+- crop해서 저장하고 편집기를 고치기: 편집기·서버 검사·이미 등록한 옷을 함께 바꿔야 해서 고르지 않음 (사람이 정함, 통합 결정 2)
+- Flood Fill만 유지: D-015 그대로지만 복잡한 배경에 약해 주 경로로는 고르지 않음. 보조 경로로 남김
+
+### 아직 정하지 않은 것
+- 잰 시간(이 PC, U3·U9): 서버를 켠 뒤 첫 사진 약 4~10초, 이후 한 장 약 1~5초, warm-up 약 3초, 새로 설치한 뒤 첫 사용은 94초 걸린 적이 있음(그때는 [다시 시도]). 메모리 약 2GB. 서버를 켠 뒤 12초 뒤 첫 업로드가 6.33초 걸리는 원인은 조사하지 않음 (PLAN backlog)
+- `vtracer`는 D-021대로 코드에서 쓰지 않지만 `requirements.txt`에 남아 있음 (패키지 정리는 사람이 정할 때까지)
+
+### 적용 범위
+`server/app/external/imaging.py`, `server/app/routers/uploads.py`, `server/app/main.py`, `server/requirements.txt`, `server/.env.example`(`IMAGING_PROVIDER`), `web/src/components/ForegroundImage.jsx`, `web/src/foregroundBounds.js`, `ClothingRegisterDialog.jsx`, README, API-SPEC §2.3, ARCHITECTURE §2.4, PRD §4, SCREEN-SPEC §6.2
+
+### 관련 기준 문서
+- D-015 (2D 이미지화를 Flood Fill만 쓴다는 부분을 바꿈. Flood Fill 규칙과 편집 도구는 보조 경로와 등록 창에서 그대로), D-021
+- 출처(historical source): `checkpoint/style-ui-phase2fix-20261023`(584fcd9)의 rembg 경로·정리·촬영 안내(그 계보의 D-017), kmj(07b317a)
+- [PLAN.md](PLAN.md) U3, U4
+
+### 유효 상태
+확정 (통합 작업 U3·U4 검토 통과, 2026-10-25)
+
+## D-024. 마네킹은 틀(SVG)과 사진(PNG)을 함께 그린다 (Unified)
+
+### 결정 내용
+(통합 작업 U2·U4, 2026-10-25. master 렌더링(D-016)을 바탕으로 checkpoint의 지운 옷 가림과 PNG 덮개를 합침)
+- 옷마다 `main_color`와 알려진 `outfit_template`이 있으면 **틀(SVG)** 로 그리고(앞모습·뒷모습 모두, `fit`·무늬 포함), 틀 정보가 없으면(PNG만 있는 옷, 예: checkpoint에서 옮긴 옷) 앞모습에서는 **2D 이미지(PNG)를 그대로** 얹는다. (`web/src/components/Mannequin.jsx`의 `resolveSlot`)
+- 지운 옷이 든 칸(`fadedSlots`)은 흐리게 보이고, 그 칸은 몸을 가리는 판단에서 빠져 **잠옷이 보인다**. 틀·PNG·섞인 코디, 앞·뒤 모두 같다.
+- **PNG 칸에서만** 팔다리 살색이 이미지 가장자리 밖으로 비치지 않게 팔다리 폭을 줄인다(`COVER_LIMB = 0.4`, 바깥쪽만 줄임, 외곽선 없음). 틀로 그린 옷에는 쓰지 않는다. 실제 rembg 옷(코트·바지·신발)으로 확인했다 (U9, 목시).
+- **뒷모습에서는 앞면 사진을 쓰지 않는다(가짜 뒷면 없음).** 틀 정보가 없는 옷은 옷이 가진 `outfit_template`, 없으면 그 구분의 기본 틀(서버 `outfits.DEFAULTS`와 같은 표: top_long, bottom_pants, dress, outer_short, shoes)을 중립색(`#9E9E9A`, 서버 `FALLBACK_COLOR`)으로 그린다. (사람이 정함: 앞면 사진을 뒤집거나 그대로 써서 뒷면을 만들지 않음)
+- 이 규칙은 코디 일기·즐겨찾기·확정 화면·새 옷 입기·처음 화면이 같은 `Mannequin`을 써서 모두 같다. 옷 객체(`image_url`, `outfit_template`, `main_color`, `pattern_url`, `fit`)와 문자열 둘 다 받는다.
+
+### 결정 이유
+- 틀이 있는 옷은 master의 정확한 맞춤을 그대로 쓰고, 틀이 없는 옛 옷도 깨지지 않고 보인다.
+- 지운 옷이 있어도 코디가 어색하게 비지 않는다.
+- 사진 앞면을 뒷모습에 쓰면 로고·모양이 거꾸로 보이는 거짓 그림이 된다.
+
+### 비교한 다른 후보
+- 틀 없는 옷을 PNG를 뒤집어 뒷모습에 쓰기: 거짓 뒷면이라 고르지 않음
+- 이행할 때 모든 옷에 틀을 채우기: D-028에서 사람이 고르지 않음
+
+### 아직 정하지 않은 것
+- PNG만 있는 옷은 `fit`을 저장해도 앞모습 표시가 바뀌지 않는다 (U8·U9 확인). 이 옷에서 `fit`을 어떻게 쓸지는 정하지 않음 (PLAN backlog)
+
+### 적용 범위
+`web/src/components/Mannequin.jsx`, `ForegroundImage.jsx`, `HomeScreen.jsx`, 코디 일기·즐겨찾기·확정·새 옷 입기 화면, SCREEN-SPEC §2.4·§5.6, DESIGN §5.4·§5.11
+
+### 관련 기준 문서
+- D-016 (마네킹에 틀을 입힌다는 것을 PNG와 함께 쓰도록 넓힘), D-023
+- 출처(historical source): `checkpoint/style-ui-phase2fix-20261023`(584fcd9)의 `Mannequin.jsx`(`fadedSlots`·`COVER_LIMB`)
+- [PLAN.md](PLAN.md) U2, U4
+
+### 유효 상태
+확정 (통합 작업 U2·U4 검토 통과, 2026-10-25)
+
+## D-025. 처음 화면 날씨는 저장한 지역(없으면 서울)을 정해서 받고 위치 권한을 묻지 않는다 (Unified)
+
+### 결정 내용
+(통합 작업 U5, 2026-10-25. 사람이 정함, 통합 결정 6)
+- 처음 화면은 오늘 코디 일기가 있으면 그 옷을 마네킹에 입히고(P-46 유지, 지운 옷은 흐리게), 날씨는 **`getWeather(오늘, homeRegion ?? '서울')`처럼 항상 지역을 정해서** 받는다. 지역 없이 부르지 않는다. (`web/src/components/HomeScreen.jsx`)
+- **앱을 켤 때 위치 권한을 묻지 않는다.** 처음 화면은 위치 요청(`lat`·`lon`)을 보내지 않는다 (U5·U9 실측: 시작 직후 geolocation 호출 0). 
+- `App`이 `GET /api/settings`의 `home_region`을 `homeRegion`으로 들고 있다가 처음 화면에 넘기고, 설정에서 내 지역을 저장하면 그 값을 바꿔 새로고침 없이 반영한다.
+- 표시는 `area ?? region`이다. 처음 화면에는 "현재 위치" 안내가 없다. 저장한 지역이 없으면(`home_region`이 비었으면) "서울 날씨예요. 설정에서 내 지역을 저장해 주세요." 안내를 보인다. 서버의 `is_default_region`에는 기대지 않는다(지역을 정해서 부르면 서버는 `false`를 돌려줌).
+- 날씨를 받지 못해도 처음 화면은 열리고 날씨 칸에만 오류와 [다시 시도]가 보인다.
+- **현재 위치(D-022)는 새 옷 입기에서만** 쓴다: 지역을 고르지 않았을 때 브라우저 위치를 묻고, 허용하면 "현재 위치(부산) 날씨예요.", 거부하거나 못 받으면 서울 안내. (`web/src/api.js`의 `withLocation`·`currentLocation`은 그대로)
+
+### 결정 이유
+- 앱을 열자마자 위치 권한 창이 뜨지 않는다. 새 옷 입기(와 거기서 여는 입혀 보기)는 지금처럼 현재 위치를 쓴다.
+- 처음 화면의 날씨가 늘 같은 지역(내 지역)이라 예측하기 쉽다.
+
+### 비교한 다른 후보
+- D-022 그대로(처음 화면에서도 첫 날씨 요청에 위치를 묻기): D-022에서 "앱을 열자마자 묻기는 고르지 않음"이라 했던 이유와 어긋나 이번에 처음 화면은 제외
+
+### 아직 정하지 않은 것
+- 새 옷 입기의 위치 거부는 브라우저 권한 조작으로 확인했다(U9). 실제 사용에서 거부 기억 기간은 D-022 그대로
+
+### 적용 범위
+`web/src/components/HomeScreen.jsx`, `web/src/App.jsx`, `SettingsScreen.jsx`, PRD §5, SCREEN-SPEC §4·§5.1, API-SPEC §5.1, TEST-PLAN
+
+### 관련 기준 문서
+- D-022 (처음 화면에서는 위치를 묻지 않도록 좁힘. 새 옷 입기의 현재 위치는 그대로), D-012
+- 출처(historical source): `checkpoint/style-ui-phase2fix-20261023`(584fcd9)의 홈 날씨 정책, kmj(07b317a)의 P-29
+- [PLAN.md](PLAN.md) U5
+
+### 유효 상태
+확정 (사람이 정함, 2026-10-25, 통합 결정 6)
+
+## D-026. 추천 AI와 평가 AI를 나누고 추천 점수는 평가 AI가 매긴다 (Unified)
+
+### 결정 내용
+(통합 작업 U6, 2026-10-25. 사람이 정함, 통합 결정 3)
+- **추천 AI**는 점수를 만들지 않는다. 입력은 페르소나(전문가·친구·내 스타일, 내 스타일은 즐겨찾기 취향), 요청 글(200자 이하), 옷장(지운 옷 제외), 날씨·태그이고 출력은 코디 후보(최대 3), 이유·요약, 필요하면 구매 추천(최대 2)이다. 페르소나·요청 글·구매 추천 구조와 응답 계약은 그대로다. (`server/app/external/bedrock_ai.py` `recommend`, `server/app/routers/recommendations.py`)
+- **칸별 제한**: 추천 AI의 출력에서 칸마다 그 구분의 옷 번호만 고를 수 있게 한다(`enum`, 신발은 0 없음). 실제 Bedrock 40회에서 0벌만 남아 실패한 경우가 2번, 칸에 다른 구분을 넣어 탈락한 경우가 많아 넣었다 (후속 A, Planner 결정 2026-10-25). 넣은 뒤 36회 중 3벌 29, 2벌 7, 0벌 0.
+- **평가 AI**가 두 가지를 한다: ① 사용자가 입힌 실제 조합을 평가(`POST /api/scores`), ② 추천 후보를 한 벌씩 따로 채점(`task="recommend_score"`, 후보 최대 3벌을 동시에, `ThreadPoolExecutor`). 응답 계약(`score`, 코멘트)은 master 형태 그대로이고 값의 출처만 바뀐다. 추천과 평가를 한 호출로 합치지 않는다.
+- 평가 규칙: 기준표(날씨 적합, 태그 적합, 조화 — 태그가 없으면 두 기준)를 기준마다 점수로 받아 `combine_score`로 합친다(평균과 최저+1.0 중 작은 값). 범위 밖·0·빠진 값은 `score_retry`로 한 번 더 묻고(기다림 10초 안일 때) 그래도 아니면 `ai_invalid`. 추위 규칙(`OUTER_RULES`, `is_cold`: 최저 5° 미만, 비·눈이면 12° 미만)은 추천 AI와 평가 AI가 같은 기준을 쓴다. 모델이 형식 오류(`ModelErrorException`)를 내면 2초 안일 때 한 번 더 묻는다.
+- **평가 입력은 키워드만 보낸다(옷 이미지는 보내지 않는다).** (사람이 정함, 2026-10-25) 출처: master P-25(2026-10-21, 사진도 보냄) 뒤에 checkpoint 계보 D-015(2026-10-22, 키워드만)가 나중이라 그 쪽을 따른다.
+- 채점에 실패한 후보는 뺀다. 전부 실패하면 추천 전체가 실패(`recommend_failed`)이고 화면은 [다시 시도]를 보인다. 점수 없이 추천만 보이지는 않는다.
+- `should_fake_fail`·가짜 AI 경로: `FAKE_FAIL` 이름 `recommend`, `score`, `recommend_score`, `keywords`, `gender`, `similar`로 각 단계를 일부러 실패시킬 수 있다 (`server/app/external/ai.py`).
+- **들여오지 않은 것**: checkpoint의 추천 3역할(무난·태그·과감)과 temperature 값(master의 페르소나 구조를 유지). 
+
+### 결정 이유
+- 추천 AI가 점수까지 만들면 자기가 고른 코디를 후하게 매기기 쉬워, 평가 기준표를 쓰는 별도 평가가 더 믿을 만하다.
+- 같은 기준표를 추천 화면의 점수와 직접 입힌 코디의 점수에 쓰면 두 점수를 비교할 수 있다.
+
+### 비교한 다른 후보
+- 추천과 평가를 한 호출로: 책임이 섞이고 점수가 후해져 고르지 않음 (사람이 정함, 통합 결정 3)
+- checkpoint 추천 3역할로 바꾸기: master 페르소나(D-020, P-39)와 겹쳐 고르지 않음 (Planner 승인)
+
+### 아직 정하지 않은 것
+- 후보가 2벌만 남는 경우의 원인은 조사하지 않음 (PLAN backlog)
+- 실제 Bedrock 프롬프트 품질과 형식 오류율, 재질문 경로의 실제 지연은 재지 못함(실제로 발생하지 않음)
+- 평가 코멘트가 해요체 지시와 달리 합쇼체로 나오는 일이 있음 (경미)
+
+### 적용 범위
+`server/app/external/bedrock_ai.py`, `ai.py`, `fake_ai.py`, `__init__.py`, `server/app/routers/recommendations.py`, `scores.py`, `web/src/components/DressUpPanels.jsx`, PRD §5·§6, API-SPEC §5.2·§5.3, ARCHITECTURE 흐름 2·3, TEST-PLAN
+
+### 관련 기준 문서
+- D-013, D-020 (페르소나별 모델은 그대로. 평가 AI는 페르소나와 상관없이 기본 모델), D-014
+- 출처(historical source): `checkpoint/style-ui-phase2fix-20261023`(584fcd9)의 평가 구조(그 계보의 D-014·D-015, 칸별 enum은 P-26), master 86ef5b8의 P-25·P-26
+- [PLAN.md](PLAN.md) U6, 후속 A
+
+### 유효 상태
+확정 (사람이 정함, 2026-10-25, 통합 결정 3. 후속 A는 Planner 결정)
+
+## D-027. AI 기다리는 시간은 잰 최댓값의 3배, 화면은 서버 최악 경로의 합 (Unified)
+
+### 결정 내용
+(통합 작업 U6b, 2026-10-25. 실제 Bedrock을 이 PC에서 작업마다 10번씩 잰 값으로 정함)
+- **서버**: 잰 가장 긴 시간(첫 호출 포함)의 3배, 최소 5초, 5초 단위로 올림. (`server/app/external/bedrock_ai.py`의 `TIMEOUTS`)
+- **화면**: 그 화면이 기다리는 서버 단계의 가장 긴 경우의 합(날씨 10초 포함, 빠진 칸 다시 묻기 포함). 서버가 화면보다 먼저 포기해야 한다. (`web/src/api.js`)
+
+| 작업 | 잰 가장 긴 시간(초) | 서버 | 화면 |
+| --- | --- | --- | --- |
+| 성별 정하기 | 0.75 | 5 | |
+| 비슷한 단어 | 0.52 | 5 | |
+| 키워드 미리 고르기 | 1.39 | 5 | |
+| 점수 (`score`) | 3.17 | 10 | 점수 확인하기 30 (날씨 10 + 점수 10 + 다시 묻기 10) |
+| 추천 코디 점수 한 벌 (`recommend_score`) | 3.30 (3벌 동시 3.39) | 10 | |
+| 점수 빠진 칸 다시 묻기 (`score_retry`) | (점수와 같음) | 10 | |
+| 추천 (전문가 / 친구 / 내 스타일) | 4.77 / 4.36 / 4.89 | 15 | 추천받기 45 (날씨 10 + 추천 15 + 코디 점수 10 + 다시 묻기 10) |
+| 키워드·태그 더하기 | | | 10 (일반 5 + 비슷한 단어 5) |
+| 종류 단어 더하기 | | | 15 (일반 5 + 성별 5 + 비슷한 단어 5) |
+| 사진 올리기 | | | 30 (2D 이미지화 20 + 키워드 미리 고르기 5, 여유) |
+| 날씨 / 배경 고치고 적용 / 일반 요청 | | | 10 / 5 / 5 |
+
+- 실서버로 이어서 잰 값: 추천 5.7~7.7초(날씨·채점 포함), 점수 확인하기 2.8초 (화면 45초·30초 안).
+- 측정은 `BEDROCK_MODEL_ID2`를 설정하지 않은 상태(전문가도 Nova Lite)에서 했다. **`BEDROCK_MODEL_ID2`를 설정하면(D-020, Claude) 전문가 추천을 다시 재서 값을 정해야 한다.**
+
+### 결정 이유
+- 이전 화면 값(추천 30초)은 서버의 최악 경로(날씨 + 추천 + 채점 + 다시 묻기, 35초 이상)보다 짧아 서버가 끝내기 전에 화면이 먼저 포기할 수 있었다 (Reviewer 지적).
+- 규칙은 checkpoint P-28과 같아 두 계보의 값이 같은 방식으로 나온다.
+
+### 비교한 다른 후보
+- 어느 한 브랜치의 값을 그대로 쓰기: 각각 다른 구조(추천이 점수를 만들던 때와 아닌 때)에서 정한 값이라 고르지 않음
+
+### 아직 정하지 않은 것
+- 표본은 각 10회, 이 PC 한 대. 재질문(`score_retry`, `ModelErrorException`) 경로의 실제 지연은 재지 못함
+- 사진 올리기의 2D 이미지화(rembg) 시간은 이번에 다시 재지 않음 (D-023의 잰 시간 참고)
+
+### 적용 범위
+`server/app/external/bedrock_ai.py`, `web/src/api.js`, API-SPEC §2.3, README
+
+### 관련 기준 문서
+- D-013, D-020, D-026
+- 출처(historical source): `checkpoint/style-ui-phase2fix-20261023`(584fcd9)의 P-28 규칙, master 86ef5b8의 P-28
+- [PLAN.md](PLAN.md) U6b
+
+### 유효 상태
+확정 (통합 작업 U6b 검토 통과, 2026-10-25)
+
+## D-028. checkpoint 데이터는 새 저장 폴더로 옮기고 틀 정보는 채우지 않는다 (Unified)
+
+### 결정 내용
+(통합 작업 U8과 후속 B, 2026-10-25. 백필 안 함은 사람이 정함)
+- checkpoint의 `dev.db`는 Alembic 없이 `create_all`로 만들어져, 그대로 `upgrade head`를 돌리면 baseline이 표를 새로 만들려다 실패한다. 그래서 **빈 Unified 저장 폴더를 새로 만들고 행을 옮긴다.** (`server/scripts/import_checkpoint_data.py`)
+- 방법: 새 `DATA_DIR`에서 `init_db()`로 빈 Unified 표를 만들고(앱 기본 단어 포함), 원본 DB 복사본을 읽기 전용(`mode=ro`)으로 열어 `clothing`, `clothing_keyword`, `diary_entry`, `favorite`, `settings`를 옮긴다. `keyword`와 `style_tag`는 번호를 믿지 않고 자연키((종류, 이름, 구분), 이름)로 맞춰 외래 키를 다시 잇고, 원본에만 있는 단어·태그는 더한다. 사진은 DB가 가리키는 것만 복사한다(예전 `*-image.jpg`는 옮기지 않음).
+- 안전 장치: 원본은 읽기만 하고 복사본을 넘기는 것이 규칙이다. 원본이 이미 Unified(Alembic) DB이면 멈춘다. 대상 폴더에 `app.db`나 사진이 있으면 아무것도 하지 않고 멈춘다(덮어쓰기 없음). 한 번의 트랜잭션으로 옮기고 `PRAGMA foreign_key_check`로 확인한다. 새 dependency 없음.
+- **`main_color`와 `outfit_template`은 채우지 않는다(NULL).** 채우면 사진이던 옷이 단색 SVG 틀로 바뀌어 보이는 제품 변화가 생긴다. 사진 PNG로 보이는 것을 유지한다. (사람이 정함, 2026-10-25) 이 옷들은 D-024대로 앞모습은 사진, 뒷모습은 기본 틀의 중립색이다.
+- 이행한 PNG 전용 옷 상세에서 [모습 조절] → [모습 저장]은 `outfit_template`이 비어 있으면 **그 구분의 기본 틀**(서버 `outfits.DEFAULTS`와 같은 표)을 보낸다. 새 API·필드는 없고 `main_color`는 건드리지 않는다. 저장해도 앞모습은 사진 그대로이고 저장한 `fit`은 PNG 표시에 영향을 주지 않는다. (사람이 정함, 2026-10-25, `ClothingDetailDialog.jsx`)
+
+### 결정 이유
+- 원본 데이터를 건드리지 않고 되돌릴 수 있다.
+- 사진 옷을 사용자가 보던 그대로 보여 준다.
+
+### 비교한 다른 후보
+- 이행 때 틀 정보 채우기(`pick_template` + `main_color`): 옷장·마네킹이 사진에서 단색 틀로 바뀌어(줄무늬 니트가 단색 상의로) 고르지 않음. 비교 이미지는 U8 기록 (사람이 정함)
+- 원본 `dev.db`에 Alembic을 직접 돌리기: baseline이 실패하고 원본을 바꾸게 되어 고르지 않음
+
+### 아직 정하지 않은 것
+- PNG 전용 옷의 `fit`이 표시에 영향을 주지 않음 (D-024)
+- 부분 실패하면 대상 폴더에 부분 `app.db`가 남을 수 있어 새 폴더로 다시 실행해야 함 (스크립트 설명에 적음)
+
+### 적용 범위
+`server/scripts/import_checkpoint_data.py`, `web/src/components/ClothingDetailDialog.jsx`, README, DATA-MODEL §1, TEST-PLAN
+
+### 관련 기준 문서
+- D-017 (저장 파일과 Alembic), D-024
+- 출처(historical source): `checkpoint/style-ui-phase2fix-20261023`(584fcd9)와 kmj(07b317a)의 `dev.db` 구조 (U0 조사)
+- [PLAN.md](PLAN.md) U8, 후속 B
+
+### 유효 상태
+확정 (사람이 정함, 2026-10-25, U8 검토 통과)

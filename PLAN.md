@@ -26,7 +26,7 @@
 | --- | --- |
 | [README.md](README.md) | 있음 |
 | [AGENTS.md](AGENTS.md) | 있음 |
-| [DECISIONS.md](DECISIONS.md) | 있음 (D-001 ~ D-020 확정, D-021 제안) |
+| [DECISIONS.md](DECISIONS.md) | 있음 (D-001 ~ D-020 확정, D-021 제안, D-022 확정, 통합 D-023 ~ D-028 확정) |
 | [PRD.md](PRD.md) | 있음 (승인됨) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 있음 (승인됨) |
 | [SCREEN-SPEC.md](SCREEN-SPEC.md) | 있음 (승인됨) |
@@ -83,6 +83,7 @@
 | P-42 | 추천: 페르소나마다 모델, 버튼 위치 | 완료 | 페르소나 칩과 원하는 상황 입력칸을 [AI 코디 추천받기] 아래로 옮긴다. 전문가는 Claude 3.5 Sonnet(`BEDROCK_MODEL_ID2`), 친구·내 스타일은 Nova Lite. 전문가 모델을 못 부르면 실패로 보여 줌. D-020 (사람이 정함, 2026-10-23) |
 | P-43 | 새 옷 입기: 거울에 비친 뒷모습 | 확인 기다림 | 옷 고르기·추천 보기 배경의 거울에서 여자아이를 지우고, 그 자리에 고른 마네킹 모양과 지금 입힌 코디의 뒷모습이 비친다. 옷을 바꾸면 거울도 바로 바뀐다. 뒷머리는 SVG로 그린다 (사람이 정함, 2026-10-23). 사람이 화면을 보고 승인한다 |
 | P-45 | 현재 위치 날씨와 `server/.env.example` (kmj 브랜치에서 가져옴) | 완료 | 지역을 고르지 않았으면 날씨가 처음 필요할 때 위치 권한을 한 번 묻고, 그 좌표의 날씨를 "부산(현재 위치)"처럼 보인다. 순서는 고른 지역 → 현재 위치 → 내 지역 → 서울, 위치는 저장하지 않음 (D-022). 키를 비운 `server/.env.example`을 git에 올린다. T-126, T-127 (사람이 정함, 2026-10-23) |
+| U0 ~ U10 | Unified 통합 (master + checkpoint를 한 제품으로) | U0 ~ U10 완료 | 아래 "Unified 통합 기록 (U0 ~ U10)"과 D-023 ~ D-028. 결정 번호는 master 체계 그대로(D-001 ~ D-022 불변), 새 결정은 D-023부터 |
 
 ## 실제 검증 결과
 
@@ -631,3 +632,40 @@
   - 오늘 일기가 없을 때: 브라우저에서 `/api/diary` 응답만 빈 목록으로 바꾸고 설정 → 로고로 처음 화면을 다시 열자 잠옷 차림. 콘솔 오류 없음
 - 실행하지 않음: 실제로 오늘 일기를 지우거나 새로 확정하기 (`data-dev`의 기록을 남기려고 응답을 흉내 냄), 진짜 데이터(`data/`)와 매일 쓰는 앱(8080)
 - 고친 문서: PRD §6, SCREEN-SPEC §4·§5.6·§10, TEST-PLAN T-66·T-128, README
+
+## Unified 통합 기록 (U0 ~ U10)
+
+(2026-10-24 ~ 2026-10-25) branch `integrate/unified-v1`. 기준 계보: master `86ef5b8`, checkpoint `checkpoint/style-ui-phase2fix-20261023`(`584fcd9`), 공통 조상 `7ad2588`, kmj `07b317a`, style `a46ecac`. 원칙: 영역마다 근거로 합치고(Unified Capability), 원본 `data/`와 `_phase0_backup`은 읽기만 한다. push·merge 없음. 결정은 DECISIONS D-023 ~ D-028.
+
+| 단계 | 내용 | 커밋 | 결과 |
+| --- | --- | --- | --- |
+| U0 | 두 계보 조사(차이 목록) | 없음 (`_u0/U0-inventory.md`) | Reviewer PASS |
+| U1 | 기준 환경(합집합 venv, 단일 서버 8080, Alembic head `b39c1a7e5d20`), lint 기준 13건 | 없음 | Reviewer PASS |
+| U2 | 마네킹 렌더링 합침: 틀·PNG, `fadedSlots`, 뒷모습 중립 틀 (D-024) | `6ba1d3d` | Reviewer PASS |
+| U3 | 2D 이미지화 합침: rembg + Flood Fill, crop 없음, `run_in_threadpool`, `foregroundBounds`, pillow 12.3.0 (D-023) | `6c361c8` | Reviewer PASS |
+| U4 | 옷 등록·옷장: 서버 시작 시 모델 미리 올리기 + 촬영 안내·PNG 확대·COVER_LIMB (D-023, D-024) | `bf31fb6`(warm-up), `42a3b8b`(본체) | Reviewer PASS |
+| U5 | 처음 화면·날씨 정책 (D-025) | `3f947f6` | Reviewer PASS, lint 경고 12 |
+| U6a | 추천·평가 AI 분리, 후보 채점, 평가 입력 키워드만 (D-026) | `c13a431` | Reviewer PASS |
+| U7 | 일기·즐겨찾기·확정 화면 | 없음 (master가 이미 만족) | Reviewer PASS, 결정 4 확인 |
+| U6b | 실제 Bedrock 실측으로 timeout 재결정 (D-027) | `d9c819e` | Reviewer PASS |
+| U8 | checkpoint 데이터 이행 스크립트 (D-028) | `b6f3001` | Reviewer PASS |
+| 후속 A | 추천 칸별 enum (D-026) | `92fe964` | Reviewer PASS |
+| 후속 B | 사진 전용 옷 [모습 저장] 기본 틀 (D-028) | `fa3a8ff` | Reviewer PASS |
+| U9 | 전체 회귀(체크리스트 A·B·C, 결함 0), 기록 `_u9/U9-regression.md` | 없음 | Reviewer PASS |
+| U10 | 문서 갱신 | `docs: document unified application behavior` (이 표를 담은 커밋) | Reviewer PASS |
+
+### 실제 검증 결과 (U9, 2026-10-25)
+- 빈 DB와 이행 데이터 복사본 두 가지로 실서버(실제 Bedrock, openweathermap, rembg) 확인. 엔드포인트 37, Alembic head, `upgrade head` no-op.
+- 업로드 중 이벤트 루프: 업로드 16회 연속 동안 `/api/health` 2509회 중앙 3.7ms, p95 26ms, 최대 180ms. rembg 서버 시작 직후 warm-up 약 3초.
+- build 81 modules 경고 0, lint 오류 0·경고 12.
+
+### 남은 문제와 다음 행동 (backlog, 고치지 않음)
+- **머지·배포 전 필수**: `server/.venv`가 checkpoint 환경이라 `alembic`·`rembg`가 없어 `start.bat` 원본은 실패한다. 합집합 `server/requirements.txt`로 `server/.venv`를 새로 만들어야 한다 (README 시작 방법). 확인은 `_venv_u3`를 쓴 repo 밖 사본 bat로만 했다.
+- 옷장 카드 `#키워드`가 옷마다 `getClothing`을 불러(N+1) 느릴 수 있음 (API를 바꿔야 함).
+- 서버를 켠 뒤 12초 뒤 첫 업로드가 6.33초 걸리는 원인을 조사하지 않음.
+- PNG 전용 옷은 `fit`을 저장해도 앞모습 표시에 영향이 없음 (저장 전후 픽셀 차이 0).
+- 추천이 2벌만 남는 경우의 원인을 조사하지 않음 (칸별 enum 뒤 36회 중 7회).
+- `BEDROCK_MODEL_ID2`를 설정하면 전문가 추천 timeout을 다시 재야 함.
+- `vtracer`는 코드에서 쓰지 않지만 `requirements.txt`에 남아 있음 (패키지 정리는 사람이 정함).
+- 줄바꿈: `.gitattributes`는 `*.bat`만 정하고, 새 파일은 index에 LF로 들어감 (충돌 없음, 확인만).
+- 재질문(`score_retry`, `ModelErrorException`) 경로의 실제 지연은 재지 못함.
