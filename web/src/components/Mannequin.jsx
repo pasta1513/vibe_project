@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { useForegroundBounds } from '../foregroundBounds.js'
 import ForegroundImage from './ForegroundImage.jsx'
+import { useDominantColor } from '../dominantColor.js'
 import headFemale from '../assets/mannequin/head-female.png'
 import headMale from '../assets/mannequin/head-male.png'
 
@@ -287,12 +288,15 @@ function ClothingShape({ item, slot, box, dims, faded, back }) {
   const info = typeof item === 'object' && item ? item : null
   const pattern = usePattern(info?.pattern_url)
   const resolved = resolveSlot(item, slot, dims, back)
+  // 틀 정보가 없는 사진 옷을 뒷모습에서 기본 틀로 그릴 때는 앞면 사진은 쓰지 않고, 그 사진의 대표 색만 가져와 칠합니다. (U-Q1)
+  // 대표 색을 아직 모르거나 구하지 못하면 중립 회색입니다.
+  const photoColor = useDominantColor(resolved.kind === 'neutral' && !info?.main_color ? (info ? info.image_url : item) : null)
   if (resolved.kind === 'none') return null
   if (resolved.kind === 'png') {
     return <ClothingImage box={box} url={info ? info.image_url : item} faded={faded} />
   }
   const neutral = resolved.kind === 'neutral'
-  const color = neutral ? (info?.main_color ?? NEUTRAL_COLOR) : info.main_color
+  const color = neutral ? (info?.main_color ?? photoColor ?? NEUTRAL_COLOR) : info.main_color
   const area = outfitBox(resolved.template, dims)
   const shapes = resolved.paths.map((d, i) => <path key={i} d={d} />)
   // 피팅값 (P-33, DESIGN §5.5): 옷은 틀 상자 가운데를 중심으로 옮기고 늘이고 기울입니다.
