@@ -22,11 +22,14 @@ from . import ExternalError
 DEFAULT_REGION = "ap-northeast-2"
 DEFAULT_MODEL_ID = "apac.amazon.nova-lite-v1:0"
 
-# 실패로 볼 때까지 기다리는 시간(초). API-SPEC §2.3 (P-28에서 잰 시간으로 정함, 사람이 정함 2026-10-21)
-TIMEOUTS = {"similar": 10, "gender": 5, "pick": 10, "score": 15, "recommend": 20, "ping": 10,
-            # U6에서 더한 평가 AI의 일. 값은 score와 같게 두고, 실제 Bedrock으로 잰 뒤에 정합니다.
-            # recommend_score: 추천 코디 한 벌의 점수 (3벌을 동시에), score_retry: 빠진 칸이 있을 때 한 번 더 묻기
-            "recommend_score": 15, "score_retry": 15}
+# 실패로 볼 때까지 기다리는 시간(초). API-SPEC §2.3
+# 규칙 (U6b, 2026-10-25): 실제 Bedrock으로 일마다 10번씩 잰 가장 긴 시간(첫 호출 포함)의 3배, 최소 5초, 5초 단위로 올림.
+# 잰 가장 긴 시간(초): 성별 0.75, 비슷한 단어 0.52, 키워드 미리 고르기 1.39, 점수 3.17, 추천 코디 점수(한 벌) 3.30,
+#   추천(전문가 4.77, 친구 4.36, 내 스타일 4.89 → 가장 긴 4.89). 평가 AI 입력은 키워드만 (사람이 정함 2026-10-25).
+# 서버가 화면보다 먼저 포기해야 화면이 실패를 보인 뒤에 서버가 몰래 저장하는 일이 없습니다. 화면 시간은 web/src/api.js.
+TIMEOUTS = {"similar": 5, "gender": 5, "pick": 5, "score": 10, "recommend": 15, "ping": 10,
+            # recommend_score: 추천 코디 한 벌의 점수(3벌을 동시에), score_retry: 빠진 칸이 있을 때 한 번 더 묻기
+            "recommend_score": 10, "score_retry": 10}
 # 답 형식이 깨져(ModelErrorException) 이 시간 안에 바로 실패하면 한 번만 다시 묻습니다.
 # 접속 실패나 시간 초과는 다시 묻지 않습니다. (checkpoint P-25a, P-28)
 MODEL_ERROR_RETRY_WITHIN = 2

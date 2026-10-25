@@ -11,14 +11,15 @@ const UPLOAD_TIMEOUT_MS = 30000
 const EDIT_TIMEOUT_MS = 5000
 // 날씨 받기 (API-SPEC §2.3)
 const WEATHER_TIMEOUT_MS = 10000
-// 점수 확인하기 = 날씨 10초 + AI 점수 15초
-const SCORE_TIMEOUT_MS = 25000
-// 추천받기 = 날씨 10초 + AI 추천 20초
-const RECOMMEND_TIMEOUT_MS = 30000
-// 종류 단어 더하기 = 일반 요청 5초 + AI 성별 정하기 5초 + AI 비슷한 단어 판단 10초
-const TYPE_WORD_TIMEOUT_MS = 20000
-// 키워드·태그 더하기 = 일반 요청 5초 + AI 비슷한 단어 판단 10초
-const WORD_TIMEOUT_MS = 15000
+// 화면 시간 = 그 화면이 기다리는 서버 단계의 가장 긴 경우의 합 (U6b, 서버 시간은 bedrock_ai.py TIMEOUTS)
+// 점수 확인하기 = 날씨 10초 + AI 점수 10초 + 빠진 칸 다시 묻기 10초
+const SCORE_TIMEOUT_MS = 30000
+// 추천받기 = 날씨 10초 + AI 추천 15초 + 코디 점수(3벌 동시) 10초 + 빠진 칸 다시 묻기 10초
+const RECOMMEND_TIMEOUT_MS = 45000
+// 종류 단어 더하기 = 일반 요청 5초 + AI 성별 정하기 5초 + AI 비슷한 단어 판단 5초
+const TYPE_WORD_TIMEOUT_MS = 15000
+// 키워드·태그 더하기 = 일반 요청 5초 + AI 비슷한 단어 판단 5초
+const WORD_TIMEOUT_MS = 10000
 
 function fail(kind, message) {
   return { result: 'error', error: { kind, message } }
