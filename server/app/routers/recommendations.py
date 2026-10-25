@@ -2,7 +2,7 @@
 
 import logging
 from datetime import date
-from typing import Literal, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -26,12 +26,7 @@ class RecommendIn(BaseModel):
     tag_id: Optional[int] = None  # 추천을 받을 때는 태그가 꼭 있어야 합니다. (PRD §5)
     # 요청 글: 원하는 상황이나 분위기. 추천에만 쓰고 저장하지 않습니다. (P-39, 사람이 정함 2026-10-22)
     request: Optional[str] = Field(None, max_length=200)
-    # 페르소나: 전문가, 친구, 내 스타일(즐겨찾기 기반). 없으면 전문가 (P-39, 사람이 정함 2026-10-22)
-    persona: Literal["expert", "friend", "my_style"] = "expert"
-
-
-# "내 스타일" 추천에 넘길 즐겨찾기 수. 글이 길어져 기다림과 비용이 커지는 것을 막습니다. (사람이 정함, 2026-10-22)
-FAVORITES_FOR_AI = 20
+    # (D-029) 예전 화면이 보내던 persona는 받아도 무시합니다. (pydantic이 모르는 칸은 버림)
 
 
 def _keywords_by_clothing(session: Session) -> dict:
@@ -54,24 +49,6 @@ def closet_for_ai(session: Session) -> list[dict]:
     keywords = _keywords_by_clothing(session)
     return [{"id": c.id, "category": c.category, "keywords": keywords.get(c.id, {})}
             for c in clothes]
-
-
-def favorites_for_ai(session: Session) -> list[dict]:
-    """"내 스타일" 추천에 넘길 즐겨찾기. 사용자가 정한 순서로 앞에서 FAVORITES_FOR_AI개.
-
-    지운 옷도 키워드는 취향 정보로 씁니다. 추천에는 옷장에 있는 옷만 나옵니다 (ai.py 검사).
-    돌려주는 것: [{"tag": 태그 이름 또는 None, "slots": {칸: 키워드}}, ...]
-    """
-    favorites = session.exec(
-        select(Favorite).order_by(Favorite.position).limit(FAVORITES_FOR_AI)).all()
-    keywords = _keywords_by_clothing(session)
-    tags = {t.id: t.name for t in session.exec(select(StyleTag)).all()}
-    result = []
-    for fav in favorites:
-        slots = {slot: keywords.get(getattr(fav, f"{slot}_id"), {}) for slot in SLOTS
-                 if getattr(fav, f"{slot}_id") is not None}
-        result.append({"tag": tags.get(fav.style_tag_id), "slots": slots})
-    return result
 
 
 def favorite_ids(session: Session) -> dict:
@@ -99,22 +76,13 @@ def recommend(body: RecommendIn, session: Session = Depends(get_session)):
         return ok({"insufficient": missing, "weather": None, "outfits": [],
                    "fewer_than_three": False, "shopping": []})
 
-    # "내 스타일"은 즐겨찾기가 있어야 합니다. 없으면 AI를 부르지 않습니다. (사람이 정함, 2026-10-22)
-    favorites_info = None
-    if body.persona == "my_style":
-        favorites_info = favorites_for_ai(session)
-        if not favorites_info:
-            raise ApiError("no_favorites", "즐겨찾기에 코디를 먼저 넣어 주세요.")
-
     # ③ 날씨 ④ AI ⑤ 검사 (검사는 ai.recommend 안에서 합니다)
     # 추천 AI가 고른 코디는 평가 AI가 따로 점수를 매깁니다. (U6)
     from .scores import outfit_items  # scores.py가 이 파일을 불러오므로 여기서 불러옵니다.
 
     weather = daily_weather(session, body.day, body.region, body.location)
-    request_text = (body.request or "").strip() or None
     try:
-        answer = ai.recommend(closet, weather, tag.name, request=request_text,
-                              persona=body.persona, favorites=favorites_info,
+        answer = ai.recommend(closet, weather, tag.name, request=(body.request or "").strip() or None,
                               items_for=lambda outfit: outfit_items(session, outfit))
     except ExternalError as exc:
         # 왜 실패했는지 서버 터미널에 남깁니다. 오류 문장에는 키가 들어가지 않습니다. (P-41)

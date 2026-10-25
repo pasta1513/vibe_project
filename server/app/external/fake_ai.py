@@ -40,17 +40,12 @@ def find_similar(name, candidates):
     return match if match in candidates else None
 
 
-REASON_BY_PERSONA = {
-    "expert": "AI 연결 전 예시입니다. (전문가)",
-    "friend": "AI 연결 전 예시야. (친구)",
-    "my_style": "AI 연결 전 예시입니다. (내 스타일)",
-}
 # 요청 글이 있을 때만 주는 사면 좋을 옷 예시. 화면에서 그 칸을 볼 수 있게 하려는 것입니다. (P-39)
 SHOPPING_EXAMPLE = {"name": "AI 연결 전 예시 옷", "reason": "요청 글이 있을 때 보이는 예시입니다."}
 
 
-def recommend(closet, weather, tag, request=None, persona="expert", favorites=None):
-    reason = REASON_BY_PERSONA.get(persona, REASON_TEXT)
+def recommend(closet, weather, tag, request=None):
+    reason = REASON_TEXT
     by_category = {}
     for item in closet:
         by_category.setdefault(item["category"], []).append(item["id"])

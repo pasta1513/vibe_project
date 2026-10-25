@@ -38,7 +38,7 @@
 - 가짜 부품: AI, 2D 이미지화, 날씨는 진짜를 연결하기 전까지 가짜로 만듭니다. 가짜를 진짜로 바꾸는 일은 사람이 정한 뒤에 합니다. (D-007)
 - DB 도구: SQLModel. 설치할 때 버전을 고정합니다. DB 구조는 Alembic으로 바꾸고, 구조를 바꿀 때마다 변경 파일(revision)을 만들어 승인받습니다. 저장 파일은 `data/app.db` (D-009, D-017)
 - 확인 작업: 진짜 데이터(`data/`)를 바꾸지 않도록 `DATA_DIR`로 다른 폴더를 씁니다. 진짜 데이터를 바꿔야 하면 먼저 묻습니다. (D-017)
-- AI: Amazon Bedrock의 Amazon Nova Lite. 연결함 (P-23 ~ P-28). `server/.env`의 `AI_PROVIDER`로 가짜와 고릅니다. (D-013) 추천의 전문가 페르소나만 Claude 3.5 Sonnet(`BEDROCK_MODEL_ID2`)입니다. (D-020)
+- AI: Amazon Bedrock의 Amazon Nova Lite. 연결함 (P-23 ~ P-28). `server/.env`의 `AI_PROVIDER`로 가짜와 고릅니다. (D-013) 추천은 스타일리스트 3역할(D-029)이고 모델은 기본 하나입니다. (D-020은 D-029로 쓰지 않음)
 - 2D 이미지화: 서버에서 Pillow로 배경을 지운 투명 PNG (D-015). 캐릭터 의상은 SVG 틀 + 사진 색·무늬 (D-016)
 - 화면 모양: 팀원이 만든 시안 `style/html`(moire)을 따릅니다. 앱 이름은 moire입니다. (D-019)
 - 정해지지 않은 항목은 AI가 혼자 고르지 않습니다. 필요하면 후보를 제안하고 사람에게 묻습니다.

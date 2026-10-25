@@ -12,12 +12,7 @@ import { api } from '../api.js'
 // 시안의 순서: 상의, 하의, 원피스, 아우터, 신발 (가방·악세서리는 앱에 없어 넣지 않음, 사람이 정함 2026-10-22)
 const CLOSET_ORDER = ['top', 'bottom', 'dress', 'outer', 'shoes']
 const LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.code, c.label]))
-// 추천 페르소나와 요청 글 길이 한도. 서버도 같은 값으로 다시 검사합니다. (P-39, 사람이 정함 2026-10-22)
-const PERSONAS = [
-  ['expert', '전문가'],
-  ['friend', '친구'],
-  ['my_style', '내 스타일'],
-]
+// 요청 글 길이 한도. 서버도 같은 값으로 다시 검사합니다. (P-39, 사람이 정함 2026-10-22)
 const REQUEST_MAX = 200
 const STAR_PATH ='M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6L2.5 9.3l6.6-.8z'
 
@@ -123,8 +118,6 @@ export function SidePanel({
   tags,
   tagId,
   onTag,
-  persona,
-  onPersona,
   requestText,
   onRequestText,
   onRecommend,
@@ -227,21 +220,7 @@ export function SidePanel({
         {!recommending && <span aria-hidden="true">→</span>}
       </button>
 
-      {/* 누가 추천해 줄지와 요청 글. 저장하지 않습니다. 버튼 아래에 둡니다 (P-39, P-42 옮김) */}
-      <div className="du-side__opts" role="radiogroup" aria-label="추천 페르소나">
-        {PERSONAS.map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={persona === value}
-            className={`du-tag${persona === value ? ' du-tag--on' : ''}`}
-            onClick={() => onPersona(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* 요청 글. 저장하지 않습니다. 버튼 아래에 둡니다 (P-39, P-42 옮김) */}
       <input
         className="du-side__request"
         type="text"

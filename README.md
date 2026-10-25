@@ -102,7 +102,6 @@ AI_PROVIDER=bedrock
 AWS_BEARER_TOKEN_BEDROCK=<Bedrock API 키>
 AWS_REGION=ap-northeast-2
 BEDROCK_MODEL_ID=apac.amazon.nova-lite-v1:0
-BEDROCK_MODEL_ID2=apac.anthropic.claude-3-5-sonnet-20241022-v2:0
 OPENWEATHERMAP_API_KEY=<OpenWeatherMap API 키>
 ```
 
@@ -111,10 +110,9 @@ OPENWEATHERMAP_API_KEY=<OpenWeatherMap API 키>
 
 - `AI_PROVIDER`: `bedrock`이면 진짜 AI, 없거나 `fake`면 가짜 AI
 - `AWS_REGION`, `BEDROCK_MODEL_ID`: 적지 않으면 위의 값을 씁니다. 서울은 Nova Lite를 바로 쓸 수 없어 아시아·태평양 묶음(`apac.`)으로 부르며, 요청은 도쿄, 서울, 오사카, 뭄바이, 싱가포르, 시드니 중 한 곳에서 처리될 수 있습니다.
-- `BEDROCK_MODEL_ID2`: 추천의 "전문가" 페르소나에만 쓰는 모델 (D-020). 비우면 전문가도 `BEDROCK_MODEL_ID`를 씁니다. Claude 모델은 AWS 콘솔에서 계정의 Anthropic 사용 목적 양식을 한 번 내야 쓸 수 있습니다. 서울에서는 아시아·태평양(`apac.`) 모델만 씁니다.
+- `BEDROCK_MODEL_ID2`: 지금은 쓰지 않습니다 (D-029가 전문가 페르소나를 없앰). 값을 적어도 영향이 없습니다.
 - `IMAGING_PROVIDER`: `rembg`(기본), `floodfill`, `fake`. 적지 않으면 `rembg`입니다. (D-023)
-- `server/.env`의 키 이름은 `AI_PROVIDER`, `AWS_BEARER_TOKEN_BEDROCK`, `AWS_REGION`, `BEDROCK_MODEL_ID`, `BEDROCK_MODEL_ID2`(선택), `WEATHER_PROVIDER`, `OPENWEATHERMAP_API_KEY`, `IMAGING_PROVIDER`, `DATA_DIR`입니다. 값은 `server/.env.example`을 복사해 직접 적고, 문서나 git에 적지 않습니다.
-- `BEDROCK_MODEL_ID2`를 설정하면 전문가 추천의 기다리는 시간을 다시 재야 합니다 (D-027).
+- `server/.env`의 키 이름은 `AI_PROVIDER`, `AWS_BEARER_TOKEN_BEDROCK`, `AWS_REGION`, `BEDROCK_MODEL_ID`, `WEATHER_PROVIDER`, `OPENWEATHERMAP_API_KEY`, `IMAGING_PROVIDER`, `DATA_DIR`입니다. 값은 `server/.env.example`을 복사해 직접 적고, 문서나 git에 적지 않습니다.
 - 값을 바꾼 뒤에는 서버를 다시 켭니다.
 - AI가 하는 일(키워드 미리 고르기, 종류 단어의 성별, 비슷한 단어 판단, 코디 점수, 코디 추천)은 모두 Bedrock으로 옮겼습니다 (P-24 ~ P-27).
 

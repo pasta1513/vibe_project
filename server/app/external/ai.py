@@ -123,26 +123,25 @@ def _clean_shopping(items, closet: list[dict] | None = None) -> list[dict]:
     return cleaned
 
 
-def recommend(closet: list[dict], weather: dict, tag: str, request: str | None = None,
-              persona: str = "expert", favorites: list[dict] | None = None, items_for=None) -> dict:
-    """코디를 최대 3벌 추천받습니다. 추천 AI가 코디와 이유를 고르고, 평가 AI가 점수를 따로 매깁니다. (U6, 사람이 정함)
+def recommend(closet: list[dict], weather: dict, tag: str, request: str | None = None, items_for=None) -> dict:
+    """코디를 최대 3벌 추천받습니다. 추천 AI가 코디와 이유를 고르고, 평가 AI가 점수를 따로 매깁니다. (U6, D-026, D-029)
 
     추천 AI는 점수를 만들지 않습니다. 점수는 사용자가 입힌 코디를 평가할 때와 같은 평가 AI(score)가
     고른 코디마다 따로 매깁니다. (checkpoint P-26, D-014)
+    추천 AI는 1번 무난, 2번 태그 충실, 3번 과감 순서로 답하고, 이 순서를 그대로 지킵니다. 역할은 화면에 보이지 않습니다.
     closet: 지운 옷을 뺀 옷 목록. 옷마다 {"id", "category", "keywords"}.
-    request: 사용자가 쓴 요청 글 (없으면 None). persona: expert, friend, my_style.
-    favorites: "내 스타일"일 때 취향으로 넘기는 즐겨찾기 (recommendations.favorites_for_ai). (P-39)
     items_for: 코디 구성 → 평가 AI에 넘길 칸마다 옷 정보 (score의 items). 없으면 키워드만.
+    request: 사용자가 쓴 요청 글 (없으면 None). (P-39, 페르소나는 D-029에서 없앰)
     돌려주는 것: {"outfits": [{"outfit", "score", "note_type": "reason", "summary", "details"}, ...],
                  "shopping": [{"name", "reason"}, ...]}
     검사를 통과하지 못했거나 점수를 받지 못한 코디는 빼고, 하나도 남지 않으면 ExternalError("ai_invalid")를 냅니다.
     (점수 없이 보여 주면 응답과 화면의 점수 칸이 달라지므로, 점수를 받지 못한 코디는 뺍니다.)
     """
     _fail_if_asked("recommend")
-    reply = provider.recommend(closet, weather, tag, request=request, persona=persona,
-                               favorites=favorites)
+    reply = provider.recommend(closet, weather, tag, request=request)
     reply = reply if isinstance(reply, dict) else {}
     answers = reply.get("outfits") if isinstance(reply.get("outfits"), list) else []
+    answers = [a for a in answers if isinstance(a, dict)]
     categories = {item["id"]: item["category"] for item in closet}
     picked, seen, dropped = [], set(), Counter()
     for answer in answers or []:

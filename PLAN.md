@@ -651,6 +651,7 @@
 | U8 | checkpoint 데이터 이행 스크립트 (D-028) | `b6f3001` | Reviewer PASS |
 | 후속 A | 추천 칸별 enum (D-026) | `92fe964` | Reviewer PASS |
 | 후속 B | 사진 전용 옷 [모습 저장] 기본 틀 (D-028) | `fa3a8ff` | Reviewer PASS |
+| 작업 3 | 추천 AI를 스타일리스트 3역할로 복구, 페르소나·요청 글·구매 추천 제거 (D-029) | 이 문서를 담은 커밋 | Reviewer 검토 중 |
 | U9 | 전체 회귀(체크리스트 A·B·C, 결함 0), 기록 `_u9/U9-regression.md` | 없음 | Reviewer PASS |
 | U10 | 문서 갱신 | `docs: document unified application behavior` (이 표를 담은 커밋) | Reviewer PASS |
 
