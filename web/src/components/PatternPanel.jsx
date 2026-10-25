@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { loadImage, patternFromImage, toSvg } from '../vectorize.js'
 import Button from './Button.jsx'
 import ErrorLine from './ErrorLine.jsx'
+import ForegroundImage from './ForegroundImage.jsx'
 import Mannequin, { GarmentIllustration } from './Mannequin.jsx'
 
 // 무늬 칸 (SCREEN-SPEC §6.2, §6.3, P-44). 옷 등록 창의 [2D 이미지]와 옷 상세의 [무늬 바꾸기]에서 씁니다.
@@ -79,7 +80,7 @@ function PatternPanel({ imageUrl, mainColor, settings, save, item, mannequin, on
       title="옷만 그린 2D 일러스트"
     />
   ) : (
-    <img src={imageUrl} alt="배경을 지운 2D 이미지" />
+    <ForegroundImage src={imageUrl} alt="배경을 지운 2D 이미지" />
   )
   const panel = layout === 'panel'
   return (

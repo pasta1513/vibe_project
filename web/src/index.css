@@ -1153,6 +1153,18 @@ button {
   color: var(--color-accent);
 }
 
+/* 촬영 안내 (kmj D-017). 01 · 사진 업로드 제목 오른쪽에 둡니다. */
+.reg__tip {
+  position: absolute;
+  left: 215px;
+  top: 108px;
+  width: 400px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--reg-muted);
+}
+
 /* 01 · 사진 올리기 칸 */
 .reg__drop {
   left: 36px;
@@ -1261,6 +1273,13 @@ button {
 
 .reg__error {
   font-size: 13px;
+}
+
+/* 업로드 실패 줄은 02 · 옷 정보 칸과 겹치는 자리에 있어 칸 뒤에 가려졌습니다(master와 같은 위치). 칸 위로 올립니다. (U4) */
+.reg__error {
+  z-index: 3;
+  background: #fdfaf7;
+  border-radius: 8px;
 }
 
 /* 02 · 키워드 (칸 안에서 스크롤) */

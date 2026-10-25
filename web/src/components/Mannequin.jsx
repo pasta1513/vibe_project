@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { useForegroundBounds } from '../foregroundBounds.js'
+import ForegroundImage from './ForegroundImage.jsx'
 import headFemale from '../assets/mannequin/head-female.png'
 import headMale from '../assets/mannequin/head-male.png'
 
@@ -482,7 +483,7 @@ export function GarmentIllustration({ item, mannequin, className, title }) {
   const { boxes, dims } = bodyGeometry(gender, height, body)
   const area = item?.main_color ? outfitBox(item.outfit_template, dims) : null
   if (!area) {
-    return <img className={className} src={item?.image_url} alt={title ?? '2D 이미지'} />
+    return <ForegroundImage className={className} src={item?.image_url} alt={title ?? '2D 이미지'} />
   }
   // 옷 상자 둘레에 여유를 두어 피팅값으로 옮기거나 기울여도 잘리지 않게 합니다.
   const pad = Math.max(area.w, area.h) * 0.12

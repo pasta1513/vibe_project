@@ -249,6 +249,8 @@ function ClothingRegisterDialog({ keywords: loadedKeywords, mannequin, outfitTab
         <span className="reg__sec-t" style={{ left: 35, top: 108 }}>
           01 · 사진 업로드 <span className="reg__req">*</span>
         </span>
+        {/* 촬영 안내 (SCREEN-SPEC §6, kmj D-017): 여러 벌이나 어수선한 배경은 배경 지우기가 잘 안 됨 */}
+        <p className="reg__tip">옷 한 벌만, 벽이나 바닥처럼 단순한 배경에서 찍으면 배경이 깔끔하게 지워져요.</p>
         <button
           type="button"
           className={`reg__drop${upload ? ' reg__drop--filled' : ''}`}
