@@ -14,7 +14,7 @@ Flood Fill (D-015, P-30, 보조 경로):
 - 배경이 복잡하거나 거의 모두 지워지면 실패로 보지 않고, 배경을 지우지 않은 사진을 씁니다.
   사용자는 마음에 들지 않으면 사진을 다시 올립니다. (PRD §4 등록하기 3)
 
-저장하는 PNG는 옷 둘레로 자르지 않습니다. 크기는 늘 working_size()(= 방향을 바로잡고 긴 변 1024 이하로 줄인 크기)입니다.
+저장하는 PNG는 옷 둘레로 자르지 않습니다. 크기는 늘 working_size()(= 방향을 바로잡고 긴 변 1536 이하로 줄인 크기)입니다.
 배경 고치기(PUT /api/uploads/{id}/image)가 이 크기를 검사하고, 화면 편집기가 원래 사진을 이 크기에 맞춰 겹치기 때문입니다.
 """
 
@@ -38,7 +38,7 @@ log = logging.getLogger("uvicorn.error")
 SVG_NS = "http://www.w3.org/2000/svg"
 
 # 긴 변이 이보다 크면 줄입니다. 마네킹에 얹는 그림이라 충분하고 처리도 빨라집니다. (제안)
-MAX_SIDE = 1024
+MAX_SIDE = 1536  # 저장 해상도(D-030, 2026-10-26: 1024 → 1536). 옛 옷의 PNG는 바꾸지 않습니다.
 # 배경색과의 색 차이(R, G, B 차이 중 가장 큰 값, 0~255)가 이 안이면 배경으로 봅니다. (제안)
 TOLERANCE = 40
 # 가장자리 픽셀 중 배경색에 가까운 것이 이보다 적으면 배경이 복잡한 것으로 보고 지우지 않습니다. (제안)
@@ -52,6 +52,10 @@ MODEL_NAME = "isnet-general-use"
 MODEL_DIR = DATA_DIR / "models"
 # 정리: 투명도를 있음/없음으로 나누는 기준, 남길 조각의 최소 크기(가장 큰 조각 대비), 정리 뒤 옷이 이 비율보다 작으면 옷을 못 찾은 것
 ALPHA_CUT = 128
+# 가장자리의 부드러운 투명도. 확실한 옷(ALPHA_CUT 이상)에 이어진 칸 중 ALPHA_LOW 이상이고 옷에서 SOFT_REACH칸 안인 칸은
+# rembg의 투명도를 살려 반투명하게 남깁니다. 그보다 옅은 칸(잡음)과 멀리 떨어진 칸은 지웁니다. (U-Q1 작업 1)
+ALPHA_LOW = 32
+SOFT_REACH = 3
 MIN_PART_RATIO = 0.10
 MIN_FOREGROUND = 0.01
 
@@ -159,8 +163,9 @@ def _rembg_cut(image: Image.Image) -> Image.Image:
     rgba = np.array(cut.convert("RGBA"))
     if rgba.shape[1] != image.width or rgba.shape[0] != image.height:
         raise ValueError(f"rembg 결과 크기가 다릅니다: {rgba.shape[1]}x{rgba.shape[0]}")
-    # 1. 투명도를 있음/없음으로 나눠 흐린 잔상을 없앱니다. 2. 가장 큰 조각의 10%보다 작은 떨어진 조각을 버립니다(8방향 이웃).
-    mask = rgba[:, :, 3] >= ALPHA_CUT
+    # 1. 확실한 옷(ALPHA_CUT 이상)을 이진 마스크로 잡고, 2. 가장 큰 조각의 10%보다 작은 떨어진 조각을 버립니다(8방향 이웃).
+    alpha = rgba[:, :, 3]
+    mask = alpha >= ALPHA_CUT
     labels, count = ndimage.label(mask, structure=np.ones((3, 3)))
     if count > 1:
         areas = np.bincount(labels.ravel())
@@ -170,8 +175,19 @@ def _rembg_cut(image: Image.Image) -> Image.Image:
         mask = keep[labels]
     if mask.sum() < MIN_FOREGROUND * mask.size:
         raise ValueError("옷을 찾지 못했습니다")
-    rgba[:, :, 3] = np.where(mask, 255, 0).astype(np.uint8)
-    rgba[~mask, :3] = 255  # 지운 칸은 흰색 + 투명 (Flood Fill과 같게)
+    # 3. 옷에 이어진 반투명 가장자리는 부드러운 투명도로 남깁니다. 옷 안쪽(마스크)은 완전 불투명으로 굳힙니다.
+    distance, (near_y, near_x) = ndimage.distance_transform_edt(~mask, return_distances=True, return_indices=True)
+    soft = ~mask & (alpha >= ALPHA_LOW) & (distance <= SOFT_REACH)
+    joined, _ = ndimage.label(mask | soft, structure=np.ones((3, 3)))
+    soft &= np.isin(joined, np.unique(joined[mask]))  # 옷에 이어진 칸만
+    out_alpha = np.zeros_like(alpha)
+    out_alpha[mask] = 255
+    ramp = (alpha[soft].astype(np.float32) - ALPHA_LOW) / (ALPHA_CUT - ALPHA_LOW)
+    out_alpha[soft] = np.rint(np.clip(ramp, 0, 1) * (ALPHA_CUT - 1)).astype(np.uint8)  # 최대 127: 대표 색 계산의 "불투명" 기준(128)에 들지 않음
+    # 반투명 칸의 색은 가장 가까운 옷 색으로 바꿉니다(옛 배경색이 가장자리에 번져 보이는 것을 막음).
+    rgba[soft, :3] = rgba[near_y[soft], near_x[soft], :3]
+    rgba[:, :, 3] = out_alpha
+    rgba[~(mask | soft), :3] = 255  # 지운 칸은 흰색 + 투명 (Flood Fill과 같게)
     return Image.fromarray(rgba, "RGBA")
 
 
@@ -191,6 +207,8 @@ def main_color(image_path: Path | None, remove: bool = True) -> str:
             image = ImageOps.exif_transpose(source).convert("RGBA")
     except (OSError, ValueError, TypeError, Image.DecompressionBombError):
         return FALLBACK_COLOR
+    # 반투명 가장자리(알파 128 미만)는 지워진 칸(흰색+투명)과 같게 먼저 정리합니다. 가장자리를 살려도 대표 색이 바뀌지 않게 합니다. (U-Q1)
+    image.paste((255, 255, 255, 0), mask=image.getchannel("A").point(lambda a: 255 if a < 128 else 0))
     image.thumbnail((256, 256))
     # 이미 배경이 지워진(투명한 칸이 있는) 이미지는 다시 지우지 않습니다. 옷이 가장자리에 닿은 사진에서
     # 옷 가장자리 색이 배경으로 오인되어 옷이 깎이는 것을 막습니다.
