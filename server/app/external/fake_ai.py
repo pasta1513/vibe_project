@@ -5,14 +5,15 @@
 
 import random
 
-from . import ExternalError, should_fake_fail
 
 REASON_TEXT = "AI 연결 전 예시입니다."
 COMMENT_TEXT = "AI 연결 전 예시 코멘트입니다."
 
 
+# 일부러 실패하기(FAKE_FAIL)는 ai.py가 가짜와 Bedrock 모두에 똑같이 합니다. 추천 점수는 ai.py가 score로 따로 매깁니다. (U6)
 def _random_score() -> float:
-    return random.randint(1, 50) / 10
+    # 기준 점수의 범위는 1.0~5.0입니다. (D-014)
+    return random.randint(10, 50) / 10
 
 
 def _details(outfit: dict, text: str) -> dict:
@@ -50,8 +51,6 @@ SHOPPING_EXAMPLE = {"name": "AI 연결 전 예시 옷", "reason": "요청 글이
 
 def recommend(closet, weather, tag, request=None, persona="expert", favorites=None):
     reason = REASON_BY_PERSONA.get(persona, REASON_TEXT)
-    if should_fake_fail("recommend"):
-        raise ExternalError("ai_failed")
     by_category = {}
     for item in closet:
         by_category.setdefault(item["category"], []).append(item["id"])
@@ -80,18 +79,17 @@ def recommend(closet, weather, tag, request=None, persona="expert", favorites=No
             continue
         outfits.append({
             "outfit": outfit,
-            "score": _random_score(),
             "summary": reason,
             "details": _details(outfit, reason),
         })
     return {"outfits": outfits, "shopping": [SHOPPING_EXAMPLE] if request else []}
 
 
-def score(outfit, weather, tag, items=None):
-    if should_fake_fail("score"):
-        raise ExternalError("ai_failed")
+# 진짜 AI처럼 기준마다 점수를 주고, 전체 점수는 ai.py가 합칩니다. (D-014)
+def score(outfit, weather, tag, items=None, task="score"):
     return {
-        "score": _random_score(),
+        "criteria": {"weather": _random_score(), "tag": _random_score() if tag else None,
+                     "harmony": _random_score()},
         "summary": COMMENT_TEXT,
         "details": _details(outfit, COMMENT_TEXT),
     }

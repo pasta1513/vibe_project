@@ -150,7 +150,7 @@ export function SidePanel({
           <circle cx="12" cy="10" r="2.6" fill="#fff" />
         </svg>
       </div>
-      {w && w.is_default_region && <p className="du-side__notice">설정에서 내 지역을 저장해 주세요.</p>}
+      {w && w.is_default_region && <p className="du-side__notice">서울 날씨예요. 설정에서 내 지역을 저장해 주세요.</p>}
       {w && w.is_current_location && <p className="du-side__notice">현재 위치({w.area}) 날씨예요.</p>}
 
       <div className="du-side__weather" aria-live="polite">
@@ -411,7 +411,7 @@ export function TodayPanel({ date, weather, outfit, clothingOf, tagsOf, mannequi
       <div className="du-today__d">{formatDate(date)}</div>
       {w && (
         <div className="du-today__wx">
-          <div className="du-today__city">{w.region}</div>
+          <div className="du-today__city">{w.area ?? w.region}</div>
           <WeatherIcon condition={w.condition} className="du-today__icon" />
           <div className="du-today__t">
             {w.min_temp}°~{w.max_temp}°C <small>{look.label}</small>

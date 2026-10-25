@@ -107,11 +107,15 @@ def recommend(body: RecommendIn, session: Session = Depends(get_session)):
             raise ApiError("no_favorites", "즐겨찾기에 코디를 먼저 넣어 주세요.")
 
     # ③ 날씨 ④ AI ⑤ 검사 (검사는 ai.recommend 안에서 합니다)
+    # 추천 AI가 고른 코디는 평가 AI가 따로 점수를 매깁니다. (U6)
+    from .scores import outfit_items  # scores.py가 이 파일을 불러오므로 여기서 불러옵니다.
+
     weather = daily_weather(session, body.day, body.region, body.location)
     request_text = (body.request or "").strip() or None
     try:
         answer = ai.recommend(closet, weather, tag.name, request=request_text,
-                              persona=body.persona, favorites=favorites_info)
+                              persona=body.persona, favorites=favorites_info,
+                              items_for=lambda outfit: outfit_items(session, outfit))
     except ExternalError as exc:
         # 왜 실패했는지 서버 터미널에 남깁니다. 오류 문장에는 키가 들어가지 않습니다. (P-41)
         log.warning("추천 실패: %s", exc.args)

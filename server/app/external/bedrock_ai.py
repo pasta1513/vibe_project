@@ -11,6 +11,7 @@ AI가 하는 일은 모두 Bedrock으로 옮겼습니다 (P-24 ~ P-27).
 """
 
 import os
+import time
 
 import boto3
 from botocore.config import Config
@@ -22,7 +23,13 @@ DEFAULT_REGION = "ap-northeast-2"
 DEFAULT_MODEL_ID = "apac.amazon.nova-lite-v1:0"
 
 # 실패로 볼 때까지 기다리는 시간(초). API-SPEC §2.3 (P-28에서 잰 시간으로 정함, 사람이 정함 2026-10-21)
-TIMEOUTS = {"similar": 10, "gender": 5, "pick": 10, "score": 15, "recommend": 20, "ping": 10}
+TIMEOUTS = {"similar": 10, "gender": 5, "pick": 10, "score": 15, "recommend": 20, "ping": 10,
+            # U6에서 더한 평가 AI의 일. 값은 score와 같게 두고, 실제 Bedrock으로 잰 뒤에 정합니다.
+            # recommend_score: 추천 코디 한 벌의 점수 (3벌을 동시에), score_retry: 빠진 칸이 있을 때 한 번 더 묻기
+            "recommend_score": 15, "score_retry": 15}
+# 답 형식이 깨져(ModelErrorException) 이 시간 안에 바로 실패하면 한 번만 다시 묻습니다.
+# 접속 실패나 시간 초과는 다시 묻지 않습니다. (checkpoint P-25a, P-28)
+MODEL_ERROR_RETRY_WITHIN = 2
 
 _clients = {}
 
@@ -40,6 +47,21 @@ def _get_client(timeout: int):
                         retries={"total_max_attempts": 1})
         _clients[timeout] = boto3.client("bedrock-runtime", region_name=region, config=config)
     return _clients[timeout]
+
+
+def _converse(timeout: int, **request):
+    """Bedrock Converse를 부릅니다. 답 형식이 깨진 오류가 바로 나면 한 번만 다시 묻습니다. (checkpoint P-28)
+
+    Nova Lite가 가끔 "Model produced invalid sequence as part of ToolUse"로 0.4초쯤에 실패합니다.
+    """
+    started = time.monotonic()
+    try:
+        return _get_client(timeout).converse(**request)
+    except ClientError as exc:
+        code = exc.response.get("Error", {}).get("Code")
+        if code != "ModelErrorException" or time.monotonic() - started > MODEL_ERROR_RETRY_WITHIN:
+            raise
+    return _get_client(timeout).converse(**request)
 
 
 def model_id() -> str:
@@ -63,7 +85,8 @@ def converse_text(system: str, user_text: str, max_tokens: int = 512,
                   timeout: int = TIMEOUTS["ping"]) -> str:
     """글 한 덩어리를 보내고 글 답을 받습니다. 실패하면 ExternalError("ai_failed")."""
     try:
-        response = _get_client(timeout).converse(
+        response = _converse(
+            timeout,
             modelId=model_id(),
             system=[{"text": system}],
             messages=[{"role": "user", "content": [{"text": user_text}]}],
@@ -105,7 +128,8 @@ def converse_tool(system: str, user_text, tool_name: str, description: str,
         inference = {"maxTokens": max_tokens * 4}
         system += f"\n반드시 {tool_name} 도구 하나로만 답합니다. 도구 밖에 글을 쓰지 않습니다."
     try:
-        response = _get_client(timeout).converse(
+        response = _converse(
+            timeout,
             modelId=model,
             system=[{"text": system}],
             messages=[{"role": "user", "content": content}],
@@ -241,12 +265,9 @@ RECOMMEND_SYSTEM = (
     "신발(shoes)은 언제나 꼭 씁니다. 아우터(outer)는 입으면 번호, 입지 않으면 0입니다.\n"
     "칸마다 옷장의 같은 구분 아래에 적힌 번호만 씁니다. 목록에 없는 번호는 쓰지 않습니다.\n"
     "날씨(기온, 비나 눈), 스타일 태그, 옷끼리의 어울림을 보고 가장 잘 맞는 코디부터 고릅니다.\n"
-    "코디마다 점수를 정하기 전에 weather_fit, tag_fit에 그 코디가 날씨와 태그에 맞는지 짧게 판단을 적습니다.\n"
-    "score는 0.1~5.0, 소수점 한 자리입니다. 5.0에서 시작해 맞지 않는 만큼 깎습니다. 예:\n"
-    "- 최저 기온이 5° 아래인데 아우터를 입지 않았으면 크게 깎습니다.\n"
-    "- 청바지와 운동화처럼 편한 옷에 '포멀' 태그면 태그 기준에서 크게 깎습니다.\n"
-    "- 0.5 단위로만 매기지 말고 4.3, 2.7처럼 판단에 맞게 씁니다.\n"
-    "옷장에 태그나 날씨에 맞는 옷이 없어도 그중 나은 코디를 고르고, 점수는 판단대로 낮게 매깁니다.\n"
+    "점수는 매기지 않습니다. 점수는 따로 있는 평가 AI가 매깁니다. (U6)\n"
+    "최저 기온이 낮거나 비나 눈이 오면 아우터를 먼저 생각합니다.\n"
+    "옷장에 태그나 날씨에 맞는 옷이 없어도 그중 나은 코디를 고릅니다.\n"
     "summary는 고른 이유 한 줄(40자 안팎)의 문법에 맞는 완전한 문장입니다. 코디마다 다른 점이 드러나게 따로 씁니다. "
     "태그 이름은 스타일을 말할 때만 쓰고, 날씨를 꾸미는 말로 쓰지 않습니다.\n"
     "details에는 입은 칸마다 그 옷을 고른 이유를 한 문장씩 적습니다.\n"
@@ -324,6 +345,9 @@ def recommend_messages(closet, weather, tag, request=None, persona="expert", fav
     if persona == "my_style":
         text += f"즐겨찾기 (사용자 취향):\n{_favorites_text(favorites)}\n"
     text += "옷장:\n" + "\n".join(groups)
+    # 추운 날에 옷장에 아우터가 있으면 아우터를 꼭 입히게 합니다. 기준은 평가 AI와 같습니다. (checkpoint D-014, U6)
+    if is_cold(weather) and any(item["category"] == "outer" for item in closet):
+        text += "\n오늘은 추운 날이라 모든 코디에 아우터를 꼭 입힙니다. outer에 0을 쓰지 않습니다."
     system = RECOMMEND_SYSTEM + "\n" + PERSONA_SYSTEM.get(persona, PERSONA_SYSTEM["expert"])
     return system, text
 
@@ -348,16 +372,13 @@ def recommend(closet, weather, tag, request=None, persona="expert", favorites=No
                  "kind": {"type": "string", "enum": ["top_bottom", "dress"],
                           "description": "top_bottom: 상의+하의, dress: 원피스"},
                  **slot_schema,
-                 # 판단을 먼저 적게 해서 점수가 판단을 따르게 합니다. 이 두 칸은 저장하지 않습니다.
-                 "weather_fit": {"type": "string", "description": "날씨에 맞는지 짧은 판단"},
-                 "tag_fit": {"type": "string", "description": "태그에 맞는지 짧은 판단"},
-                 "score": {"type": "number", "description": "0.1~5.0, 소수점 한 자리"},
+                 # 점수는 추천 AI가 만들지 않습니다. 평가 AI가 코디마다 따로 매깁니다. (U6)
                  "summary": {"type": "string", "description": summary_desc},
                  # 설명은 칸마다가 아니라 묶음에 한 번만 둡니다. 칸마다 두면 신발 번호 칸을 빼먹었습니다. (P-40)
                  "details": {"type": "object", "description": f"입은 칸마다 {detail_desc}",
                              "properties": {s: {"type": "string"} for s in SLOT_NAMES}},
              },
-             "required": ["kind", *SLOT_NAMES, "weather_fit", "tag_fit", "score", "summary", "details"]}},
+             "required": ["kind", *SLOT_NAMES, "summary", "details"]}},
              # 사면 좋을 옷은 판단을 먼저 적게 합니다. 이 두 칸은 저장하지 않습니다. (P-40)
              "closet_gap": {"type": "string",
                             "description": "옷장에 날씨·태그·요청에 맞는 옷이 모자라는지 짧은 판단"},
@@ -383,7 +404,6 @@ def recommend(closet, weather, tag, request=None, persona="expert", favorites=No
         details = item.get("details") if isinstance(item.get("details"), dict) else {}
         results.append({
             "outfit": outfit,
-            "score": item.get("score"),
             "summary": item.get("summary"),
             "details": {s: t for s, t in details.items()
                         if outfit.get(s) is not None and isinstance(t, str) and t},
@@ -429,60 +449,122 @@ def _weather_text(weather: dict) -> str:
             f"{CONDITION_NAMES.get(weather['condition'], weather['condition'])}")
 
 
-SCORE_SYSTEM = (
-    "당신은 코디를 평가합니다. 사용자가 고른 코디 한 벌에 0.1점부터 5.0점까지 소수점 한 자리로 점수를 매깁니다.\n"
-    "기준은 세 가지이고, 비중은 상황에 맞게 판단합니다.\n"
-    "1. 그날 날씨(기온, 비나 눈)에 맞는지\n"
-    "2. 고른 스타일 태그에 맞는지. 태그가 없으면 이 기준은 보지 않습니다.\n"
-    "3. 옷끼리 색, 무늬, 분위기가 어울리는지\n"
-    "옷마다 사진과 사용자가 붙인 키워드가 함께 주어집니다. 사진은 옷만 찍은 것입니다.\n"
-    "점수를 정하기 전에 weather_fit, tag_fit, harmony에 기준마다 짧게 판단을 적습니다.\n"
-    "점수는 5.0에서 시작해 맞지 않는 만큼 깎습니다. 기준 하나가 크게 어긋나면 크게 깎습니다. 예:\n"
-    "- 최저 기온이 5° 아래인데 아우터를 입지 않았으면 크게 깎습니다. 같은 날 아우터를 입었으면 깎지 않거나 조금만 깎습니다.\n"
-    "- 청바지와 운동화처럼 편한 옷에 '포멀' 태그면 태그 기준에서 크게 깎습니다.\n"
-    "- 0.5 단위로만 매기지 말고 4.3, 2.7처럼 판단에 맞게 소수점 한 자리를 씁니다.\n"
-    "- 태그가 없으면 태그 기준으로는 깎지도 더하지도 않고, 날씨와 어울림만으로 점수를 정합니다.\n"
-    "summary는 한 줄(40자 안팎)의 문법에 맞는 완전한 문장입니다. 위의 판단과 점수에 맞게 씁니다. "
-    "점수가 높으면 좋은 점을, 낮으면 무엇 때문에 낮은지 씁니다. 판단과 반대되는 말을 쓰지 않습니다.\n"
-    "details에는 입은 칸마다 그 옷에 대한 평가를 한 문장씩 적습니다.\n"
-    "모든 글은 자연스러운 한국어 존댓말로 씁니다."
+# 날씨와 아우터 기준. 추천 AI와 평가 AI가 같은 기준을 씁니다. (사람이 정함, 2026-10-22, D-014)
+# 기온 3단계 + 아우터 종류(따뜻함)에 따라 가산·감점합니다.
+OUTER_RULES = (
+    "날씨와 아우터 기준 (최저 기온으로 봅니다. 비나 눈이 오면 한 단계 더 추운 쪽으로 봅니다):\n"
+    "- 추움 (최저 5° 미만): 아우터가 꼭 필요합니다. 패딩이나 두꺼운 코트가 가장 좋고, "
+    "재킷·점퍼·트렌치코트는 조금 모자라며, 가디건은 많이 모자랍니다. 아우터가 없으면 크게 깎습니다.\n"
+    "- 쌀쌀함 (최저 5°~11°): 아우터가 있으면 좋습니다. 재킷·점퍼·트렌치코트·가디건이 잘 맞고, "
+    "패딩이나 두꺼운 코트는 조금 덥습니다. 아우터가 없으면 조금만 깎습니다.\n"
+    "- 따뜻함 (최저 12° 이상): 아우터가 없어도 됩니다. 아우터가 없다는 이유로 깎지 않습니다. "
+    "가디건 같은 가벼운 아우터는 괜찮고, 패딩이나 두꺼운 코트는 더워서 깎습니다.\n"
+    "아우터의 따뜻함은 종류와 계절·두께 키워드(겨울용, 두꺼움, 얇음 등)로 판단합니다. "
+    "윗옷과 아랫옷도 같은 기준으로 봅니다. 예: 따뜻한 날의 두꺼운 니트는 조금 덥고, 추운 날의 얇은 셔츠는 춥습니다.\n"
 )
 
 
-# 코디 점수 (PRD §6 점수, P-25). 옷 키워드와 2D 이미지를 함께 보냅니다 (사람이 정함, 2026-10-21).
-def score(outfit, weather, tag, items=None):
+def is_cold(weather: dict) -> bool:
+    """OUTER_RULES의 "추움" 단계인지. 최저 5° 미만, 또는 비나 눈이 오면 한 단계 더 춥게 보아 최저 12° 미만."""
+    if weather["condition"] in ("rain", "snow"):
+        return weather["min_temp"] < 12
+    return weather["min_temp"] < 5
+
+SCORE_SYSTEM = (
+    # 평가 AI의 페르소나와 답 형식 (D-014, 사람이 정함 2026-10-22)
+    "당신은 엄격한 패션 심사위원입니다. 스타일리스트 AI가 추천한 코디든 사용자가 직접 고른 코디든 "
+    "같은 기준으로 평가합니다.\n"
+    # 기준마다 점수를 받고 서버(ai.py)가 합칩니다. 한 점수로 받으면 구간 대표값(4.5, 2.9)에 몰려
+    # 판단 하나가 뒤집힐 때 점수가 크게 뛰었습니다. (사람이 정함, 2026-10-22, D-014)
+    # 0점이 새어 들어와 전체가 1.0이 되는 일이 있어, 범위를 1.0~5.0으로 하고 태그가 없으면 태그 칸을 뺍니다.
+    # (사람이 정함, 2026-10-22)
+    "기준마다 따로따로 1.0점부터 5.0점까지 소수점 한 자리로 매깁니다. 전체 점수는 앱이 계산하므로 매기지 않습니다.\n"
+    "1. weather_score: 그날 날씨(기온, 비나 눈)에 맞는지\n"
+    "2. tag_score: 고른 스타일 태그에 맞는지. 태그가 없으면 이 칸은 답 형식에 없습니다.\n"
+    "3. harmony_score: 옷끼리 색, 무늬, 분위기가 어울리는지\n"
+    "기준마다 엄격하게 매깁니다. 5.0은 흠잡을 데가 없을 때만 줍니다.\n"
+    "- 4.0~5.0: 잘 맞음 / 3.0~3.9: 무난하지만 아쉬움이 있음 / 2.0~2.9: 꽤 어긋남 / 1.0~1.9: 크게 어긋남\n"
+    "- 예: 추운 날 아우터가 없으면 weather_score는 1.5 아래, '포멀' 태그에 청바지와 운동화면 tag_score는 2.0 아래\n"
+    # 사진은 보내지 않고 키워드만 보냅니다 (사람이 정함, 2026-10-22, D-015).
+    "옷마다 사용자가 등록할 때 확인한 키워드(구분, 색, 종류, 소재, 계절·두께, 무늬)가 주어집니다. "
+    "사진은 없으니 키워드로만 판단하고, 키워드에 없는 모양이나 색은 지어내지 않습니다.\n"
+    "점수를 정하기 전에 weather_fit, tag_fit, harmony에 기준마다 짧게 판단을 적습니다. 비워 두지 않습니다. "
+    "weather_fit에는 최저 기온이 어느 단계(추움/쌀쌀함/따뜻함)인지 먼저 적습니다.\n"
+    # 키워드만 보면 태그 판단이 무뎌져('포멀'에 청바지 + 운동화도 4.5) 옷마다 먼저 판단하게 합니다.
+    # (사람이 정함, 2026-10-22, D-015)
+    # 예시에 옷 이름을 적으면 그 이름을 따라 쓰고("셔츠"), 자리 표시("[상의 이름]")를 적으면 그 글자를 따라 써서
+    # 판단이 다시 무뎌졌습니다. 그래서 요청마다 실제 옷 이름으로 적을 순서를 줍니다 (score 참고). (2026-10-22)
+    "tag_fit에는 요청에 적힌 순서대로 입은 옷을 하나씩 '옷 이름: 맞음/조금 어긋남/맞지 않음, 짧은 까닭' 모양으로 적습니다. "
+    "까닭과 판단이 맞아야 합니다. 어울리지 않는다고 쓰면 '맞지 않음'입니다. "
+    "그 판단대로 tag_score를 매깁니다. 맞지 않는 옷이 하나라도 있으면 tag_score는 3.0 아래, "
+    "둘 이상이면 2.0 아래입니다. 모두 맞을 때만 4.0 이상을 줍니다.\n"
+    + OUTER_RULES +
+    "예시 (기준을 보여 주는 것이니 숫자를 그대로 따라 하지 말고 판단에 맞게 매깁니다):\n"
+    "- 최저 15° 맑음, 캐주얼, 니트 + 청바지 + 운동화, 아우터 없음: 따뜻한 날이라 아우터가 없어도 되어 "
+    "weather_score가 높고, 캐주얼 태그에도 맞습니다.\n"
+    "- 최저 -5° 눈, 같은 옷에 아우터 없음: weather_score가 아주 낮습니다. 패딩을 더하면 높아집니다.\n"
+    "- 최저 18° 맑음, 같은 옷에 두꺼운 겨울 코트: 더워서 weather_score가 낮습니다.\n"
+    "summary는 가장 낮은 기준의 까닭과 고칠 점을 해요체 40~50자로 씁니다. 점수 숫자는 쓰지 않습니다. "
+    "예: \"영하인데 아우터가 없어 추워요. 코트를 더해 보세요.\" "
+    "고칠 점이 없으면 \"이대로 좋아요\"처럼 씁니다. 위의 판단과 반대되는 말을 쓰지 않습니다.\n"
+    "details에는 입은 칸마다 옷 이름으로 시작하는 평가 한 문장을 해요체로 적습니다. "
+    "예: \"회색 니트는 두꺼워서 영하 날씨에 맞아요.\"\n"
+    "모든 글은 자연스러운 한국어 해요체로 씁니다. '~습니다', '~입니다'로 끝내지 않습니다."
+)
+
+
+def criterion(name: str) -> dict:
+    """평가 AI의 기준 점수 칸. 1.0~5.0 (D-014)"""
+    return {"type": "number", "minimum": 1.0, "maximum": 5.0, "description": f"{name} 1.0~5.0, 소수점 한 자리"}
+
+
+# 코디 점수 (PRD §6 점수, P-25). 옷 키워드만 보냅니다 (사람이 정함, 2026-10-22, D-015).
+# 평가 AI입니다. 추천받기에서도 이 함수로 점수를 매깁니다 (task="recommend_score", P-26).
+def score(outfit, weather, tag, items=None, task="score"):
     items = items or []
-    budget = [MAX_IMAGE_BYTES]
-    content = [{"text": (
-        f"날씨: {_weather_text(weather)}\n"
-        f"스타일 태그: {tag if tag else '없음 (태그 기준은 보지 않음)'}\n"
-        f"아우터: {'입음' if outfit.get('outer') else '입지 않음'}\n"
-        "아래는 입은 옷입니다."
-    )}]
-    for item in items:
-        content.append({"text": f"[{SLOT_NAMES[item['slot']]}] {_keyword_text(item['keywords'])}"})
-        block = _image_block(item.get("image_path"), budget)
-        if block:
-            content.append(block)
+    # 아우터가 없다는 사실만으로 깎지 않도록, 기온 기준을 따르라고 함께 적습니다. (2026-10-22)
+    outer_text = "입음" if outfit.get("outer") else "입지 않음 (괜찮은지는 날씨와 아우터 기준을 따름)"
+    clothes = "\n".join(f"[{SLOT_NAMES[item['slot']]}] {_keyword_text(item['keywords'])}" for item in items)
+    content = (f"날씨: {_weather_text(weather)}\n"
+               f"스타일 태그: {tag if tag else '없음 (태그 기준은 보지 않음)'}\n"
+               f"아우터: {outer_text}\n"
+               f"입은 옷:\n{clothes}")
+    if tag:
+        # 옷마다 태그 판단을 실제 옷 이름으로 적게 합니다 (사람이 정함, 2026-10-22, D-015).
+        names = [", ".join(item["keywords"].get("type") or [SLOT_NAMES[item["slot"]]]) for item in items]
+        content += ("\ntag_fit은 이 순서로 적습니다: "
+                    + " ".join(f"{name}: (맞음/조금 어긋남/맞지 않음), (까닭)." for name in names))
     worn = [item["slot"] for item in items]
     answer = converse_tool(
         SCORE_SYSTEM,
         content,
         "answer_score",
-        "코디 한 벌의 점수, 한 줄 코멘트, 옷마다 평가를 답합니다.",
+        "코디 한 벌을 기준마다 점수로 평가하고, 한 줄 코멘트와 옷마다 평가를 답합니다.",
         {"type": "object",
          "properties": {
-             # 판단을 먼저 적게 해서 점수가 판단을 따르게 합니다. 이 세 칸은 저장하지 않습니다.
-             "weather_fit": {"type": "string", "description": "날씨에 맞는지 짧은 판단"},
-             "tag_fit": {"type": "string", "description": "태그에 맞는지 짧은 판단, 태그가 없으면 '없음'"},
-             "harmony": {"type": "string", "description": "옷끼리 어울리는지 짧은 판단"},
-             "score": {"type": "number", "description": "0.1~5.0, 소수점 한 자리"},
-             "summary": {"type": "string", "description": "한 줄 코멘트"},
+             # 판단을 먼저 적게 해서 점수가 판단을 따르게 합니다. 판단 칸은 저장하지 않습니다.
+             "weather_fit": {"type": "string", "description": "최저 기온 단계와 날씨에 맞는지 짧은 판단 (해요체)"},
+             **({"tag_fit": {"type": "string",
+                             "description": "입은 옷마다 '옷 이름: 맞음/조금 어긋남/맞지 않음, 짧은 까닭' (해요체)"}}
+                if tag else {}),
+             "harmony": {"type": "string", "description": "옷끼리 어울리는지 짧은 판단. 배경과 소품은 보지 않음 (해요체)"},
+             "weather_score": criterion("날씨 기준"),
+             **({"tag_score": criterion("태그 기준")} if tag else {}),
+             "harmony_score": criterion("어울림 기준"),
+             "summary": {"type": "string",
+                         "description": "가장 낮은 기준의 까닭과 고칠 점, 해요체 40~50자, '~요.'로 끝남, 점수 숫자는 쓰지 않음"},
              "details": {"type": "object",
+                         "description": "입은 칸마다 옷 이름으로 시작하는 해요체 한 문장 ('~요.'로 끝남)",
                          "properties": {s: {"type": "string"} for s in worn},
                          "required": worn},
          },
-         "required": ["weather_fit", "tag_fit", "harmony", "score", "summary", "details"]},
-        timeout=TIMEOUTS["score"], max_tokens=600,
+         "required": (["weather_fit"] + (["tag_fit"] if tag else []) + ["harmony", "weather_score"]
+                      + (["tag_score"] if tag else []) + ["harmony_score", "summary", "details"])},
+        timeout=TIMEOUTS[task], max_tokens=700,
     )
-    return answer
+    # 합치기는 ai.py가 합니다. (D-014)
+    return {"criteria": {"weather": answer.get("weather_score"),
+                         "tag": answer.get("tag_score") if tag else None,
+                         "harmony": answer.get("harmony_score")},
+            "summary": answer.get("summary"),
+            "details": answer.get("details")}
