@@ -360,8 +360,15 @@ def recommend_messages(closet, weather, tag, request=None, persona="expert", fav
 # 요청 글, 페르소나, 사면 좋을 옷은 P-39에서 더함.
 def recommend(closet, weather, tag, request=None, persona="expert", favorites=None):
     system, text = recommend_messages(closet, weather, tag, request, persona, favorites)
-    slot_schema = {s: {"type": "integer", "description": f"{SLOT_NAMES[s]} 옷 번호, 입지 않으면 0"}
-                   for s in SLOT_NAMES}
+    # 칸마다 그 구분의 옷 번호만 고를 수 있게 합니다. Nova Lite가 칸에 다른 구분의 번호를 넣는 일이 잦아(실측 40번 중
+    # 검사 탈락 13번, 전부 탈락 2번) 넣었습니다. 신발은 꼭 있어야 하므로 0이 없습니다. (checkpoint P-26, 사람이 정함 2026-10-25)
+    ids = {s: [item["id"] for item in closet if item["category"] == s] for s in SLOT_NAMES}
+    slot_schema = {}
+    for s in SLOT_NAMES:
+        choices = ([] if s == "shoes" else [0]) + ids[s]
+        slot_schema[s] = {"type": "integer", "enum": choices or [0],
+                          "description": f"{SLOT_NAMES[s]} 옷 번호 ([{SLOT_NAMES[s]}] 옷만)"
+                                         + ("" if s == "shoes" else ", 입지 않으면 0")}
     summary_desc, detail_desc = PERSONA_FIELDS.get(persona, PERSONA_FIELDS["expert"])
     answer = converse_tool(
         system,
