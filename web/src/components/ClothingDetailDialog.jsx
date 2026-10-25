@@ -110,7 +110,10 @@ function ClothingDetailDialog({ clothingId, keywords, mannequin, outfitTable, on
   async function handleSaveLook() {
     setBusy(true)
     setActionError(null)
-    const res = await api.saveFit(clothingId, look)
+    // 사진만 있는 옷(틀 정보 없음)은 outfit_template이 비어 있습니다. 서버는 틀 코드를 꼭 받으므로 그 구분의 기본 틀을 보냅니다.
+    // (서버 outfit_defaults와 같은 표. 대표 색은 건드리지 않아 앞모습은 계속 사진으로 보입니다.) (U8 후속)
+    const template = look.outfit_template ?? outfitTable?.defaults?.[detail.category] ?? null
+    const res = await api.saveFit(clothingId, { ...look, outfit_template: template })
     setBusy(false)
     if (res.result === 'ok') {
       setDetail({ ...detail, ...res.data })
