@@ -240,7 +240,7 @@ function WordList({ words, adder, ...handlers }) {
 }
 
 // initialPage: 처음 보일 쪽 ('region' 등). 없으면 마네킹 설정
-function SettingsScreen({ mannequin, initialPage, onMannequinSaved, showToast }) {
+function SettingsScreen({ mannequin, initialPage, onMannequinSaved, onRegionSaved, showToast }) {
   const [settings, setSettings] = useState(null)
   const [keywords, setKeywords] = useState(null)
   const [tags, setTags] = useState(null)
@@ -299,6 +299,7 @@ function SettingsScreen({ mannequin, initialPage, onMannequinSaved, showToast })
     setSavingRegion(false)
     if (res.result === 'ok') {
       setSettings((prev) => ({ ...prev, home_region: res.data.home_region }))
+      onRegionSaved?.(res.data.home_region)
       showToast('저장되었습니다.')
     } else {
       setRegionError(res.error.message)

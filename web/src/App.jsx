@@ -21,6 +21,8 @@ function App() {
   const [loadError, setLoadError] = useState(null)
   const [mannequin, setMannequin] = useState(null)
   const [regions, setRegions] = useState([])
+  // 저장한 내 지역(없으면 null). 처음 화면 날씨가 씁니다. 설정에서 저장하면 onRegionSaved로 바로 바뀝니다. (U5)
+  const [homeRegion, setHomeRegion] = useState(null)
   // 의상 틀 표: 등록 창 미리보기가 서버와 같은 규칙으로 틀을 고릅니다. (D-016)
   const [outfitTable, setOutfitTable] = useState(null)
   const [activeMenu, setActiveMenu] = useState(null)
@@ -43,6 +45,7 @@ function App() {
     if (res.result === 'ok') {
       setMannequin(res.data.mannequin)
       setRegions(res.data.regions)
+      setHomeRegion(res.data.home_region ?? null)
       setOutfitTable({ templates: res.data.outfit_templates, defaults: res.data.outfit_defaults })
       setStatus('ready')
     } else {
@@ -139,7 +142,7 @@ function App() {
               {!fullScreen && <Wardrobe className="stage__wardrobe" />}
             </>
           )}
-          {homeOpen && <HomeScreen mannequin={mannequin} onOpenRegion={openRegionSettings} />}
+          {homeOpen && <HomeScreen mannequin={mannequin} homeRegion={homeRegion} onOpenRegion={openRegionSettings} />}
           {closetOpen && <ClosetScreen mannequin={mannequin} outfitTable={outfitTable} showToast={setToast} />}
           {dressUpOpen && (
             <DressUpScreen
@@ -159,6 +162,7 @@ function App() {
               mannequin={mannequin}
               initialPage={settingsPage}
               onMannequinSaved={setMannequin}
+              onRegionSaved={setHomeRegion}
               showToast={setToast}
             />
           )}

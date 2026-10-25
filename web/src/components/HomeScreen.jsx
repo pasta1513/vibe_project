@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import homeBg from '../assets/home/home-bg.png'
 import { isoDate } from '../labels.js'
@@ -12,7 +12,11 @@ import Mannequin from './Mannequin.jsx'
 // 캐릭터 자리에는 지금 고른 모양의 마네킹이 기본 잠옷 차림으로 섭니다.
 // 오늘 날짜의 코디 일기가 있으면 그 옷을 입습니다. 일기를 받지 못하면 잠옷 그대로입니다. (P-46, 사람이 정함 2026-10-23)
 // 날씨 카드: 오늘, 저장한 지역(없으면 서울)의 날씨 (API-SPEC §4). 처음 화면을 열 때 한 번 받습니다.
+// 지역은 늘 이름으로 보냅니다(저장한 내 지역, 없으면 '서울'). 지역 없이 부르면 api.getWeather가 현재 위치를 물어
+// 앱을 켜자마자 위치 권한 창이 뜨기 때문입니다. 서울 안내는 서버 표시(is_default_region)가 아니라 homeRegion이 비었는지로 정합니다. (U5)
 // 기온은 최저~최고, 한마디는 날씨마다 정해 둔 문장 (AI를 부르지 않음). > 는 설정의 지역 설정을 엽니다. (사람이 정함, 2026-10-22)
+
+const DEFAULT_REGION = '서울'
 
 const DAY_NAME = {
   clear: '맑은 날',
@@ -28,21 +32,31 @@ const MESSAGE = {
   snow: '따뜻한 니트와 코트를 챙겨요.',
 }
 
-function HomeScreen({ mannequin, onOpenRegion }) {
+function HomeScreen({ mannequin, homeRegion, onOpenRegion }) {
   const [weather, setWeather] = useState(null)
   const [error, setError] = useState(null)
   const [today, setToday] = useState(null)
 
-  const load = useCallback(async () => {
-    setError(null)
-    const res = await api.getWeather(isoDate(0))
-    if (res.result === 'ok') setWeather(res.data)
-    else setError(res.error.message)
-  }, [])
+  // [다시 시도]를 누를 때마다 올려서 날씨를 다시 받습니다.
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
-    load()
-  }, [load])
+    let current = true
+    api.getWeather(isoDate(0), homeRegion ?? DEFAULT_REGION).then((res) => {
+      if (!current) return
+      if (res.result === 'ok') setWeather(res.data)
+      else setError(res.error.message)
+    })
+    return () => {
+      current = false
+    }
+  }, [homeRegion, attempt])
+
+  function retry() {
+    setError(null)
+    setWeather(null)
+    setAttempt((n) => n + 1)
+  }
 
   useEffect(() => {
     let alive = true
@@ -87,7 +101,7 @@ function HomeScreen({ mannequin, onOpenRegion }) {
         {weather && (
           <>
             <div className="hm-weather__city">
-              {weather.region}
+              {weather.area ?? weather.region}
               <svg width="16" height="18" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 22s-7-7-7-12a7 7 0 0 1 14 0c0 5-7 12-7 12z" fill="#f0574b" />
                 <circle cx="12" cy="10" r="2.6" fill="#fff" />
@@ -104,10 +118,13 @@ function HomeScreen({ mannequin, onOpenRegion }) {
         {!weather && !error && <p className="hm-weather__wait">날씨를 불러오는 중…</p>}
         {error && (
           <div className="hm-weather__error">
-            <ErrorLine message={error} onRetry={load} />
+            <ErrorLine message={error} onRetry={retry} />
           </div>
         )}
       </div>
+      {!homeRegion && weather && (
+        <p className="hm-weather__notice">서울 날씨예요. 설정에서 내 지역을 저장해 주세요.</p>
+      )}
     </section>
   )
 }
